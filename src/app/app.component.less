@@ -1,0 +1,71 @@
+@import "basic.less";
+
+@gutter: 10px;
+@search-width: 300px;
+
+
+nav .container {
+  display: flex;
+  flex-direction: row;
+  height: @nav-height;
+
+  & > * {
+    line-height: @nav-height;
+    white-space: nowrap;
+    padding: 0 8px;
+    &:first-child {
+      padding-left: 0;
+    }
+    &:last-child {
+      padding-right: 0;
+    }
+  }
+}
+
+.navigation > .container {
+  height: @navigation-height;
+  display: flex;
+
+  .navigation-controls, .search-box {
+    height: 100%;
+  }
+
+  .navigation-controls {
+    margin-left: @gutter;
+    flex-grow: 1;
+  }
+
+  .search-box {
+    @media(min-width: @med) {
+      width: @search-width;
+      min-width: @search-width;
+    }
+  }
+}
+
+.body > .container {
+  padding-top: @gutter;
+  box-sizing: border-box;
+  position: relative;
+  min-height: ~"calc(100vh -" (@navigation-height + @nav-height) ~")";
+
+  .search {
+    position: absolute;
+    top: @gutter;
+    left: 0;
+    width: @search-width;
+    height: ~"calc(100% -" @gutter ~")";
+  }
+  .main {
+    padding-left: @search-width + @gutter;
+  }
+  
+  @media(max-width: @med) {
+    .main {
+      padding-left: 0;
+    }
+    .search {
+      display: none;
+    }
+  }
+}

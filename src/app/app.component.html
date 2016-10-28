@@ -1,3 +1,30 @@
-<h1>
-  {{title}}
-</h1>
+<nav>
+  <div class="container">
+    <a>Estimating</a>
+    <span class="spacer"></span>
+    <a>Link 1</a>
+    <a>Link 2</a>
+    <a>Link 3</a>
+    <a>Link 4</a>
+  </div>
+</nav>
+<section class="navigation">
+  <div class="container">
+    <div class="search-box">
+      <app-search></app-search>
+    </div>
+    <div class="navigation-controls">
+      <app-tree-navigation></app-tree-navigation>
+    </div>
+  </div>
+</section>
+<section class="body">
+  <div class="container">
+    <div class="main">
+      <app-tree></app-tree>
+    </div>
+    <div class="search">
+      <app-search-results></app-search-results>
+    </div>
+  </div>
+</section>

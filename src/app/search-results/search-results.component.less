@@ -1,0 +1,16 @@
+@import "../basic";
+
+@tree-element-height: 40px;
+
+div {
+  padding: 0 10px;
+  height: @tree-element-height;
+  span {
+    line-height: @tree-element-height;
+    &:not(:first-child) {
+      margin-left: 8px;
+    }
+  }
+  display: flex;
+  flex-direction: row;
+}

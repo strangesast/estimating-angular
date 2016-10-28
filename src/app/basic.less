@@ -1,0 +1,68 @@
+@sml: 400px;
+@med: 600px;
+@lrg: 1200px;
+
+@nav-height: 60px;
+@navigation-height: 40px;
+
+@blue1: #16193B;
+@blue2: #35478C;
+@blue3: #4E7AC7;
+@blue4: #7FB2F0;
+@blue5: #ADD5F7;
+
+@mp: 0.1; // minimum percentage
+@lrgm: (@lrg * ((2*@mp)*(1 + (2*@mp)) + 1));
+@mp2: @med / ( @med - @sml ) * @mp; // 2nd minimum percentage
+@off: -@med * @sml / ( @med - @sml ) * @mp; // offset for ^
+
+.container {
+  margin: 0 0;
+  // sml -> med
+  @media(min-width: @sml) {
+    margin: 0 ~"calc(" @mp2*100% ~" + " @off ~")";
+  }
+  // med -> lrg
+  @media(min-width: @med) {
+    margin: 0 100%*@mp;
+  }
+  // lrg ->
+  @media(min-width: @lrgm) {
+    margin: 0 ~"calc(50% - " @lrg/2 ~");";
+  }
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.active {
+  filter: invert(100%);
+}
+
+input[type="checkbox"], input[type="radio"] {
+  display: none;
+}
+label {
+  color: black;
+  background: white;
+  padding: 0 8px;
+}
+input:checked + label {
+  .active;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, currently not supported by any browser */
+}
+
+.hoverlight {
+  &:hover {
+    background: lightgrey;
+  }
+}

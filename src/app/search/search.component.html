@@ -1,0 +1,10 @@
+<div class="search-body">
+  <div class="filters">
+    <span *ngFor="let filter of filters" class="filter">
+      <span class="fa fa-remove" (click)="removeFilter(filter)"></span>
+      {{ filter }}
+    </span>
+  </div>
+  <input [(ngModel)]="query" (keydown.backspace)="onKeyDown($event)" (keyup)="onInput()" placeholder="query">
+  <span class="new-filter fa fa-search-plus"></span>
+</div>
