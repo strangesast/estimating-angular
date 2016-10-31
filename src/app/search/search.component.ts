@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 
-const AVAILABLE_FILTERS: string[] = ['building', 'phase', 'component', 'part'];
+import { SearchServiceService } from '../search-service.service';
+
+import { Filter, AVAILABLE_FILTERS } from '../filter';
 
 @Component({
   selector: 'app-search',
@@ -9,31 +11,35 @@ const AVAILABLE_FILTERS: string[] = ['building', 'phase', 'component', 'part'];
 })
 export class SearchComponent implements OnInit {
   query: string = '';
-  filters: string[] = [];
 
-  constructor() { }
+  constructor(private searchService: SearchServiceService) {
+    this.query = searchService.query.getValue();
+  }
 
   ngOnInit() {
   }
 
   removeFilter(filter: string): void {
-    let index = this.filters.indexOf(filter);
-    if(index == -1) return;
-    this.filters.splice(index, 1);
+    this.searchService.removeFilter(filter);
   }
 
   onKeyDown(event): void {
     if(event.key == 'Backspace' && this.query == '') {
-      this.filters.pop()
+      this.searchService.removeLastFilter();
     }
   }
   onInput(): void {
-    for(let i=0; i < AVAILABLE_FILTERS.length; i++) {
-      if((this.query == AVAILABLE_FILTERS[i] + ':') && (this.filters.indexOf(AVAILABLE_FILTERS[i]) == -1)) {
-        this.query = '';
-        this.filters.push(AVAILABLE_FILTERS[i]);
-        break;
+    let q = this.query;
+    if(q.endsWith(':')) {
+      for(let i=0; i < AVAILABLE_FILTERS.length; i++) {
+        if(AVAILABLE_FILTERS[i].value == q.substring(0, q.length-1)) {
+          if(this.searchService.addFilter(AVAILABLE_FILTERS[i].value) != null) {
+            this.query = '';
+            break;
+          }
+        }
       }
     }
+    this.searchService.query.next(this.query);
   }
 }

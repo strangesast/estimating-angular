@@ -1,0 +1,30 @@
+<section class="navigation">
+  <div class="container">
+    <div class="search-box">
+      <app-search></app-search>
+    </div>
+    <div class="navigation-controls">
+      <div class="navigation-bar">
+        <div *ngFor="let element of elementEditService.elements">
+          <input id="tab-{{index}}" type="radio" name="tab-navigation">
+          <label [attr.for]="'tab-' + index">{{element.name}}</label>
+        </div>
+        <div>
+          <input id="tab-new" type="radio" name="tab-navigation" checked="{{activeElement == null}}">
+          <label [attr.for]="'tab-new'"><span class="fa fa-plus"></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="body">
+  <div class="container">
+    <div class="main">
+      <app-tree-element-detail></app-tree-element-detail>
+    </div>
+    <div class="search">
+      <app-search-results></app-search-results>
+    </div>
+  </div>
+</section>
+

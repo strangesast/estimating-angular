@@ -69,3 +69,70 @@ nav .container {
     }
   }
 }
+
+.navigation-bar {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: @navigation-height;
+  line-height: @navigation-height;
+  div label {
+    display: inline-block;
+  }
+}
+
+label {
+  .noselect;
+  white-space: nowrap;
+  @media(max-width: @lrg) {
+    & > span:not(:first-child) {
+      display: none;
+    }
+  }
+}
+
+.dropdown {
+  position: relative;
+  height: @navigation-height;
+  & > *:first-child {
+    float: right;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+    height: @navigation-height;
+    line-height: @navigation-height;
+  }
+  .dropdown-body {
+    z-index: 20;
+    position: absolute;
+    min-width: 100px;
+    top: 0; // or 100%;
+    right: 0;
+    display: none; //flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background: white;
+    & > * {
+      height: @navigation-height;
+      width: 100%;
+      text-align: right;
+      background: inherit;
+      & > * {
+        padding: 8px;
+        line-height: @navigation-height;
+      }
+      .hoverlight;
+    }
+
+  }
+  &.bottom > .dropdown-body {
+    top: 100%;
+  }
+  &:hover {
+    .dropdown-body {
+      display: flex;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    }
+  }
+}

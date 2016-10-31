@@ -1,20 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { Observable }        from 'rxjs/Observable';
 
-const RESULTS = [
-  {
-    name: 'Result 1'
-  },
-  {
-    name: 'Result 2'
-  },
-  {
-    name: 'Result 3'
-  },
-  {
-    name: 'Result 4'
-  }
-]
+import { SearchServiceService } from '../search-service.service';
 
+import { Result } from '../result';
+import { Filter } from '../filter';
 
 @Component({
   selector: 'app-search-results',
@@ -22,12 +12,15 @@ const RESULTS = [
   styleUrls: ['./search-results.component.less']
 })
 export class SearchResultsComponent implements OnInit {
-  results: any[];
+  results: Observable<Result[]>;
 
-  constructor() { }
+  constructor(private searchService: SearchServiceService) { }
 
   ngOnInit() {
-    this.results = RESULTS;
+  }
+
+  addFilter(filter: Filter): void {
+    this.searchService.addFilter(filter.value);
   }
 
 }

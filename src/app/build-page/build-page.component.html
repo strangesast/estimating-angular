@@ -1,0 +1,56 @@
+<section class="navigation">
+  <div class="container">
+    <div class="search-box">
+      <app-search></app-search>
+    </div>
+    <div class="navigation-controls">
+      <div class="navigation-bar">
+        <input id="phase-enabled" type="checkbox">
+        <label for="phase-enabled">
+          <span class="fa fa-bookmark-o fa-lg"></span>
+          <span>Phase</span>
+        </label>
+        <input id="building-enabled" type="checkbox">
+        <label for="building-enabled">
+          <span class="fa fa-building-o fa-lg"></span>
+          <span>Building</span>
+        </label>
+        <input id="component-enabled" type="checkbox">
+        <label for="component-enabled">
+          <span class="fa fa-cubes fa-lg"></span>
+          <span>Component</span>
+        </label>
+      
+        <span class="spacer"></span>
+        <div class="dropdown">
+          <label>
+            <span class="fa fa-sliders fa-lg"></span>
+            <span>Options</span>
+          </label>
+          <div class="dropdown-body">
+            <a href='#'>
+              <span>Link 1</span>
+            </a>
+            <a href='#'>
+              <span>Link 2</span>
+            </a>
+            <a href='#'>
+              <span>Link 3</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="body">
+  <div class="container">
+    <div class="main">
+      <router-outlet></router-outlet>
+    </div>
+    <div class="search">
+      <app-search-results></app-search-results>
+    </div>
+  </div>
+</section>
+

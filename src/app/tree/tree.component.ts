@@ -1,4 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  trigger,
+  state,
+  animate,
+  transition,
+  style } from '@angular/core';
+import { ActivatedRoute, Params } from '@angular/router';
 
 import { Element } from '../element';
 import { Phase as PhaseElement } from '../phase';// as PhaseElement;
@@ -8,19 +16,21 @@ import { TreeBuilderService } from '../tree-builder.service';
 
 @Component({
   selector: 'app-tree',
+  animations: [
+    trigger('offset', [])
+  ],
   templateUrl: './tree.component.html',
   styleUrls: ['./tree.component.css']
 })
 export class TreeComponent implements OnInit {
   elements: Element[] = [];
 
-  constructor(private treeBuilderService: TreeBuilderService) { }
+  constructor(private route: ActivatedRoute, private treeBuilderService: TreeBuilderService) { }
 
   ngOnInit() {
-    this.treeBuilderService.buildTree().then((elements) => this.elements = elements).then(() => {
-      setInterval(() => {
-        this.elements = this.elements.length ? this.elements.slice(1).concat(this.elements[0]) : this.elements;
-      }, 5000);
+    let subject = this.treeBuilderService.buildTree();
+    subject.subscribe(res => {
+      this.elements = res;
     });
   };
 }

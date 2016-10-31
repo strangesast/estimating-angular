@@ -1,4 +1,6 @@
-<div *ngFor="let result of results" draggable="true" tabindex=1>
-  <span class="fa fa-cube"></span>
-  <span class="name">{{ result.name }}</span>
+<div *ngFor="let result of searchService.results | async" draggable="true" tabindex=1>
+  <span [ngClass]="{'fa': true, 'fa-cube': result.type=='element', 'fa-filter': result.type=='filter'}"></span>
+  <span class="name">{{ result.value.name }}</span>
+  <span class="spacer"></span>
+  <span class="hoverlink fa fa-plus" *ngIf="result.type == 'filter'" (click)="addFilter(result.value)"></span>
 </div>
