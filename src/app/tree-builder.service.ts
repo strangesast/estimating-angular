@@ -41,6 +41,12 @@ export class TreeBuilderService {
     return this.tree;
   }
 
+  grab(element: Element) {
+    let val = this._tree.getValue();
+    if(val.indexOf(element) == -1) return null;
+    return element;
+  }
+
   find(id: Number): Element | null {
     let val = this._tree.getValue();
     return val.find((el)=>el.id == id);

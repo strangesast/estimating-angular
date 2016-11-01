@@ -12,6 +12,8 @@ import { ElementEditService } from '../element-edit.service';
   styleUrls: ['./edit-page.component.less', '../app.component.less']
 })
 export class EditPageComponent implements OnInit {
+  activeElement: Element | null = null;
+  elements: Element[] = [];
 
   constructor(
     private elementEditService: ElementEditService,
@@ -21,8 +23,23 @@ export class EditPageComponent implements OnInit {
 
   ngOnInit() : void {
     this.route.params.forEach((params: Params) => {
-      let id = +params['id'];
-      this.elementEditService.loadElement(id);
+      // change to the tab of the id in the url bar
+      // TODO: need to add 404 routing
+      let id = params['id'];
+      if(id == null) {
+        this.activeElement = this.elementEditService.loadElement(null);
+      } else {
+        this.activeElement = this.elementEditService.loadElementById(+id); // numeric for now
+      }
+      this.elements = this.elementEditService.getElements();
+      this.elementEditService.elements.subscribe((res) => this.elements = res);
+      this.elementEditService.activeElement.subscribe((res) => this.activeElement = res);
     });
   }
+
+  changeActiveElement(element: Element | null) {
+    // change the active element (and tab) to 'element' or new tab (null)
+    this.elementEditService.loadElement(element);
+  }
+
 }

@@ -5,13 +5,15 @@
     </div>
     <div class="navigation-controls">
       <div class="navigation-bar">
-        <div *ngFor="let element of elementEditService.elements">
-          <input id="tab-{{index}}" type="radio" name="tab-navigation">
-          <label [attr.for]="'tab-' + index">{{element.name}}</label>
+        <div *ngFor="let element of elements; let i = index;">
+          <input id="tab-{{i}}" type="radio" name="tab-navigation" [checked]="activeElement === element">
+          <label (click)="changeActiveElement(element)" [attr.for]="'tab-' + i">{{element.name}}</label>
         </div>
         <div>
-          <input id="tab-new" type="radio" name="tab-navigation" checked="{{activeElement == null}}">
-          <label [attr.for]="'tab-new'"><span class="fa fa-plus"></span></label>
+          <input id="tab-new" type="radio" name="tab-navigation" [checked]="activeElement === null">
+          <label (click)="changeActiveElement(null)" for="tab-new">
+            <span class="fa fa-plus"></span>
+          </label>
         </div>
       </div>
     </div>
@@ -20,7 +22,8 @@
 <section class="body">
   <div class="container">
     <div class="main">
-      <app-tree-element-detail></app-tree-element-detail>
+      <app-tree-element-detail [element]="activeElement"></app-tree-element-detail>
+      <pre>{{activeElement}}</pre>
     </div>
     <div class="search">
       <app-search-results></app-search-results>
