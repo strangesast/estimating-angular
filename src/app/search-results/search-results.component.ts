@@ -28,15 +28,15 @@ export class SearchResultsComponent implements OnInit {
     draggable: '.search-result',
     filter: '.nodrag',
     sort: false,
-    store: {
-      get: (sortable: any) => {
-        console.log('get', sortable);
-        return [];
-      },
-      set: (sortable: any) => {
-        console.log('set', sortable);
-      }
-    }
+    //store: {
+    //  get: (sortable: any) => {
+    //    console.log('get', sortable);
+    //    return [];
+    //  },
+    //  set: (sortable: any) => {
+    //    console.log('set', sortable);
+    //  }
+    //}
   }
 
   addFilter(filter: Filter): void {

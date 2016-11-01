@@ -1,3 +1,9 @@
 <div [sortablejs]="elements" [sortablejsOptions]="options">
-  <app-tree-element *ngFor="let element of elements" [element]='element'></app-tree-element>
+  <div tabindex=1 *ngFor="let element of elements" class="tree-element">
+    <span class="fa fa-cubes"></span>
+    <a routerLink="/edit/{{element.id}}" class="hoverunderline">{{ element.name }}</a>
+    <span class="spacer"></span>
+    <span>({{ element.id }})</span>
+    <!--<app-tree-element *ngFor="let element of elements" [element]='element' class="tree-element"></app-tree-element>-->
+  </div>
 </div>

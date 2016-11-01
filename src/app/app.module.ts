@@ -38,9 +38,7 @@ import { SortablejsModule } from 'angular-sortablejs';
     FormsModule,
     HttpModule,
     AppRoutingModule,
-    SortablejsModule.forRoot({
-      animation: 150
-    })
+    SortablejsModule
   ],
   providers: [
     TreeBuilderService,

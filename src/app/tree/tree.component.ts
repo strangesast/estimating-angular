@@ -21,7 +21,7 @@ import { TreeBuilderService } from '../tree-builder.service';
     trigger('offset', [])
   ],
   templateUrl: './tree.component.html',
-  styleUrls: ['./tree.component.css']
+  styleUrls: ['./tree.component.less']
 })
 export class TreeComponent implements OnInit {
   elements: Element[] = [];
@@ -30,6 +30,9 @@ export class TreeComponent implements OnInit {
     group: {
       name: 'elements', pull: true, put: true
     },
+    draggable: '.tree-element',
+    ghostClass: 'ghost',
+    chosenClass: 'dragged',
     animation: 150
   }
 

@@ -3,7 +3,7 @@
 .search-body {
   position: relative;
   display: flex;
-  width: 100%;
+  width: @search-width;
   //outline: 1.5px solid black;
   padding: 0 2px;
   box-sizing: border-box;
@@ -21,6 +21,7 @@
     text-overflow: ellipsis;
     height: @navigation-height;
     flex-grow: 1;
+    min-width: 0;
   }
 
   .filters {
