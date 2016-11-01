@@ -7,17 +7,20 @@ const ELEMENTS: Element[] = [
   {
     name: 'Element 1',
     id: 0,
-    parent: null
+    parent: null,
+    children: ['Child 1']
   },
   {
     name: 'Element 2',
     id: 1,
-    parent: null
+    parent: null,
+    children: ['Child 1']
   },
   {
     name: 'Element 3',
     id: 2,
-    parent: null
+    parent: null,
+    children: ['Child 1']
   }
 ];
 

@@ -19,6 +19,8 @@ import { EditPageComponent } from './edit-page/edit-page.component';
 import { BuildPageComponent } from './build-page/build-page.component';
 import { CreatePageComponent } from './create-page/create-page.component';
 
+import { SortablejsModule } from 'angular-sortablejs';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -35,7 +37,10 @@ import { CreatePageComponent } from './create-page/create-page.component';
     BrowserModule,
     FormsModule,
     HttpModule,
-    AppRoutingModule
+    AppRoutingModule,
+    SortablejsModule.forRoot({
+      animation: 150
+    })
   ],
   providers: [
     TreeBuilderService,

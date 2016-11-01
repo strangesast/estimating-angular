@@ -4,7 +4,7 @@
       <app-search></app-search>
     </div>
     <div class="navigation-controls">
-      <div class="navigation-bar">
+      <div class="navigation-bar spacer">
         <input id="phase-enabled" type="checkbox">
         <label for="phase-enabled">
           <span class="fa fa-bookmark-o fa-lg"></span>
@@ -48,9 +48,7 @@
     <div class="main">
       <router-outlet></router-outlet>
     </div>
-    <div class="search">
-      <app-search-results></app-search-results>
-    </div>
+    <app-search-results class="search"></app-search-results>
   </div>
 </section>
 

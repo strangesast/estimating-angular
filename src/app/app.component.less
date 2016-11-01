@@ -31,6 +31,8 @@ nav .container {
   }
 
   .navigation-controls {
+    display:flex;
+    flex-direction:row;
     margin-left: @gutter;
     flex-grow: 1;
   }
@@ -57,7 +59,7 @@ nav .container {
     height: ~"calc(100% -" @gutter ~")";
   }
   .main {
-    padding-left: @search-width + @gutter;
+    margin-left: @search-width + @gutter;
   }
   
   @media(max-width: @med) {
@@ -78,6 +80,9 @@ nav .container {
   line-height: @navigation-height;
   div label {
     display: inline-block;
+  }
+  &:not(:first-child) {
+    flex-shrink: 1;
   }
 }
 

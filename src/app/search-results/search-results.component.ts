@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable }        from 'rxjs/Observable';
+import { SortablejsOptions } from 'angular-sortablejs';
 
 import { SearchServiceService } from '../search-service.service';
 
@@ -17,6 +18,25 @@ export class SearchResultsComponent implements OnInit {
   constructor(private searchService: SearchServiceService) { }
 
   ngOnInit() {
+  }
+
+  options: SortablejsOptions = {
+    animation: 150,
+    group: {
+      name: 'elements', pull: 'clone', put: false
+    },
+    draggable: '.search-result',
+    filter: '.nodrag',
+    sort: false,
+    store: {
+      get: (sortable: any) => {
+        console.log('get', sortable);
+        return [];
+      },
+      set: (sortable: any) => {
+        console.log('set', sortable);
+      }
+    }
   }
 
   addFilter(filter: Filter): void {

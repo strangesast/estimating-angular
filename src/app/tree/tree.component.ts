@@ -7,6 +7,7 @@ import {
   transition,
   style } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
+import { SortablejsOptions } from 'angular-sortablejs';
 
 import { Element } from '../element';
 import { Phase as PhaseElement } from '../phase';// as PhaseElement;
@@ -24,6 +25,13 @@ import { TreeBuilderService } from '../tree-builder.service';
 })
 export class TreeComponent implements OnInit {
   elements: Element[] = [];
+
+  options: SortablejsOptions = {
+    group: {
+      name: 'elements', pull: true, put: true
+    },
+    animation: 150
+  }
 
   constructor(private route: ActivatedRoute, private treeBuilderService: TreeBuilderService) { }
 

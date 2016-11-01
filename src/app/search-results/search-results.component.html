@@ -1,6 +1,8 @@
-<div *ngFor="let result of searchService.results | async" draggable="true" tabindex=1>
-  <span [ngClass]="{'fa': true, 'fa-cube': result.type=='element', 'fa-filter': result.type=='filter'}"></span>
-  <span class="name">{{ result.value.name }}</span>
-  <span class="spacer"></span>
-  <span class="hoverlink fa fa-plus" *ngIf="result.type == 'filter'" (click)="addFilter(result.value)"></span>
+<div class="search" [sortablejs]="searchService.results | async" [sortablejsOptions]="options">
+  <div [class.nodrag]="result.type == 'filter'" class="search-result" *ngFor="let result of searchService.results | async" tabindex=1>
+    <span [ngClass]="{'fa': true, 'fa-cube': result.type=='element', 'fa-filter': result.type=='filter'}"></span>
+    <a [class.hoverunderline]="result.type != 'filter'" class="name">{{ result.value.name }}</a>
+    <span class="spacer"></span>
+    <span class="hoverlink fa fa-plus" *ngIf="result.type == 'filter'" (click)="addFilter(result.value)"></span>
+  </div>
 </div>
