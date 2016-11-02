@@ -18,11 +18,24 @@ export class EditPageComponent implements OnInit {
   activeElement: Element | null = null;
   elements: Element[] = [];
 
+  newElement = {}; // used to construct new object
+
+  optionTypes: string[] = [
+    'phase',
+    'building',
+    'component',
+    'job'
+  ];
+
+  JSON: any; // temporary
+
   constructor(
     private elementEditService: ElementEditService,
     private route: ActivatedRoute,
     private location: Location
-  ) { }
+  ) {
+    this.JSON = JSON;
+  }
 
   ngOnInit() : void {
     this.route.params.forEach((params: Params) => {
@@ -60,5 +73,14 @@ export class EditPageComponent implements OnInit {
     },
     filter: '.remove',
     draggable: '.tab'
+  }
+
+  createNewFromType(_type: string): void {
+    this.elementEditService.addElement({
+      id: 0,
+      name: 'New Element',
+      parent: null,
+      children: []
+    });
   }
 }

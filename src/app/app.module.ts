@@ -9,6 +9,7 @@ import { TreeElementComponent } from './tree/tree-element/tree-element.component
 import { SearchResultsComponent } from './search-results/search-results.component';
 import { SearchComponent } from './search/search.component';
 
+import { ElementRetrievalService } from './element-retrieval.service';
 import { TreeBuilderService } from './tree-builder.service';
 import { ElementEditService } from './element-edit.service';
 import { SearchServiceService } from './search-service.service';
@@ -43,7 +44,8 @@ import { SortablejsModule } from 'angular-sortablejs';
   providers: [
     TreeBuilderService,
     ElementEditService,
-    SearchServiceService
+    SearchServiceService,
+    ElementRetrievalService
   ],
   bootstrap: [AppComponent]
 })

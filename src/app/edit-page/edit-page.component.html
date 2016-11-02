@@ -43,8 +43,14 @@
       </div>
       <div *ngIf="activeElement==null">
         <h1>Create New Element</h1>
+        <button (click)="createNewFromType(type)" class="type-button" *ngFor="let type of optionTypes">{{type | uppercase}}</button>
+        <pre>{{JSON.stringify(newElement, null, 2)}}</pre>
         <label>Name</label>
-        <input type="text">
+        <input [(ngModel)]="newElement.name" type="text">
+        <label>Type</label>
+        <select [(ngModel)]="newElement.type">
+          <option *ngFor="let type of optionTypes">{{type}}</option>
+        </select>
       </div>
     </div>
     <div class="search">

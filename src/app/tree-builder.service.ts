@@ -2,28 +2,9 @@ import { Injectable, OnChanges, SimpleChanges } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import { Element } from './element';
-const ELEMENTS: Element[] = [
-  {
-    name: 'Element 1',
-    id: 0,
-    parent: null,
-    children: ['Child 1']
-  },
-  {
-    name: 'Element 2',
-    id: 1,
-    parent: null,
-    children: ['Child 1']
-  },
-  {
-    name: 'Element 3',
-    id: 2,
-    parent: null,
-    children: ['Child 1']
-  }
-];
+import { ElementRetrievalService } from './element-retrieval.service';
 
+import { Element } from './element';
 
 @Injectable()
 export class TreeBuilderService {
@@ -31,11 +12,10 @@ export class TreeBuilderService {
   private _tree: BehaviorSubject<Element[]> = new BehaviorSubject(this._init);
   public tree: Observable<Element[]> = this._tree.asObservable();
 
-  constructor() {
-    this._tree.next(ELEMENTS);
-  }
+  constructor(private store: ElementRetrievalService) { }
 
   buildTree() {
+    this._tree.next(this.store.getElements());
     return this.tree;
   }
 
