@@ -17,9 +17,7 @@ var Account = new Schema({
       },
       message: 'Username cannot contain spaces or non-alphanumerics and must be at least 3 characters'
     }
-
-  },
-  password: String
+  }
 }, {timestamps: true});
 
 Account.plugin(passportLocalMongoose);
