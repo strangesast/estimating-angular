@@ -22,7 +22,6 @@
         "styles.css"
       ],
       "scripts": [
-        "./assets/git.js"
       ],
       "environments": {
         "source": "environments/environment.ts",

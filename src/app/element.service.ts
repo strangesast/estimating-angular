@@ -13,4 +13,8 @@ export class ElementService {
 
   constructor() { }
 
+  init():void {
+
+  }
+
 }
