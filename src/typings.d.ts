@@ -4,7 +4,11 @@
 declare var System: any;
 
 declare module 'js-git/lib/modes';
+declare module 'js-git/mixins/fs-db';
 declare module 'js-git/mixins/mem-db';
+declare module 'js-git/mixins/indexed-db';
+//declare module 'git-indexeddb';
+declare module 'js-git/mixins/websql-db';
 declare module 'js-git/mixins/create-tree';
 declare module 'js-git/mixins/pack-ops';
 declare module 'js-git/mixins/walkers';

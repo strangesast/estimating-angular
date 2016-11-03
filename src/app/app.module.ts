@@ -3,22 +3,23 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
-import { AppComponent } from './app.component';
-import { TreeComponent } from './tree/tree.component';
-import { TreeElementComponent } from './tree/tree-element/tree-element.component';
+import { AppComponent }           from './app.component';
+import { TreeComponent }          from './tree/tree.component';
+import { TreeElementComponent }   from './tree/tree-element/tree-element.component';
 import { SearchResultsComponent } from './search-results/search-results.component';
-import { SearchComponent } from './search/search.component';
+import { SearchComponent }        from './search/search.component';
 
 import { ElementRetrievalService } from './element-retrieval.service';
-import { TreeBuilderService } from './tree-builder.service';
-import { ElementEditService } from './element-edit.service';
-import { SearchServiceService } from './search-service.service';
+import { TreeBuilderService }      from './tree-builder.service';
+import { ElementEditService }      from './element-edit.service';
+import { SearchServiceService }    from './search-service.service';
+import { ElementService }          from './element.service';
 
-import { AppRoutingModule } from './app-routing.module';
+import { AppRoutingModule }           from './app-routing.module';
 import { TreeElementDetailComponent } from './tree-element-detail/tree-element-detail.component';
-import { EditPageComponent } from './edit-page/edit-page.component';
-import { BuildPageComponent } from './build-page/build-page.component';
-import { CreatePageComponent } from './create-page/create-page.component';
+import { EditPageComponent }          from './edit-page/edit-page.component';
+import { BuildPageComponent }         from './build-page/build-page.component';
+import { CreatePageComponent }        from './create-page/create-page.component';
 
 import { SortablejsModule } from 'angular-sortablejs';
 
@@ -45,7 +46,8 @@ import { SortablejsModule } from 'angular-sortablejs';
     TreeBuilderService,
     ElementEditService,
     SearchServiceService,
-    ElementRetrievalService
+    ElementRetrievalService,
+    ElementService
   ],
   bootstrap: [AppComponent]
 })

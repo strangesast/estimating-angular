@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
+import { ElementService } from './element.service';
+
 import { Element } from './element';
 
 const ELEMENTS: Element[] = [
@@ -29,7 +31,7 @@ const ELEMENTS: Element[] = [
 @Injectable()
 export class ElementRetrievalService {
 
-  constructor() { }
+  constructor(private elementService: ElementService) { }
 
   getElements(): Element[] {
     return ELEMENTS;
