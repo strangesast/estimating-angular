@@ -22,6 +22,13 @@ import { BuildPageComponent }         from './build-page/build-page.component';
 import { CreatePageComponent }        from './create-page/create-page.component';
 
 import { SortablejsModule } from 'angular-sortablejs';
+import { ProjectPageComponent } from './project-page/project-page.component';
+import { StartPageComponent } from './start-page/start-page.component';
+import { UserSelectComponent } from './start-page/user-select/user-select.component';
+import { UserCreateComponent } from './start-page/user-create/user-create.component';
+import { JobSelectComponent } from './start-page/job-select/job-select.component';
+import { JobCreateComponent } from './start-page/job-create/job-create.component';
+import { JobListPageComponent } from './job-list-page/job-list-page.component';
 
 @NgModule({
   declarations: [
@@ -33,7 +40,14 @@ import { SortablejsModule } from 'angular-sortablejs';
     TreeElementDetailComponent,
     EditPageComponent,
     BuildPageComponent,
-    CreatePageComponent
+    CreatePageComponent,
+    ProjectPageComponent,
+    StartPageComponent,
+    UserSelectComponent,
+    UserCreateComponent,
+    JobSelectComponent,
+    JobCreateComponent,
+    JobListPageComponent
   ],
   imports: [
     BrowserModule,

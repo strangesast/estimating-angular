@@ -7,11 +7,20 @@ import { TreeElementDetailComponent } from './tree-element-detail/tree-element-d
 import { BuildPageComponent } from './build-page/build-page.component';
 import { EditPageComponent }  from './edit-page/edit-page.component';
 
+import { StartPageComponent } from './start-page/start-page.component';
+import { UserSelectComponent } from './start-page/user-select/user-select.component';
+import { UserCreateComponent } from './start-page/user-create/user-create.component';
+import { JobListPageComponent } from './job-list-page/job-list-page.component';
+
 const routes: Routes = [
   {
     path: '',
-    redirectTo: '/build',
+    redirectTo: '/jobs',
     pathMatch: 'full'
+  },
+  {
+    path: 'jobs',
+    component: JobListPageComponent
   },
   {
     path: 'build',

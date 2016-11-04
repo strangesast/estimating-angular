@@ -1,0 +1,6 @@
+<div class="container">
+  <h1>choose a user.</h1>
+  <router-outlet></router-outlet>
+  <a *ngIf="!elementService.activeUser" routerLink="/jobs"><h3>skip for now</h3></a>
+  <a *ngIf="elementSerivce.activeUser" routerLink="/jobs"><h3>next</h3></a>
+</div>

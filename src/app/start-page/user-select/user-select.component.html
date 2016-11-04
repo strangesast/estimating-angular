@@ -1,0 +1,8 @@
+<div class="block-container">
+  <div *ngFor="let user of elementService.users | async" class="block">
+    {{ user }} 
+  </div>
+  <a routerLink="./new" class="block">
+    Create New
+  </a>
+</div>

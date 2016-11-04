@@ -1,0 +1,36 @@
+@import '../basic';
+
+.icon {
+  padding: 8px;
+}
+
+.status-icon {
+  font-size: 0.75em;
+}
+
+.list {
+  .list-item {
+    display: flex;
+    flex-direction: row;
+
+    .left, .right {
+      &:first-child {
+        flex-grow: 1;
+      }
+      display: flex;
+      flex-direction: column;
+    }
+    margin-bottom: 10px;
+  }
+}
+
+.form {
+  .form-control {
+    display: flex;
+    flex-direction: row;
+    label {
+      min-width: 100px;
+    }
+    margin-bottom: 10px;
+  }
+}
