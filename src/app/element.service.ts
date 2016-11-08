@@ -17,6 +17,15 @@ import * as DeepDiff from 'deep-diff';
 // useful
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
 
+const stores = [
+  { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
+                                                       { on: 'email',     name: 'email',     unique: true }] },
+  { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false }] },
+  { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false }] },
+  { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false }] },
+  { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true }] }
+];
+
 function streamify(stream): Promise<any[]> {
   return new Promise((resolve, reject) => {
     let fn = (arr) => {
@@ -48,7 +57,6 @@ function random():string {
 
 // account of the user editing / saving job / components
 class User {
-  //id?: string;
   _id?: string;
 
   constructor(
@@ -70,23 +78,26 @@ class User {
 class Element {
   _id?: string|null;   // server id.  may be null if unsaved
 
-  static exclude: string[] = [];
-
   constructor(
     public id: string, 
     public name: string, 
     public description: string
   ) { }
 
+  static exclude: string[] = [];
 }
-
 
 // how are other elements referenced
 class Child {
   constructor(
     public id: string,
-    public qty: number
+    public qty: number,
+    public _id?: string
   ) { }
+  toJSON() {
+    let copy = Object.assign({}, this);
+    return copy;
+  }
 }
 
 // optional but convienent/necessary to dispurse updates
@@ -101,8 +112,6 @@ class BasedOn {
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
 class Component extends Element {
-  static type = 'component';
-
   constructor(
     id,
     name,
@@ -113,11 +122,60 @@ class Component extends Element {
   ) {
     super(id, name, description);
   }
+
+  static exclude: string[] = ['commit'];
+
+  toJSON(removeExcluded?:Boolean) {
+    if(removeExcluded == null) removeExcluded = true;
+    let copy = Object.assign({}, this);
+    if(removeExcluded) {
+      Component.exclude.forEach((e)=>{
+        if(e in copy) {
+          delete copy[e];
+        }
+      });
+    }
+    return copy;
+  }
+}
+
+class Location {
+  id: string;
+  constructor(job: Job, folders, public children: Child[]) {
+    let types = job.folders.types.slice().sort();
+    let roots = job.folders.roots;
+
+    let id = []; 
+    for(var i=0; i<types.length; i++) {
+      if(types[i] in folders) {
+        // is it specified in folders?
+        id.push(folders[types[i]]);
+      } else {
+        // use root by default
+        id.push(roots[job.folders.types.indexOf(types[i])]);
+      }
+    }
+    this.id = id.join('-');
+  }
+
+  toJSON(removeExcluded?: Boolean) {
+    let copy = Object.assign({}, this);
+    for(var prop in copy) {
+      if(typeof copy[prop].toJSON == 'function') {
+        copy[prop] = copy[prop].toJSON();
+      } else if (Array.isArray(copy[prop])) {
+        copy[prop] = copy[prop].map((el)=>typeof el.toJSON == 'function' ? el.toJSON() : el);
+      }
+    }
+    return copy;
+  }
 }
 
 class FolderDef {
-  types: string[]; // names of kinds of folders (buildings/phases/etc)
-  roots?: string[]; // ids of root folders
+  constructor(
+    public types: string[], // names of kinds of folders (buildings/phases/etc)
+    public roots?: string[] // ids of root folders
+  ) { }
 }
 
 class Folder extends Element {
@@ -131,26 +189,24 @@ class Folder extends Element {
   ) {
     super(id, name, description);
   }
-}
 
-class Phase extends Folder {
-  static type = 'phase';
-  constructor(id, name, description, type, job, children) {
-    super(id, name, description, type, job, children);
-  }
-}
+  static exclude: string[] = ['commit'];
 
-class Building extends Folder {
-  static type = 'building';
-  constructor(id, name, description, type, job, children) {
-    super(id, name, description, type, job, children);
+  toJSON(removeExcluded?:Boolean) {
+    if(removeExcluded == null) removeExcluded = true;
+    let copy = Object.assign({}, this);
+    if(removeExcluded) {
+      Folder.exclude.forEach((e)=>{
+        if(e in copy) {
+          delete copy[e];
+        }
+      });
+    }
+    return copy;
   }
 }
 
 class Job extends Element {
-
-  static exclude: string[] = ['commit'];
-
   constructor(
     id,
     name,
@@ -163,6 +219,8 @@ class Job extends Element {
   ) {
     super(id, name, description);
   }
+
+  static exclude: string[] = ['commit'];
 
   toJSON(removeExcluded?:Boolean) {
     if(removeExcluded == null) removeExcluded = true;
@@ -177,10 +235,6 @@ class Job extends Element {
     return copy;
   }
 
-  static safe(jobLike) {
-    return this.prototype.toJSON.call(jobLike);
-  }
-
   static create(obj, commit?: string) {
     if(!obj.owner) throw new Error('object owner required');
     let owner = User.create(obj.owner);
@@ -190,6 +244,23 @@ class Job extends Element {
     return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit);
   }
 }
+
+let TEST_USER: User = new User(
+  'Sam Zagrobelny', // name
+  'sazagrobelny', // username
+  'sazagrobelny@dayautomation.com' // email
+);
+
+let TEST_JOB: Job = new Job(
+  random(), // id
+  'Test Job 123', // name
+  '', // description
+  TEST_USER, // owner
+  'test_job_123', // shortname
+  { // folders
+    types: ['phase', 'building']
+  }
+);
 
 @Injectable()
 export class ElementService {
@@ -206,70 +277,77 @@ export class ElementService {
   gitdb: any;
   db: any;
 
-  testRefs: string[] = ['test1', 'test2', 'test3'];
-
   public users: BehaviorSubject<User[]> = new BehaviorSubject([]);
   public jobs: BehaviorSubject<Job[]> = new BehaviorSubject([]);
 
   init(): Promise<any> {
     return Promise.all([this.initObjectStore(), this.createGitRepo()]).then(() => {
-      let user: User = {
-        name: 'Sam Zagrobelny',
-        username: 'sazagrobelny',
-        email: 'sazagrobelny@dayautomation.com'
-      };
 
-      let job: Job = new Job(
-        random(), // id
-        'Test Job 123', // name
-        '', // description
-        user, // owner
-        'test_job_123', // shortname
-        { // folders
-          types: ['phase', 'building']
-        }
-      );
-
-      Job.safe(job.toJSON());
-
-      Promise.resolve().then(()=> {
+      return Promise.resolve().then(()=> {
+        // user creation
         return this.getUsers().then((users) => {
           let usernames = users.map((u)=>u.username);
-          if(usernames.indexOf(user.username) == -1) {
-            return this.saveUser(user);
+          if(usernames.indexOf(TEST_USER.username) == -1) {
+            return this.saveUser(TEST_USER);
           }
         });
       }).then(() => {
+        // job creation
         return this.getJobs().then((jobs)=>{
-
-          let i;
-          if((i = jobs.map((j)=>j.shortname).indexOf(job.shortname)) == -1) {
-            return this.saveNewJob(job);
-
+          let i = jobs.map((j)=>j.shortname).indexOf(TEST_JOB.shortname);
+          if(i == -1) {
+            return this.saveNewJob(TEST_JOB).then((obj)=>{
+              return obj.job;
+            });
           } else {
             return jobs[i];
-
           }
         }).then((job)=>{
 
           // try changing description
           job.description = 'new description';
 
-          return this.saveJob(job, 'updated description').catch((err)=>{
+          let message = 'updated description';
+          return this.saveJob(job, message).catch((err)=>{
             console.error(err);
-
           }).then(()=>{
-            return this.logWalk(job.commit).then(streamify);
-          }).then((arr)=>{
-
-            return this.compareTrees(arr.map((a)=>a.tree));
-          }).then((res)=>{
-            console.log(res);
+            return job;
           });
         });
-      });
+      }).then((job)=>{
+        console.log('job', job);
+        let component = new Component(
+          random(), // id
+          'first component', // name
+          '', // description
+          TEST_JOB.id // job id
+        );
+        console.log(component);
+        this.addComponent(component, job, {});
 
+      });
     });
+  }
+
+  addComponent(component: Component, job: Job, folders) {
+    folders = folders || {};
+    // not location exist
+    let loc = new Location(job, folders, []);
+    this.saveOrRetrieve(this.db, 'locations', loc.toJSON(), 'id').then((key)=>{
+      let child = new Child(component.id, 1);
+      loc.children = loc.children || [];
+      let i = loc.children.map((c)=>c.id).indexOf(child.id);
+      if(i == -1) {
+        loc.children.push(child);
+      } else {
+        loc.children[i].qty = loc.children[i].qty + 1;
+      }
+      return this.saveToStore(this.db, 'locations', loc.toJSON()).then((key)=>{
+        console.log('key', key, 'loc', loc);
+      });
+    });
+    
+    // add to location
   }
 
   treeToObject(tree) {
@@ -280,14 +358,12 @@ export class ElementService {
         let mode = tree[key].mode;
         if(mode == gitModes.file) {
           let prom = this.loadAs('text', hash).then((text) => {
-            console.log('prop', key, 'value', JSON.parse(text));
             return [key, JSON.parse(text)];
           });
           promises.push(prom);
         } else if (mode == gitModes.tree) {
           let prom = this.loadAs('tree', hash).then((tree)=> {
             return this.treeToObject(tree).then((obj)=>{
-              console.log('prop', key, 'value', obj);
               return [key, obj];
             });
           });
@@ -304,32 +380,11 @@ export class ElementService {
     });
   }
 
-  compareTrees(trees: string[]):Promise<any> {
+  compareTrees(trees: string[]): Promise<any[]> {
     return Promise.all(trees.map((t)=>{
       return this.loadAs('tree', t).then((tree) => this.treeToObject(tree));
     })).then((arr)=>{
-      return DeepDiff.diff.apply(null, arr.slice(0, 2));
-    });
-  }
-
-  debugCommit(hash: string) : void {
-    this.logWalk(hash).then(streamify).then((commits)=> {
-      return Promise.all(commits.map((c, i)=>{
-        return this.treeWalk(c.tree).then(streamify).then((tree)=>{
-          return Promise.all(tree.filter((e)=>e.mode == gitModes.blob).map((e)=>{
-            return this.loadAs('text', e.hash).then((text)=>{
-              return [e.path, JSON.parse(text)];
-            });
-          }));
-        }).then((res)=>{
-          let ob = {};
-          ob[i] = {};
-          res.forEach((r)=>{
-            ob[i][r[0]] = r[1];
-          })
-          console.log(ob);
-        });
-      }));
+      return DeepDiff.diff.apply(null, arr);
     });
   }
 
@@ -372,6 +427,31 @@ export class ElementService {
     });
   }
 
+  retrieve(db: any, storeName: string, obj: any, key?:string): Promise<any> {
+    if(key == null) key = 'id';
+    return new Promise((resolve, reject) => {
+      let trans = db.transaction(storeName);
+      let store = trans.objectStore(storeName);
+      let req = store.get(obj[key]);
+      req.onsuccess = (e) => {
+        resolve(e.target.result)
+      };
+      req.onerror = (e) => {
+        reject(e.target.error);
+      }
+    });
+  }
+
+  saveOrRetrieve(db: any, storeName: string, obj: any, key): Promise<string> {
+    if(key == null) key = 'id';
+    return this.retrieve(db, storeName, obj, key).then((res)=>{
+      if(res == null) {
+        return this.saveToStore(db, storeName, obj);
+      }
+      return res[key];
+    });
+  }
+
   saveToStore(db: any, storeName: string, obj: any): Promise<string> {
     return new Promise((resolve, reject) => {
       let trans = db.transaction(storeName, 'readwrite');
@@ -391,79 +471,35 @@ export class ElementService {
     return this.saveToStore(this.db, 'users', user);
   }
 
-  readUsersJobs(): Promise<any> {
-    return this.readRefs(this.gitdb).then((refs) => {
-      let initUsers = [];
-      let initProjects = [];
-      for(let i=0; i<refs.length; i++) {
-        let a = refs[i].split('/');
-        if(a[0] == this.gitStoreRefPrefix) {
-          let username = a[1];
-          let projectShortId = a[2];
-          if(initUsers.indexOf(username) == -1) initUsers.push(username);
-          initProjects.push(initProjects);
-        }
-      }
-      this.users.next(initUsers);
-      this.jobs.next(initProjects);
-
-      return {users: initUsers, projects: initProjects};
-
-    });
-  }
-
   initObjectStore(): Promise<any> {
     let name = this.objectStoreName;
     let version = this.objectStoreVersion;
     return new Promise((resolve, reject) => {
       let request = indexedDB.open(name, version);
 
+
       request.onupgradeneeded = (e:any) => {
         let db = e.target.result;
-
-        let stores = ['users', 'components', 'folders'];
-        for(let i=0,store; store=stores[i],i<stores.length; i++) {
-          if(db.objectStoreNames.contains(store)) {
-            db.deleteObjectStore(store);
-          }
+        let createStore = (name, keypath, indexes) => {
+          return new Promise((resolve, reject) => {
+            let store = db.createObjectStore(name, { keyPath: keypath });
+            store.transaction.oncomplete = resolve;
+            indexes.forEach((index)=> {
+              store.createIndex(index.name, index.on, { unique: index.unique });
+            });
+          });
         }
-        Promise.all([
-          new Promise((resolve) => {
-            // users
-            let userStore = db.createObjectStore('users', {keyPath: 'username'});
-            userStore.createIndex('name',      'name',     {unique: false});
-            //userStore.createIndex('username',  'username', {unique: true});
-            userStore.createIndex('email',     'email',    {unique: true});
-            userStore.transaction.oncomplete = (e) => {
-              resolve();
-            };
-          }),
-          new Promise((resolve) => {
-            // components
-            let componentStore = db.createObjectStore('components', {keyPath: 'id'});
-            componentStore.createIndex('children', 'children', { unique: false, multiEntry: true });
-            componentStore.transaction.oncomplete = (e) => {
-              resolve();
-            };
-          }),
-          new Promise((resolve) => {
-            let store = db.createObjectStore('jobs', {keyPath: 'id'});
-            store.createIndex('shortname', 'shortname', { unique: true });
-            store.transaction.oncomplete = (e) => {
-              resolve();
-            }
-          }),
-          new Promise((resolve) => {
-            let folderStore = db.createObjectStore('folders', {keyPath: 'id'});
-            folderStore.transaction.oncomplete = (e) => {
-              resolve();
-            }
-          })
-        ]).then(()=>{
 
+        Promise.all(stores.map((store)=> {
+          if(db.objectStoreNames.contains(store.name)) {
+            db.deleteObjectStore(store.name);
+          }
+          return createStore(store.name, store.keypath, store.indexes);
+
+        })).then(()=>{
           this.db = db;
           resolve(db);
-        }); // may not resolve
+        });
       };
 
       request.onsuccess = (e:any) => {
@@ -529,14 +565,10 @@ export class ElementService {
   }
 
   saveNewJob(job: Job): Promise<any> {
-    let jobText = JSON.stringify(job);
-    let tree = {
-      'job.json': {
-        mode: gitModes.file,
-        content: jobText
-      }
-    };
+    let tree = {};
+    let folders = [];
     let folderTypes = job.folders.types;
+
     for(let i=0,folderType; folderType=folderTypes[i],i<folderTypes.length; i++) {
       let folder: Folder = new Folder(
         random(), // id
@@ -546,13 +578,25 @@ export class ElementService {
         job.id, // job
         [] // children
       );
-      let folderText = JSON.stringify(folder);
+      console.log(folder.toJSON());
+      folders.push(folder);
+      let folderText = JSON.stringify(folder.toJSON());
       let folderPath = [folderType, folder.id + '.json'].join('/');
       tree[folderPath] = {
         mode: gitModes.file,
         content: folderText
       };
     }
+
+    if(folders.length != folderTypes.length) throw new Error('wtf');
+
+    job.folders.roots = folders.map((f)=>f.id);
+    let jobText = JSON.stringify(job.toJSON());
+    tree['job.json'] = {
+      mode: gitModes.file,
+      content: jobText
+    };
+
     return promisify(this.repo.createTree.bind(this.repo), tree).then((both)=>{
       let hash = both[0], tree = both[1];
 
@@ -569,8 +613,9 @@ export class ElementService {
 
       return this.updateRef(ref, commit).then(()=>{
         job.commit = commit;
-        return this.updateRecord(job).then((objectId)=>{
-          return job;
+        return Promise.all([this.updateRecord(job), folders.map((folder)=>this.updateRecord(folder))]).then((ids)=>{
+
+          return {job: job, folders: folders};
         });
       });
     });
@@ -579,7 +624,13 @@ export class ElementService {
   updateRecord(obj) {
     let storeName;
     if(obj instanceof Job) {
-      storeName = 'jobs'
+      storeName = 'jobs';
+    } else if (obj instanceof Folder) {
+      storeName = 'folders';
+    } else if (obj instanceof Component) {
+      storeName = 'components';
+    } else if (obj instanceof Location) {
+      storeName = 'locations';
     } else {
       throw new Error('unknown obj type');
     }
@@ -588,7 +639,7 @@ export class ElementService {
     });
   }
 
-  saveJob(job: Job, message: string): Promise<any> {
+  saveJob(job: Job, message: string): Promise<Job> {
     return this.loadAs('commit', job.commit).then((commit) => {
       let jobText = JSON.stringify(job.toJSON());
       let changes:any = [{
@@ -612,127 +663,19 @@ export class ElementService {
           tree: treeHash,
           message: message,
           parents: [job.commit]
-        }).then((commitHash)=> {
-          let ref = [job.owner.username, job.shortname].join('/');
+        });
+      }).then((commitHash)=> {
+        let ref = [job.owner.username, job.shortname].join('/');
 
-          return this.updateRef(ref, commitHash).then(()=>{
-            job.commit = commitHash;
-            return this.updateRecord(job);
-          }).then((key)=>{
-            return job;
-          });
+        return this.updateRef(ref, commitHash).then(()=>{
+          job.commit = commitHash;
+          return this.updateRecord(job);
+        }).then((key)=>{
+          return job;
         });
       });
     });
   };
-
-  saveEmptyJob(shortname: string, name: string, description: string, owner: User): Promise<void> {
-    if(/\s/g.test(shortname)) throw new Error('invalid job shotname - no spaces');
-
-    if(this.repo == null) throw new Error('repo undefined, run init');
-
-    let jobId = random(); // should check that this is unique - no jobs have this id
-    let job: Job = new Job(
-      jobId,
-      name,
-      description,
-      owner,
-      shortname,
-      {
-        types: ['phase', 'building'] // probably perm default, but allow others later
-      }
-    );
-
-    let jobBlob:string = JSON.stringify(job);
-    let ref = [job.owner.username, job.shortname].join('/');
-
-    return this.readRefs(this.gitdb).then((refs: string[]) => {
-      if(refs.indexOf(ref) != -1) throw new Error('username / job id combination already exists');
-
-      // create root phase / building
-      let ftypes = job.folders.types;
-      let folderPromises = Promise.all(ftypes.map((ftype) => {
-        let folderName = ftype + 's';
-        let fid = random();
-        let rootFolder: Folder = new Folder(
-          fid, // id  
-          'root', // name
-          '', // description
-          ftype, // type
-          job.id, // job
-          [] // children
-        );
-        job.folders.roots = [] || job.folders.roots;
-        job.folders.roots.push(rootFolder.id);
-
-        let fileName = rootFolder.id + '.json'
-        let fileBlob = JSON.stringify(rootFolder);
-
-        return this.saveToHash('blob', fileBlob).then((fileHash) => {
-          let tree = {};
-          tree[fileName] = { mode: gitModes.file, hash: fileHash};
-          return this.saveToHash('tree', tree);
-        }).then((treeHash) => {
-          return [folderName, treeHash];
-        });
-      }));
-
-      let fileName = 'job.json';
-      let filePromise = this.saveToHash('blob', jobBlob).then((fileHash) => {
-        return [fileName, fileHash];
-      });
-
-      return Promise.all([filePromise, folderPromises]);
-
-    }).then((both: any[]) => {
-      let jobPair = both[0];
-      let folderPairs = both[1];
-
-      let tree = {};
-
-      tree[jobPair[0]] = { mode: gitModes.file, hash: jobPair[1] };
-      folderPairs.forEach((pair)=>{
-        tree[pair[0]] = { mode: gitModes.tree, hash: pair[1] };
-      });
-
-
-      return this.saveToHash('tree', tree);
-
-    }).then((treeHash) => {
-
-      return this.saveToHash('commit', {
-        author: {
-          name: job.owner.username,
-          email: job.owner.email
-        },
-        tree: treeHash,
-        message: 'first - created by form'
-      });
-
-    }).then((commitHash) => {
-      this.updateRef(ref, commitHash);
-
-    }).catch((err) => {
-      console.error('error!', err);
-
-
-    }).then(() => {
-      this.readRef(ref).then((commitHash) => {
-
-        return this.logWalk(commitHash);
-
-      }).then(streamify).then((arr) => {
-        // arr = commits
-
-        return promisify(this.repo.treeWalk.bind(this.repo), arr[0].tree)
-      }).then((result) => {
-        // args applied to cb
-        let stream = result[0]
-        return streamify(stream);
-      }).then((result) => {
-      });
-    });
-  }
 
   logWalk(hash: string): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -776,72 +719,3 @@ export class ElementService {
   }
 
 }
-/*
-this.repo.readRef(refName, (err, ref) => {
-  console.log('ref', ref);
-  if(err) return reject(err);
-  if(ref == null) {
-    this.repo.createTree({
-      "www/index.html": {
-        mode: gitModes.file,
-        content: "<h1>Hello</h1>\n<p>This is an HTML page?</p>\n"
-      },
-      "README.md": {
-        mode: gitModes.file,
-        content: "# Sample repo\n\nThis is a sample\n"
-      }
-    }, (err, treeHash) => {
-      if(err) return reject(err);
-      console.log(treeHash);
-
-      this.repo.treeWalk(treeHash, (err, treeStream) => {
-        if(err) return reject(err);
-        treeStream.read((err, res1) => {
-          if(err) return reject(err);
-          console.log(res1);
-          treeStream.read((err, res2) => {
-            if(err) return reject(err);
-            console.log(res2);
-            treeStream.read((err, res3) => {
-              if(err) return reject(err);
-              console.log(res3);
-              treeStream.read((err, res4) => {
-                if(err) return reject(err);
-                console.log(res4);
-                treeStream.read((err, res5) => {
-                  if(err) return reject(err);
-                  this.repo.saveAs('commit', {
-                    author: {
-                      name: "sam",
-                      email: "sam@zag"
-                    },
-                    tree: treeHash,
-                    message: 'first!'
-                  }, (err, commitHash) => {
-                    if(err) return reject(err);
-                    this.repo.updateRef(refName, commitHash, (err, result) => {
-                      console.log(result);
-
-                      this.repo.logWalk(commitHash, (err, stream) => {
-                        stream.read((err, result) => {
-                          console.log(result);
-                          stream.read((err, result) => {
-                            console.log(result);
-                          });
-                        });
-                      });
-                    });
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
-    });
-  } else {
-    console.log(ref)
-    this.repo.logWalk
-  }
-});
-*/
