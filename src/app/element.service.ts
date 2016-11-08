@@ -253,22 +253,60 @@ export class ElementService {
           // try changing description
           job.description = 'new description';
 
-          return this.saveJob(job, 'updated description');
+          return this.saveJob(job, 'updated description').catch((err)=>{
+            console.error(err);
 
-        }).then((res) => {
-          let hash = res.commit;
+          }).then(()=>{
+            return this.logWalk(job.commit).then(streamify);
+          }).then((arr)=>{
 
-          return this.logWalk(hash).then(streamify);
-        }).then((arr) => {
-          return Promise.all(arr.map((e)=>this.loadAs('tree', e.tree)));
-        }).then((arr) => {
-
-          // commits
-          console.log(arr);
-
+            return this.compareTrees(arr.map((a)=>a.tree));
+          }).then((res)=>{
+            console.log(res);
+          });
         });
       });
 
+    });
+  }
+
+  treeToObject(tree) {
+    let promises = [];
+    Object.keys(tree).forEach((key)=>{
+      if(tree[key].hash != null) {
+        let hash = tree[key].hash;
+        let mode = tree[key].mode;
+        if(mode == gitModes.file) {
+          let prom = this.loadAs('text', hash).then((text) => {
+            console.log('prop', key, 'value', JSON.parse(text));
+            return [key, JSON.parse(text)];
+          });
+          promises.push(prom);
+        } else if (mode == gitModes.tree) {
+          let prom = this.loadAs('tree', hash).then((tree)=> {
+            return this.treeToObject(tree).then((obj)=>{
+              console.log('prop', key, 'value', obj);
+              return [key, obj];
+            });
+          });
+          promises.push(prom);
+        }
+      }
+    });
+    let obj = {};
+    return Promise.all(promises).then((pairs)=>{
+      pairs.forEach((pair)=>{
+        obj[pair[0]] = pair[1];
+      });
+      return obj;
+    });
+  }
+
+  compareTrees(trees: string[]):Promise<any> {
+    return Promise.all(trees.map((t)=>{
+      return this.loadAs('tree', t).then((tree) => this.treeToObject(tree));
+    })).then((arr)=>{
+      return arr;
     });
   }
 
