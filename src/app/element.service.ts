@@ -59,6 +59,11 @@ class Element {
   _id?: string|null;   // server id.  may be null if unsaved
   name: string;        // required 
   description?: string; // optional, default ''
+
+  static exclude: string[] = [];
+
+  constructor() {}
+
 }
 
 // how are other elements referenced
@@ -108,6 +113,8 @@ class Job extends Element {
   basedOn?: BasedOn|null;    // potentially ambigious, null vs undefined
   folders: FolderDef;
   commit?: string;
+
+  static exclude: string[] = ['commit'];
 }
 
 @Injectable()
@@ -171,7 +178,7 @@ export class ElementService {
             return this.saveJob(job, 'updated description');
 
           }).then((hash)=>{
-            console.log(hash);
+            this.debugCommit(hash);
 
           });
         });
@@ -181,46 +188,13 @@ export class ElementService {
   }
 
   debugCommit(hash: string) : void {
-    this.loadAs('commit', hash).then((commit) => {
-      let promises = [];
-      let recurse = (tree) => {
-        for(var prop in tree) {
-          let el = tree[prop];
-          let prom = Promise.resolve();
-          if(el.mode == gitModes.blob) {
-            prom = this.loadAs('text', el.hash).then((res)=> {
-              el.body = res;
-            });
-          } else if (el.mode == gitModes.tree) {
-            prom = this.loadAs('tree', el.hash).then((res)=> {
-              el.body = res;
-              return recurse(el.body);
-            });
-          }
-          promises.push(prom);
-        }
-      }
-
-      let recurse2 = (tree) => {
-        if(typeof tree == 'string') {
-          return JSON.parse(tree);
-        } else if (typeof tree == 'object') {
-          let ob = {};
-          for(let prop in tree) { 
-            console.log(tree[prop].body)
-            if(tree[prop].body) {
-              ob[prop] = recurse2(tree[prop].body);
-            }
-          }
-          return ob;
-        }
-      };
-
-      this.loadAs('tree', commit.tree).then((tree)=>{
-        recurse(tree);
-        Promise.all(promises).then(()=>{
-          console.log(recurse2(tree));
-        });
+    this.logWalk(hash).then(streamify).then((commits)=> {
+      Promise.all(commits.map((c)=>{
+        return this.loadAs('tree', c.tree);
+      })).then((arr)=>{
+        return Promise.all(arr.map((o)=>this.loadAs('text', o['job.json'].hash)));
+      }).then((arr)=>{
+        console.log(arr.map((o)=>JSON.parse(o)));
       });
     });
   }
