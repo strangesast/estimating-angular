@@ -48,44 +48,69 @@ function random():string {
 class User {
   //id?: string;
   _id?: string;
-  name: string;
-  username: string;
-  email: string;
+
+  constructor(
+    public name: string,
+    public username: string,
+    public email: string
+  ) { }
+
+  static create(obj) {
+    let user = new User(obj.name, obj.username, obj.email);
+    if(obj._id) {
+      user._id = obj._id;
+    }
+    return user;
+  }
 }
 
 // root 'element' of phase, building, component, job, etc
 class Element {
-  id: string;          // generated clientside - 10 characters
   _id?: string|null;   // server id.  may be null if unsaved
-  name: string;        // required 
-  description?: string; // optional, default ''
 
   static exclude: string[] = [];
 
-  constructor() {}
+  constructor(
+    public id: string, 
+    public name: string, 
+    public description: string
+  ) { }
 
 }
 
+
 // how are other elements referenced
 class Child {
-  id: string;
-  qty: number;
+  constructor(
+    public id: string,
+    public qty: number
+  ) { }
 }
 
 // optional but convienent/necessary to dispurse updates
 class BasedOn {
-  id?: string;     // local id
-  hash: string;    // local hash (very specific version)
-  _id?: string;    // server id
-  version: string; // server version / version id
+  constructor(
+    public id: string, 
+    public hash: string, 
+    public _id: string, 
+    public version: string
+  ) { }
 }
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
 class Component extends Element {
   static type = 'component';
-  job: string;            // see above
-  children: Child[];
-  basedOn?: BasedOn|null; // component it's based on
+
+  constructor(
+    id,
+    name,
+    description,
+    public job: string, 
+    public children?: Child[], 
+    public basedOn?: BasedOn|null
+  ) {
+    super(id, name, description);
+  }
 }
 
 class FolderDef {
@@ -94,27 +119,74 @@ class FolderDef {
 }
 
 class Folder extends Element {
-  type: string;
-  job: string;        // folders are always unique to jobs
-  children: string[]; // id refs of other folders (phases/buildings)
+  constructor(
+    id,
+    name,
+    description,
+    public type: string,
+    public job: string,
+    public children: string[]
+  ) {
+    super(id, name, description);
+  }
 }
 
-class Phase extends Folder{
+class Phase extends Folder {
   static type = 'phase';
+  constructor(id, name, description, type, job, children) {
+    super(id, name, description, type, job, children);
+  }
 }
 
 class Building extends Folder {
   static type = 'building';
+  constructor(id, name, description, type, job, children) {
+    super(id, name, description, type, job, children);
+  }
 }
 
 class Job extends Element {
-  owner: User;
-  shortname: string;
-  basedOn?: BasedOn|null;    // potentially ambigious, null vs undefined
-  folders: FolderDef;
-  commit?: string;
 
   static exclude: string[] = ['commit'];
+
+  constructor(
+    id,
+    name,
+    description,
+    public owner: User,
+    public shortname: string,
+    public folders: FolderDef,
+    public basedOn?: BasedOn|null,    // potentially ambigious, null vs undefined
+    public commit?: string
+  ) {
+    super(id, name, description);
+  }
+
+  toJSON(removeExcluded?:Boolean) {
+    if(removeExcluded == null) removeExcluded = true;
+    let copy = Object.assign({}, this);
+    if(removeExcluded) {
+      Job.exclude.forEach((e)=>{
+        if(e in copy) {
+          delete copy[e];
+        }
+      });
+    }
+    return copy;
+  }
+
+  static safe(jobLike) {
+    return this.prototype.toJSON.call(jobLike);
+  }
+
+  static create(obj, commit?: string) {
+    if(!obj.owner) throw new Error('object owner required');
+    let owner = User.create(obj.owner);
+    ['id', 'name', 'description', 'owner', 'shortname', 'folders'].forEach((t)=>{
+      if(obj[t] == null) throw new Error('key ' + t + ' required');
+    });
+    return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit);
+  }
 }
 
 @Injectable()
@@ -145,16 +217,18 @@ export class ElementService {
         email: 'sazagrobelny@dayautomation.com'
       };
 
-      let job: Job = {
-        id: random(),
-        name: 'Test Job 123',
-        description: '',
-        owner: user,
-        shortname: 'test_job_123',
-        folders: {
+      let job: Job = new Job(
+        random(), // id
+        'Test Job 123', // name
+        '', // description
+        user, // owner
+        'test_job_123', // shortname
+        { // folders
           types: ['phase', 'building']
         }
-      };
+      );
+
+      Job.safe(job.toJSON());
 
       Promise.resolve().then(()=> {
         return this.getUsers().then((users) => {
@@ -166,21 +240,32 @@ export class ElementService {
       }).then(() => {
         return this.getJobs().then((jobs)=>{
 
-          if(jobs.map((j)=>j.shortname).indexOf(job.shortname) == -1) {
+          let i;
+          if((i = jobs.map((j)=>j.shortname).indexOf(job.shortname)) == -1) {
             return this.saveNewJob(job);
+
+          } else {
+            return jobs[i];
+
           }
-        }).then(()=>{
-          this.getJobs().then((jobs)=>{
-            let job = jobs[0];
+        }).then((job)=>{
 
-            job.description = 'new description';
+          // try changing description
+          job.description = 'new description';
 
-            return this.saveJob(job, 'updated description');
+          return this.saveJob(job, 'updated description');
 
-          }).then((hash)=>{
-            this.debugCommit(hash);
+        }).then((res) => {
+          let hash = res.commit;
 
-          });
+          return this.logWalk(hash).then(streamify);
+        }).then((arr) => {
+          return Promise.all(arr.map((e)=>this.loadAs('tree', e.tree)));
+        }).then((arr) => {
+
+          // commits
+          console.log(arr);
+
         });
       });
 
@@ -189,13 +274,22 @@ export class ElementService {
 
   debugCommit(hash: string) : void {
     this.logWalk(hash).then(streamify).then((commits)=> {
-      Promise.all(commits.map((c)=>{
-        return this.loadAs('tree', c.tree);
-      })).then((arr)=>{
-        return Promise.all(arr.map((o)=>this.loadAs('text', o['job.json'].hash)));
-      }).then((arr)=>{
-        console.log(arr.map((o)=>JSON.parse(o)));
-      });
+      return Promise.all(commits.map((c, i)=>{
+        return this.treeWalk(c.tree).then(streamify).then((tree)=>{
+          return Promise.all(tree.filter((e)=>e.mode == gitModes.blob).map((e)=>{
+            return this.loadAs('text', e.hash).then((text)=>{
+              return [e.path, JSON.parse(text)];
+            });
+          }));
+        }).then((res)=>{
+          let ob = {};
+          ob[i] = {};
+          res.forEach((r)=>{
+            ob[i][r[0]] = r[1];
+          })
+          console.log(ob);
+        });
+      }));
     });
   }
 
@@ -210,11 +304,8 @@ export class ElementService {
           return this.loadAs('tree', commit.tree);
         }).then((tree)=>{
           return this.loadAs('text', tree['job.json'].hash).then((text)=>{
-            let job : Job = JSON.parse(text);
-            job.commit = commitHash;
-            return this.saveToStore(this.db, 'jobs', job).then((key)=>{
-              return job;
-            });
+            let job = Job.create(JSON.parse(text), commitHash);
+            return job;
           });
         });
       }));
@@ -407,13 +498,14 @@ export class ElementService {
     };
     let folderTypes = job.folders.types;
     for(let i=0,folderType; folderType=folderTypes[i],i<folderTypes.length; i++) {
-      let folder: Folder = {
-        id: random(),
-        job: job.id,
-        type: folderType,
-        name: 'root',
-        children: []
-      };
+      let folder: Folder = new Folder(
+        random(), // id
+        'root', // name
+        '', // description
+        folderType, // type
+        job.id, // job
+        [] // children
+      );
       let folderText = JSON.stringify(folder);
       let folderPath = [folderType, folder.id + '.json'].join('/');
       tree[folderPath] = {
@@ -435,14 +527,30 @@ export class ElementService {
     }).then((commit)=>{
       let ref = [job.owner.username, job.shortname].join('/');
 
-      return this.updateRef(ref, commit);
+      return this.updateRef(ref, commit).then(()=>{
+        job.commit = commit;
+        return this.updateRecord(job).then((objectId)=>{
+          return job;
+        });
+      });
     });
   };
 
+  updateRecord(obj) {
+    let storeName;
+    if(obj instanceof Job) {
+      storeName = 'jobs'
+    } else {
+      throw new Error('unknown obj type');
+    }
+    return this.saveToStore(this.db, storeName, obj.toJSON(false)).then((key)=>{
+      return key;
+    });
+  }
+
   saveJob(job: Job, message: string): Promise<any> {
-    if(job.commit == null || job.commit == '') throw new Error('job must have first commit');
     return this.loadAs('commit', job.commit).then((commit) => {
-      let jobText = JSON.stringify(job);
+      let jobText = JSON.stringify(job.toJSON());
       let changes:any = [{
         path: 'job.json',
         mode: gitModes.file,
@@ -452,23 +560,27 @@ export class ElementService {
 
       return promisify(this.repo.createTree.bind(this.repo), changes).then((res)=>{
         return res[0];
-      });
+      }).then((treeHash) => {
+        // if tree hasn't changed _nothing_ has changed
+        if(treeHash == commit.tree) throw new Error('nothing has changed');
 
-    }).then((treeHash)=> {
-      console.log('new tree', treeHash);
-      return this.saveToHash('commit', {
-        author: {
-          name: job.owner.username,
-          email: job.owner.email
-        },
-        tree: treeHash,
-        message: message,
-        parents: [job.commit]
-      }).then((commitHash)=> {
-        let ref = [job.owner.username, job.shortname].join('/');
+        return this.saveToHash('commit', {
+          author: {
+            name: job.owner.username,
+            email: job.owner.email
+          },
+          tree: treeHash,
+          message: message,
+          parents: [job.commit]
+        }).then((commitHash)=> {
+          let ref = [job.owner.username, job.shortname].join('/');
 
-        return this.updateRef(ref, commitHash).then(()=>{
-          return commitHash;
+          return this.updateRef(ref, commitHash).then(()=>{
+            job.commit = commitHash;
+            return this.updateRecord(job);
+          }).then((key)=>{
+            return job;
+          });
         });
       });
     });
@@ -480,16 +592,16 @@ export class ElementService {
     if(this.repo == null) throw new Error('repo undefined, run init');
 
     let jobId = random(); // should check that this is unique - no jobs have this id
-    let job: Job = {
-      id: jobId,
-      name: name,
-      shortname: shortname,
-      description: description,
-      owner: owner,
-      folders: {
+    let job: Job = new Job(
+      jobId,
+      name,
+      description,
+      owner,
+      shortname,
+      {
         types: ['phase', 'building'] // probably perm default, but allow others later
       }
-    };
+    );
 
     let jobBlob:string = JSON.stringify(job);
     let ref = [job.owner.username, job.shortname].join('/');
@@ -502,13 +614,14 @@ export class ElementService {
       let folderPromises = Promise.all(ftypes.map((ftype) => {
         let folderName = ftype + 's';
         let fid = random();
-        let rootFolder: Folder = {
-          id: fid,
-          type: ftype,
-          name: 'root',
-          job: job.id,
-          children: []
-        }
+        let rootFolder: Folder = new Folder(
+          fid, // id  
+          'root', // name
+          '', // description
+          ftype, // type
+          job.id, // job
+          [] // children
+        );
         job.folders.roots = [] || job.folders.roots;
         job.folders.roots.push(rootFolder.id);
 
