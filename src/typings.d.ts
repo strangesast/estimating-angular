@@ -14,3 +14,4 @@ declare module 'js-git/mixins/pack-ops';
 declare module 'js-git/mixins/walkers';
 declare module 'js-git/mixins/read-combiner';
 declare module 'js-git/mixins/formats';
+declare module 'deep-diff';

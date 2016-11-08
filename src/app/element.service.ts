@@ -12,6 +12,8 @@ import * as gitWalkers      from 'js-git/mixins/walkers';
 import * as gitReadCombiner from 'js-git/mixins/read-combiner';
 import * as gitFormats      from 'js-git/mixins/formats';
 
+import * as DeepDiff from 'deep-diff';
+
 // useful
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
 
@@ -306,7 +308,7 @@ export class ElementService {
     return Promise.all(trees.map((t)=>{
       return this.loadAs('tree', t).then((tree) => this.treeToObject(tree));
     })).then((arr)=>{
-      return arr;
+      return DeepDiff.diff.apply(null, arr.slice(0, 2));
     });
   }
 
