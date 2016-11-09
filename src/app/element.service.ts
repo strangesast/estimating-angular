@@ -19,13 +19,14 @@ import * as DeepDiff from 'deep-diff';
 
 const stores = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
-                                                       { on: 'email',     name: 'email',     unique: true }] },
+                                                       { on: 'email',     name: 'email',     unique: true  }] },
   { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false }] },
   { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false },
                                                        { on: 'job',       name: 'job',       unique: false }] },
   { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false },
+                                                       { on: 'folders',   name: 'folders',   unique: true,  multiEntry: true },
                                                        { on: 'job',       name: 'job',       unique: false }] },
-  { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true }] }
+  { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true  }] }
 ];
 
 function streamify(stream): Promise<any[]> {
@@ -73,6 +74,24 @@ class User {
       user._id = obj._id;
     }
     return user;
+  }
+}
+
+class TreeElement {
+  // reference component or folder
+  constructor(public refid: string, public reftype: 'component'|'phase'|'building'|'folder', public level: number, public ctx: any) { }
+
+  static fromElement(obj, ctx, level:number):TreeElement {
+    let t;
+    if(obj instanceof Component) {
+      t = 'component';
+    } else if (obj instanceof Folder) {
+      t = obj['type'] || 'folder'; // perhaps undesirable
+    } else {
+      console.error('unrecognized type', obj);
+      throw new Error('unrecognized type');
+    }
+    return new TreeElement(obj.id, t, level, ctx);
   }
 }
 
@@ -129,6 +148,10 @@ class Component extends Element {
     if(children == null) this.children = [];
   }
 
+  static create(obj) {
+    return new Component(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn);
+  }
+
   static exclude: string[] = ['commit'];
 
   toJSON(removeExcluded?:Boolean) {
@@ -146,7 +169,7 @@ class Component extends Element {
 }
 
 class Location {
-  constructor(public id: string, public job: string, public children: Child[]) { }
+  constructor(public id: string, public job: string, public children: Child[], public folders: string[]) { }
 
   static createId(obj, job) {
     return job.folders.types.map((name, i)=>obj[name] || job.folders.roots[i]).join('-');
@@ -155,11 +178,11 @@ class Location {
   static fromJob(job: Job, folders, children?: Child[]) {
     let id = Location.createId(folders, job);
     let jobId = job.id;
-    return new Location(id, jobId, children || []);
+    return new Location(id, jobId, children || [], job.folders.types.map((name, i)=>folders[name] || job.folders.roots[i]));
   }
 
   static create(obj) {
-    return new Location(obj.id, obj.job, obj.children);
+    return new Location(obj.id, obj.job, obj.children, obj.folders);
   }
 
   toJSON(removeExcluded?: Boolean) {
@@ -189,7 +212,7 @@ class Folder extends Element {
     description,
     public type: string,
     public job: string,
-    public children: string[]|Folder[]
+    public children: any[]
   ) {
     super(id, name, description);
   }
@@ -324,60 +347,154 @@ export class ElementService {
           });
         });
       }).then((job)=>{
-        console.log('job', job);
         let component = new Component(
           random(), // id
           'first component', // name
           '', // description
-          TEST_JOB.id // job id
+          job.id // job id
         );
         let folder = new Folder(
           random(),
           'new folder',
           'folder',
           'phase',
-          TEST_JOB.id,
+          job.id,
           []
         );
         this.addFolder(folder, null, job).then((result)=>{
           console.log('added folder', result);
         });
         this.addComponent(component, job, {}).then((results)=>{
-          console.log('added compontn', results);
-          this.buildTree(job);
+          console.log('added component', results);
+          this.buildTree(job).then((res)=>{
+            for(let i=0; i<res.length; i++) {
+              let r = res[i];
+              console.log(r.level + Array(+r.level+1).join('--') + '(' + r.reftype + ') ' + r.refid);
+            }
+          });
         });
 
       });
     });
   }
 
-  buildTree(job) {
-    let roots = job.folders.roots;
+  buildTree(job, roots?) {
+    roots = roots || job.folders.roots; // order important
 
     return Promise.all([
       Promise.all(roots.map((id)=>this.retrieveFolder(id))),
-      this.allLocations(job.id)
-    ]).then((res)=>{
+      this.allLocations(job.id) // should add filter for the above roots
+    ]).then((res:any)=>{
       let folders:Folder[] = res[0];
       let locations = res[1];
-      console.log(typeof folders, Array.isArray(folders));
+      console.log('locations', locations);
 
-      Promise.all(folders.map((folder)=>this.getAllChildren(folder))).then((result)=>{
-        console.log(result);
+      return Promise.all(folders.map((folder)=>{
+        return this.getAllChildren(folder);
+      })).then((rootFolders)=>{
+        // may want to duplicate locations
+        return this.mergeTrees(job, rootFolders, locations, 0, 3);
       });
     });
   }
 
+  mergeTrees(job, folders, locations, level:number, maxLevel:number, ctx?): Promise<TreeElement[]> {
+    if(folders.length && level < maxLevel) {
+      let arr = []
+      if(ctx == null) {
+        ctx = {};
+        folders.forEach((folder)=>{
+          ctx[folder['type']] = folder.id;
+        });
+      }
+      ctx = Object.assign({}, ctx);
+      let folder = folders[0];
+      let rest = folders.slice(1);
+
+      let el = TreeElement.fromElement(folder, ctx, level);
+      arr.push(el);
+
+      ctx[folder['type']] = folder.id;
+
+      let nextLevel = this.mergeTrees(job, rest, locations, level+1, maxLevel, ctx).then((els)=>{
+        return arr.concat(els);
+      });
+
+      let sameKindNextLevel = Promise.all(folder.children.map((child)=>{
+        return this.mergeTrees(job, [child].concat(rest), locations, level+1, maxLevel, ctx);
+
+      })).then((arrs: any[])=>{
+        return arrs.reduce((a,b)=>a.concat(b), []);
+      });
+
+      return Promise.all([nextLevel, sameKindNextLevel]).then((res)=>{
+        return arr.concat(res.reduce((a, b)=>a.concat(b),[]));
+      });
+
+    } else {
+      // assumes order of filters
+      let locs = locations.filter((loc)=>{
+        return Object.keys(ctx).every((prop) => {
+          return loc.folders[job.folders.types.indexOf(prop)] == ctx[prop];
+        });
+      });
+      return Promise.all(locs.map((loc)=>{
+        return Promise.all(loc.children.map((child)=>{
+          return this.retrieveComponent(child.id).then((component)=>{
+            return TreeElement.fromElement(component, ctx, level);
+          });
+        }));
+      })).then((results:any[])=>{
+        if(results.length == 0) return [];
+        return results.reduce((a,b)=>a.concat(b));
+      });
+    }
+  }
+
+  findLocation(locArr) {
+    console.log('arr', locArr);
+    //return Promise.all(locArr.map((folderId)=>{
+    //  return this.findLocationWithFolder(folderId).then((matches)=>{
+    //    return [folderId, matches];
+    //  });
+    //}));
+    return Promise.resolve();
+  }
+
+  findLocationWithFolder(folderId) {
+    return new Promise((resolve, reject) => {
+      let storeName = 'locations';
+      let trans = this.db.transaction([storeName], 'readonly');
+      let store = trans.objectStore(storeName);
+      let index = store.index('folders');
+      let range = IDBKeyRange.only(folderId);
+
+      let req = index.openCursor(range);
+      let vals = [];
+      req.onsuccess = (e) => {
+        let cursor = e.target.result;
+        if(cursor) {
+          vals.push(cursor.value);
+          return cursor.continue();
+        }
+        resolve(vals)
+      };
+      req.onerror = (e) => {
+        reject(e.target.error);
+      }
+    });
+  }
+
   getAllChildren(folder: Folder, maxLevel?):Promise<Folder> {
-    maxLevel = maxLevel == null ? 10 : maxLevel;
+    maxLevel = maxLevel == null ? 2 : maxLevel;
     folder.children = folder.children || [];
     if(maxLevel < 1 || folder.children.length == 0) return Promise.resolve(folder);
-    return Promise.all(folder.children.map((childId)=>{
+    let promises = folder.children.map((childId)=>{
       return this.retrieveFolder(childId).then((child)=>{
         return this.getAllChildren(child, maxLevel - 1);
       });
-    })).then((children)=>{
-      console.log(children);
+    });
+    return Promise.all(promises).then((children)=>{
       folder.children = children;
       return folder;
     });
@@ -548,6 +665,15 @@ export class ElementService {
     });
   }
 
+  retrieveComponent(id: string): Promise<Component|null> {
+    return this.retrieveRecordFrom('components', id).then((res)=>{
+      if(res != null) {
+        return Component.create(res);
+      }
+      return null;
+    });
+  }
+
   retrieveLocation(id: string) {
     return this.retrieveRecordFrom('locations', id);
   }
@@ -614,7 +740,7 @@ export class ElementService {
             let store = db.createObjectStore(name, { keyPath: keypath });
             store.transaction.oncomplete = resolve;
             indexes.forEach((index)=> {
-              store.createIndex(index.name, index.on, { unique: index.unique });
+              store.createIndex(index.name, index.on, { unique: index.unique, multiEntry: !!index.multiEntry });
             });
           });
         }
@@ -707,7 +833,6 @@ export class ElementService {
         job.id, // job
         [] // children
       );
-      console.log(folder.toJSON());
       folders.push(folder);
       let folderText = JSON.stringify(folder.toJSON());
       let folderPath = [folderType, folder.id + '.json'].join('/');
