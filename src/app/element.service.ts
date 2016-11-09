@@ -21,8 +21,10 @@ const stores = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
                                                        { on: 'email',     name: 'email',     unique: true }] },
   { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false }] },
-  { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false }] },
-  { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false }] },
+  { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false },
+                                                       { on: 'job',       name: 'job',       unique: false }] },
+  { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false },
+                                                       { on: 'job',       name: 'job',       unique: false }] },
   { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true }] }
 ];
 
@@ -98,6 +100,9 @@ class Child {
     let copy = Object.assign({}, this);
     return copy;
   }
+  static create(obj) {
+    return new Child(obj.id, obj.qty, obj._id);
+  }
 }
 
 // optional but convienent/necessary to dispurse updates
@@ -121,6 +126,7 @@ class Component extends Element {
     public basedOn?: BasedOn|null
   ) {
     super(id, name, description);
+    if(children == null) this.children = [];
   }
 
   static exclude: string[] = ['commit'];
@@ -140,22 +146,20 @@ class Component extends Element {
 }
 
 class Location {
-  id: string;
-  constructor(job: Job, folders, public children: Child[]) {
-    let types = job.folders.types.slice().sort();
-    let roots = job.folders.roots;
+  constructor(public id: string, public job: string, public children: Child[]) { }
 
-    let id = []; 
-    for(var i=0; i<types.length; i++) {
-      if(types[i] in folders) {
-        // is it specified in folders?
-        id.push(folders[types[i]]);
-      } else {
-        // use root by default
-        id.push(roots[job.folders.types.indexOf(types[i])]);
-      }
-    }
-    this.id = id.join('-');
+  static createId(obj, job) {
+    return job.folders.types.map((name, i)=>obj[name] || job.folders.roots[i]).join('-');
+  }
+
+  static fromJob(job: Job, folders, children?: Child[]) {
+    let id = Location.createId(folders, job);
+    let jobId = job.id;
+    return new Location(id, jobId, children || []);
+  }
+
+  static create(obj) {
+    return new Location(obj.id, obj.job, obj.children);
   }
 
   toJSON(removeExcluded?: Boolean) {
@@ -185,7 +189,7 @@ class Folder extends Element {
     description,
     public type: string,
     public job: string,
-    public children: string[]
+    public children: string[]|Folder[]
   ) {
     super(id, name, description);
   }
@@ -203,6 +207,11 @@ class Folder extends Element {
       });
     }
     return copy;
+  }
+
+  static create(obj) {
+    let children = obj.children || [];
+    return new Folder(obj.id, obj.name, obj.description, obj.type, obj.job, children);
   }
 }
 
@@ -322,32 +331,110 @@ export class ElementService {
           '', // description
           TEST_JOB.id // job id
         );
-        console.log(component);
-        this.addComponent(component, job, {});
+        let folder = new Folder(
+          random(),
+          'new folder',
+          'folder',
+          'phase',
+          TEST_JOB.id,
+          []
+        );
+        this.addFolder(folder, null, job).then((result)=>{
+          console.log('added folder', result);
+        });
+        this.addComponent(component, job, {}).then((results)=>{
+          console.log('added compontn', results);
+          this.buildTree(job);
+        });
 
       });
     });
   }
 
-  addComponent(component: Component, job: Job, folders) {
-    folders = folders || {};
-    // not location exist
-    let loc = new Location(job, folders, []);
-    this.saveOrRetrieve(this.db, 'locations', loc.toJSON(), 'id').then((key)=>{
-      let child = new Child(component.id, 1);
-      loc.children = loc.children || [];
-      let i = loc.children.map((c)=>c.id).indexOf(child.id);
-      if(i == -1) {
-        loc.children.push(child);
-      } else {
-        loc.children[i].qty = loc.children[i].qty + 1;
-      }
-      return this.saveToStore(this.db, 'locations', loc.toJSON()).then((key)=>{
-        console.log('key', key, 'loc', loc);
+  buildTree(job) {
+    let roots = job.folders.roots;
+
+    return Promise.all([
+      Promise.all(roots.map((id)=>this.retrieveFolder(id))),
+      this.allLocations(job.id)
+    ]).then((res)=>{
+      let folders:Folder[] = res[0];
+      let locations = res[1];
+      console.log(typeof folders, Array.isArray(folders));
+
+      Promise.all(folders.map((folder)=>this.getAllChildren(folder))).then((result)=>{
+        console.log(result);
       });
     });
-    
-    // add to location
+  }
+
+  getAllChildren(folder: Folder, maxLevel?):Promise<Folder> {
+    maxLevel = maxLevel == null ? 10 : maxLevel;
+    folder.children = folder.children || [];
+    if(maxLevel < 1 || folder.children.length == 0) return Promise.resolve(folder);
+    return Promise.all(folder.children.map((childId)=>{
+      return this.retrieveFolder(childId).then((child)=>{
+        return this.getAllChildren(child, maxLevel - 1);
+      });
+    })).then((children)=>{
+      console.log(children);
+      folder.children = children;
+      return folder;
+    });
+  }
+
+  addFolder(folder: Folder, parId, job: Job) {
+    let types = job.folders.types;
+    if(types.indexOf(folder.type) == -1) throw new Error('job does not have this type of folder');
+    return this.retrieveFolder(parId || job.folders.roots[job.folders.types.indexOf(folder.type)]).then((par)=>{
+      if(par.job != folder.job) throw new Error('cannot add folder to folder of another job ('+par.job+' and '+folder.job+')');
+      if(par instanceof Folder) {
+        // should not already be child
+        par.children = par.children || [];
+        if(par.children.indexOf(folder.id) != -1) throw new Error('already child of this folder');
+        par.children.push(folder.id);
+        return Promise.all([
+          this.saveRecord(this.db, 'folders', folder.toJSON()),
+          this.saveRecord(this.db, 'folders', par.toJSON())
+        ]);
+
+      } else {
+        throw new Error('invalid root folder');
+      }
+    });
+  }
+
+
+  // returns [componentRecordId, locationRecordId]
+  addComponent(component: Component, job: Job, folders) {
+    folders = folders || {};
+    let locId = Location.createId(folders, job);
+    return this.retrieveRecord(this.db, 'locations', locId).then((obj) => {
+      // get record, create if not exists
+      let prom;
+      if(obj == null) {
+        let loc = Location.fromJob(job, folders, []);
+        if(locId != loc.id) throw new Error('wtf');
+        return this.saveRecord(this.db, 'locations', loc.toJSON()).then((recordId)=>{
+          return this.retrieveRecord(this.db, 'locations', recordId);
+        });
+      }
+      return obj;
+    }).then((locRecord)=>{
+      let loc = Location.create(locRecord);
+      let childIds = loc.children.map((c)=>c.id);
+      let i = childIds.indexOf(component.id);
+      if(i != -1) {
+        loc.children[i].qty = loc.children[i].qty + 1;
+      } else {
+        let child = new Child(component.id, 1);
+        loc.children.push(child);
+      }
+      return Promise.all([
+        this.saveRecord(this.db, 'components', component.toJSON()),
+        this.saveRecord(this.db, 'locations', loc.toJSON())
+      ]);
+    });
   }
 
   treeToObject(tree) {
@@ -427,12 +514,53 @@ export class ElementService {
     });
   }
 
-  retrieve(db: any, storeName: string, obj: any, key?:string): Promise<any> {
-    if(key == null) key = 'id';
+  allLocations(jobId:string) {
+    return new Promise((resolve, reject) => {
+      let storeName = 'locations';
+      let trans = this.db.transaction([storeName], 'readonly');
+      let store = trans.objectStore(storeName);
+
+      let q = IDBKeyRange.only(jobId);
+      let index = store.index('job');
+      let req = index.openCursor(q);
+      let results = [];
+      req.onsuccess = (e) => {
+        let cursor = e.target.result;
+        if(cursor) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results)
+        }
+      };
+      req.onerror = (e) => {
+        reject(e.target.error);
+      }
+    });
+  }
+
+  retrieveFolder(id: string): Promise<Folder|null> {
+    return this.retrieveRecordFrom('folders', id).then((res)=>{
+      if(res != null) {
+        return Folder.create(res);
+      }
+      return null;
+    });
+  }
+
+  retrieveLocation(id: string) {
+    return this.retrieveRecordFrom('locations', id);
+  }
+
+  retrieveRecordFrom(storeName: string, id: string) {
+    return this.retrieveRecord(this.db, storeName, id);
+  }
+
+  retrieveRecord(db: any, storeName: string, id: string): Promise<any> {
     return new Promise((resolve, reject) => {
       let trans = db.transaction(storeName);
       let store = trans.objectStore(storeName);
-      let req = store.get(obj[key]);
+      let req = store.get(id);
       req.onsuccess = (e) => {
         resolve(e.target.result)
       };
@@ -444,15 +572,16 @@ export class ElementService {
 
   saveOrRetrieve(db: any, storeName: string, obj: any, key): Promise<string> {
     if(key == null) key = 'id';
-    return this.retrieve(db, storeName, obj, key).then((res)=>{
+    let id = obj[key];
+    return this.retrieveRecord(db, storeName, id).then((res)=>{
       if(res == null) {
-        return this.saveToStore(db, storeName, obj);
+        return this.saveRecord(db, storeName, obj);
       }
       return res[key];
     });
   }
 
-  saveToStore(db: any, storeName: string, obj: any): Promise<string> {
+  saveRecord(db: any, storeName: string, obj: any): Promise<string> {
     return new Promise((resolve, reject) => {
       let trans = db.transaction(storeName, 'readwrite');
       let store = trans.objectStore(storeName);
@@ -468,7 +597,7 @@ export class ElementService {
 
   // returns keypath of created user
   saveUser(user: User): Promise<string> {
-    return this.saveToStore(this.db, 'users', user);
+    return this.saveRecord(this.db, 'users', user);
   }
 
   initObjectStore(): Promise<any> {
@@ -634,7 +763,7 @@ export class ElementService {
     } else {
       throw new Error('unknown obj type');
     }
-    return this.saveToStore(this.db, storeName, obj.toJSON(false)).then((key)=>{
+    return this.saveRecord(this.db, storeName, obj.toJSON(false)).then((key)=>{
       return key;
     });
   }
