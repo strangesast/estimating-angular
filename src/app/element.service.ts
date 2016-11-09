@@ -20,10 +20,10 @@ import * as DeepDiff from 'deep-diff';
 const stores = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
                                                        { on: 'email',     name: 'email',     unique: true  }] },
-  { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false }] },
+  { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true }] },
   { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false },
                                                        { on: 'job',       name: 'job',       unique: false }] },
-  { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false },
+  { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
                                                        { on: 'folders',   name: 'folders',   unique: true,  multiEntry: true },
                                                        { on: 'job',       name: 'job',       unique: false }] },
   { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true  }] }
@@ -355,7 +355,7 @@ export class ElementService {
         );
         let folder = new Folder(
           random(),
-          'new folder',
+          'New Phase*',
           'folder',
           'phase',
           job.id,
@@ -367,10 +367,16 @@ export class ElementService {
         this.addComponent(component, job, {}).then((results)=>{
           console.log('added component', results);
           this.buildTree(job).then((res)=>{
-            for(let i=0; i<res.length; i++) {
-              let r = res[i];
-              console.log(r.level + Array(+r.level+1).join('--') + '(' + r.reftype + ') ' + r.refid);
-            }
+            Promise.all(res.map((el)=>{
+              return (el.reftype == 'component' ? this.retrieveComponent(el.refid) : this.retrieveFolder(el.refid)).then((doc)=>{
+                return Object.assign({}, el, doc);
+              });
+            })).then((arr)=>{
+              for(let i=0; i<arr.length; i++) {
+                let r = arr[i];
+                console.log(r.level + Array(+r.level+1).join('--') + '(' + r.reftype + ') ' + r.refid + ' ' + r.name);
+              }
+            });
           });
         });
 
@@ -416,9 +422,7 @@ export class ElementService {
 
       ctx[folder['type']] = folder.id;
 
-      let nextLevel = this.mergeTrees(job, rest, locations, level+1, maxLevel, ctx).then((els)=>{
-        return arr.concat(els);
-      });
+      let nextLevel = this.mergeTrees(job, rest, locations, level+1, maxLevel, ctx);
 
       let sameKindNextLevel = Promise.all(folder.children.map((child)=>{
         return this.mergeTrees(job, [child].concat(rest), locations, level+1, maxLevel, ctx);
@@ -453,11 +457,6 @@ export class ElementService {
 
   findLocation(locArr) {
     console.log('arr', locArr);
-    //return Promise.all(locArr.map((folderId)=>{
-    //  return this.findLocationWithFolder(folderId).then((matches)=>{
-    //    return [folderId, matches];
-    //  });
-    //}));
     return Promise.resolve();
   }
 
