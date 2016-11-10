@@ -29,6 +29,9 @@ nav .container {
   display:flex;
   flex-direction:row;
   margin-left: @gutter;
+  @media(max-width:@med) {
+    margin-left: @search-width;
+  }
   flex-grow: 1;
 }
 
