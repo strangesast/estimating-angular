@@ -3,7 +3,7 @@
   <div class="list">
     <div *ngFor="let job of jobs | async" class="list-item" tabindex=1>
       <div class="left">
-        <a class="hoverunderline"><h3>{{ job.name }}</h3></a>
+        <a routerLink="{{job.getURL()}}" class="hoverunderline"><h3>{{ job.name }}</h3></a>
         <p>{{ job.description }}</p>
       </div>
       <div class="right">
@@ -14,31 +14,33 @@
       </div>
     </div>
   </div>
-  <h1>New Job</h1>
-  <div class="form">
-    <pre>{{job | json}}</pre>
-    <div class="form-control">
-      <label>Name</label>
-      <input [(ngModel)]="job.name" type="text">
+  <div *ngIf="job">
+    <h1>New Job</h1>
+    <div class="form">
+      <pre>{{job | json}}</pre>
+      <div class="form-control">
+        <label>Name</label>
+        <input [(ngModel)]="job.name" type="text">
+      </div>
+      <div class="form-control">
+        <label>Description</label>
+        <textarea [(ngModel)]="job.description"></textarea>
+      </div>
+      <div class="form-control">
+        <label>Start Date</label>
+        <input [(ngModel)]="job.start_date" type="text">
+      </div>
+      <div class="form-control">
+        <label>End Date</label>
+        <input [(ngModel)]="job.end_date" type="text">
+      </div>
+      <div class="form-control">
+        <label>Owner</label>
+        <select [(ngModel)]="job.owner">
+          <option [value]="user.id" *ngFor="let user of users | async">{{user.name}}</option> 
+        </select>
+      </div>
+      <button (click)="createNewJob()">Create</button>
     </div>
-    <div class="form-control">
-      <label>Description</label>
-      <textarea [(ngModel)]="job.description"></textarea>
-    </div>
-    <div class="form-control">
-      <label>Start Date</label>
-      <input [(ngModel)]="job.start_date" type="text">
-    </div>
-    <div class="form-control">
-      <label>End Date</label>
-      <input [(ngModel)]="job.end_date" type="text">
-    </div>
-    <div class="form-control">
-      <label>Owner</label>
-      <select [(ngModel)]="job.owner">
-        <option [value]="user.id" *ngFor="let user of users | async">{{user.name}}</option> 
-      </select>
-    </div>
-    <button (click)="createNewJob()">Create</button>
   </div>
 </div>

@@ -4,11 +4,12 @@ import { Observable, BehaviorSubject } from 'rxjs';
 
 import { User, Job, TreeElement } from './classes';
 
-
 import { ElementService } from './element.service';
 
 @Injectable()
 export class JobService {
+
+  public job: Job;
 
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public tree: BehaviorSubject<TreeElement[]> = new BehaviorSubject([]);
@@ -26,8 +27,8 @@ export class JobService {
         return this.elementService.createJob(user, shortname);
 
       }).then((job:Job)=>{
+        this.job = job;
 
-        console.log('job', job);
         return this.elementService.buildTree(job).then((res)=>{
           return Promise.all(res.map(el => {
             return (el.reftype == 'component' ? this.elementService.retrieveComponent(el.refid) : this.elementService.retrieveFolder(el.refid)).then((ref)=>{

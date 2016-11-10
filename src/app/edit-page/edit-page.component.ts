@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Params }   from '@angular/router';
+import { ActivatedRoute, Params, Router }   from '@angular/router';
 import { Location }                 from '@angular/common';
 
 import { Element } from '../element';
@@ -15,51 +15,43 @@ import { SortablejsOptions } from 'angular-sortablejs';
 })
 
 export class EditPageComponent implements OnInit {
-  activeElement: Element | null = null;
-  elements: Element[] = [];
+  elements: any[];
+  activeElement: any;
 
-  newElement = {}; // used to construct new object
-
-  optionTypes: string[] = [
-    'phase',
-    'building',
-    'component',
-    'job'
-  ];
-
-  JSON: any; // temporary
+  elementsSub: any;
+  activeSub: any;
+  sub: any;
 
   constructor(
     private elementEditService: ElementEditService,
     private route: ActivatedRoute,
+    private router: Router,
     private location: Location
-  ) {
-    this.JSON = JSON;
-  }
+  ) { }
 
-  ngOnInit() : void {
-    this.route.params.forEach((params: Params) => {
-      // change to the tab of the id in the url bar
-      // TODO: need to add 404 routing
-      let id = params['id'];
-      if(id == null) {
-        this.activeElement = this.elementEditService.loadElement(null);
-      } else {
-        this.activeElement = this.elementEditService.loadElementById(+id); // numeric for now
-      }
-      this.elements = this.elementEditService.getElements();
-      this.elementEditService.elements.subscribe((res) => this.elements = res);
-      this.elementEditService.activeElement.subscribe((res) => this.activeElement = res);
+  ngOnInit() : Promise<void> {
+    return this.elementEditService.init().then(()=>{
+      this.elementsSub = this.elementEditService.elements.subscribe(els=>{
+        this.elements = els;
+      });
+      this.activeSub = this.elementEditService.activeElement.subscribe(el=>{
+        this.activeElement = el;
+      });
+
+      this.sub = this.route.params.subscribe((params: Params) => {
+        let kind = params['kind'];
+        let id = params['id'];
+        this.elementEditService.loadElement(kind, id);
+      });
     });
   }
 
-  removeElement(element: Element): void {
-    this.elementEditService.removeElement(element);
+  removeElement(el): void {
+    this.elementEditService.removeElement(el);
   }
 
-  changeActiveElement(element: Element | null) {
-    // change the active element (and tab) to 'element' or new tab (null)
-    this.elementEditService.loadElement(element);
+  loadElement(el): void {
+    this.elementEditService.loadElement(el);
   }
 
   childListOptions: SortablejsOptions = {
@@ -75,12 +67,14 @@ export class EditPageComponent implements OnInit {
     draggable: '.tab'
   }
 
-  createNewFromType(_type: string): void {
-    this.elementEditService.addElement({
-      id: 0,
-      name: 'New Element',
-      parent: null,
-      children: []
-    });
+  backToBuild() {
+    //let job = this.elementEditService.getJob();
+    this.location.back();
+  }
+
+  ngOnDestroy() {
+    if(this.elementsSub) this.elementsSub.unsubscribe();
+    if(this.activeSub) this.activeSub.unsubscribe();
+    if(this.sub) this.sub.unsubscribe();
   }
 }

@@ -24,7 +24,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-
+    this.sub.unsubscribe();
   }
 
   options: SortablejsOptions = {

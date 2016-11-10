@@ -28,6 +28,10 @@ const routes: Routes = [
         component: EditPageComponent
       },
       {
+        path: 'edit/:kind/:id',
+        component: EditPageComponent
+      },
+      {
         path: 'build',
         component: BuildPageComponent
       }

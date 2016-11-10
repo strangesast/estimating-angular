@@ -11,7 +11,6 @@ import { SearchComponent }        from './search/search.component';
 
 import { ElementRetrievalService } from './element-retrieval.service';
 import { TreeBuilderService }      from './tree-builder.service';
-import { ElementEditService }      from './element-edit.service';
 import { SearchServiceService }    from './search-service.service';
 import { ElementService }          from './element.service';
 import { UserService }             from './user.service';
@@ -59,7 +58,6 @@ import { JobListPageComponent } from './job-list-page/job-list-page.component';
   ],
   providers: [
     TreeBuilderService,
-    ElementEditService,
     SearchServiceService,
     ElementRetrievalService,
     ElementService,

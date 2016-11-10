@@ -1,61 +1,24 @@
-<section class="navigation">
-  <div class="container">
-    <div class="search-box">
-      <app-search></app-search>
-    </div>
-    <div class="navigation-controls">
-      <div [sortablejs]="elements" [sortablejsOptions]="tabListOptions" class="navigation-bar">
-        <div *ngFor="let element of elements; let i = index;" class="tab">
-          <input id="tab-{{i}}" type="radio" name="tab-navigation" [checked]="activeElement === element">
-          <label (click)="changeActiveElement(element)" [attr.for]="'tab-' + i">
-            <span (click)="removeElement(element)" class="hoverlink fa fa-remove"></span>
-            <span>{{element.name}}</span>
-          </label>
-        </div>
-      </div>
-      <div class="navigation-bar">
-        <div class="remove">
-          <input id="tab-new" type="radio" name="tab-navigation" [checked]="activeElement === null">
-          <label (click)="changeActiveElement(null)" for="tab-new">
-            <span class="fa fa-plus"></span>
-          </label>
-        </div>
-      </div>
+<div class="navigation-controls">
+  <div [sortablejs]="elements" [sortablejsOptions]="tabListOptions" class="navigation-bar">
+    <div *ngFor="let element of elements; let i = index;" class="tab">
+      <input id="tab-{{i}}" type="radio" name="tab-navigation" [checked]="activeElement === element">
+      <label (click)="loadElement(element)" [attr.for]="'tab-' + i">
+        <span (click)="removeElement(element); $event.stopPropagation()" class="hoverlink fa fa-remove"></span>
+        <span [class]="element.type == 'building' ? 'fa fa-building-o' : element.type == 'phase' ? 'fa fa-bookmark-o' : 'fa fa-cubes'"></span>
+        <span>{{element.name}}</span>
+      </label>
     </div>
   </div>
-</section>
-<section class="body">
-  <div class="container">
-    <div class="main">
-      <div *ngIf="activeElement!=null">
-        <h1>Edit "{{activeElement.name}}"</h1>
-        <label>Name</label>
-        <input type="text" [(ngModel)]="activeElement.name">
-        <br>
-        <label>Parent</label>
-        <input type="number" [(ngModel)]="activeElement.parent">
-        <h2>Children</h2>
-        <div [sortablejs]="activeElement.children" [sortablejsOptions]="childListOptions">
-          <div *ngFor="let child of activeElement.children">
-            {{ child }}
-          </div>
-        </div>
-      </div>
-      <div *ngIf="activeElement==null">
-        <h1>Create New Element</h1>
-        <button (click)="createNewFromType(type)" class="type-button" *ngFor="let type of optionTypes">{{type | uppercase}}</button>
-        <pre>{{JSON.stringify(newElement, null, 2)}}</pre>
-        <label>Name</label>
-        <input [(ngModel)]="newElement.name" type="text">
-        <label>Type</label>
-        <select [(ngModel)]="newElement.type">
-          <option *ngFor="let type of optionTypes">{{type}}</option>
-        </select>
-      </div>
-    </div>
-    <div class="search">
-      <app-search-results></app-search-results>
+  <div class="navigation-bar">
+    <div class="remove">
+      <input id="tab-new" type="radio" name="tab-navigation" [checked]="activeElement === null">
+      <label (click)="loadElement(null)" for="tab-new">
+        <span class="fa fa-plus"></span>
+      </label>
     </div>
   </div>
-</section>
-
+</div>
+<div class="main">
+  <pre>{{activeElement | json}}</pre>
+  <button (click)="backToBuild()">Back</button>
+</div>

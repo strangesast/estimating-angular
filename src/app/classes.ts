@@ -35,6 +35,10 @@ export class TreeElement {
     }
     return new TreeElement(obj.id, t, level, ctx);
   }
+
+  getURL():string {
+    return [this.reftype, this.refid].join('/');
+  }
 }
 
 // root 'element' of phase, building, component, job, etc
@@ -207,6 +211,10 @@ export class Job extends Element {
       });
     }
     return copy;
+  }
+
+  getURL():string {
+    return [this.owner.username, this.shortname, 'build'].join('/');
   }
 
   static create(obj, commit?: string) {

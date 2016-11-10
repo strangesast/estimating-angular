@@ -4,69 +4,87 @@ import { Subject }                  from 'rxjs/Subject';
 import { BehaviorSubject }          from 'rxjs/BehaviorSubject';
 import { Router, ActivatedRoute, Params }   from '@angular/router';
 
-import { Element } from './element';
-import { TreeBuilderService } from './tree-builder.service';
+import { Component, Folder, Job } from './classes';
+import { ElementService } from './element.service';
+import { JobService } from './job.service';
 
 @Injectable()
 export class ElementEditService {
-  _elements: BehaviorSubject<Element[]> = new BehaviorSubject([]);
-  elements: Observable<Element[]> = this._elements.asObservable();
-  _activeElement: BehaviorSubject<Element | null> = new BehaviorSubject(null);
-  activeElement: Observable<Element> = this._activeElement.asObservable();
+  _elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
+  elements: Observable<any[]> = this._elements.asObservable();
 
-  constructor(private treeBuilderService: TreeBuilderService, private router: Router) { }
+  _activeElement: BehaviorSubject<any> = new BehaviorSubject(null);
+  activeElement: Observable<any> = this._activeElement.asObservable();
 
-  getElements(): Element[] {
+  constructor(private jobService: JobService, private elementService: ElementService) { }
+
+  init(): Promise<void>{
+    return this.elementService.init().then(() => {
+
+    });
+  }
+
+  getElements() {
     return this._elements.getValue();
   }
 
-  addElement(element: Element): void {
-    let arr = this._elements.getValue();
-    if(arr.indexOf(element) == -1) {
-      arr.push(element)
-      this._elements.next(arr);
-    }
-  }
-
-  removeElement(element: Element): Element | null {
-    let arr = this._elements.getValue();
-    let i;
-    if((i = arr.indexOf(element)) != -1) {
-      let removed = arr.splice(i, 1);
-      this._elements.next(arr);
-      if(this._activeElement.getValue() == removed[0]) this.loadElement(null);
-      return removed[0];
-    }
-    return null;
-  }
-
-  loadElementById(id: number): Element | null{
-    var element = this.treeBuilderService.find(id);
-    if(element == null) throw new Error('element with that id does not exist');
-    return this.loadElement(element);
-  }
-
-  loadElement(element: Element | null): Element | null{
-    if(element == null) {
-      this._activeElement.next(null);
-      this.router.navigate(['/edit']);
-      return null;
-    }
-    let arr = this._elements.getValue();
-    let i;
-    if((i=arr.indexOf(element)) != -1) {
-      let el = arr[i];
-      this._activeElement.next(el);
-      this.router.navigate(['/edit', el.id]);
-      return el;
+  removeElement(element) {
+    let wasActive = element == this._activeElement.getValue();
+    let elements = this._elements.getValue();
+    let i = elements.indexOf(element);
+    if(i == -1) throw new Error('element not in elements');
+    let removed = elements.splice(i, 1);
+    this._elements.next(elements);
+    if(elements.length && wasActive) {
+      this._activeElement.next(elements[i] || elements[i-1] || elements[i+1] || null);
     } else {
-      var el = this.treeBuilderService.grab(element);
-      if(el == null) throw new Error('element not in tree');
-      this._elements.next(arr.concat(el));
-      this.router.navigate(['/edit', el.id]);
-      this._activeElement.next(el);
-      return el;
+      this._activeElement.next(null);
     }
+    return removed;
   }
 
+  // kind, id || element
+  loadElement(elementOrKind: string|Folder|Component, id?:string): Observable<any> {
+    if(elementOrKind == null) {
+      this._activeElement.next(null)
+      return this.activeElement;
+    }
+    let prom;
+    if(elementOrKind instanceof Component || elementOrKind instanceof Folder) {
+      prom = Promise.resolve(elementOrKind);
+    } else if (typeof elementOrKind == 'string') {
+      if(id == null) throw new Error('id required for "'+elementOrKind+'"');
+      let kind = elementOrKind;
+      switch(kind) {
+        case 'phase':
+        case 'building':
+          prom = this.elementService.retrieveFolder(id);
+          break;
+        case 'component':
+          prom = this.elementService.retrieveComponent(id);
+          break;
+        default:
+          throw new Error('invalid kind "'+kind+'"');
+      }
+    } else {
+      throw new Error('invalid type');
+    }
+    prom.then((el)=>{
+      if(el == null) throw new Error('that element does not exist');
+
+      let elements = this._elements.getValue();
+      let isNew = true;
+      for(let i=0; i<elements.length; i++) {
+        if(el instanceof elements[i].constructor && el.id == elements[i].id) isNew = false;
+      }
+      if(isNew) this._elements.next(elements.concat(el));
+      this._activeElement.next(el);
+    });
+
+    return this.activeElement;
+  }
+
+  getJob() {
+    return this.jobService.job;
+  }
 }

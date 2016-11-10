@@ -21,26 +21,21 @@ nav .container {
   }
 }
 
-.navigation > .container {
-  height: @navigation-height;
-  display: flex;
+.navigation-controls, .search-box {
+  height: 100%;
+}
 
-  .navigation-controls, .search-box {
-    height: 100%;
-  }
+.navigation-controls {
+  display:flex;
+  flex-direction:row;
+  margin-left: @gutter;
+  flex-grow: 1;
+}
 
-  .navigation-controls {
-    display:flex;
-    flex-direction:row;
-    margin-left: @gutter;
-    flex-grow: 1;
-  }
-
-  .search-box {
-    @media(min-width: @med) {
-      width: @search-width;
-      min-width: @search-width;
-    }
+.search-box {
+  @media(min-width: @med) {
+    width: @search-width;
+    min-width: @search-width;
   }
 }
 

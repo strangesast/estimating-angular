@@ -7,12 +7,14 @@ import { TreeElement } from '../classes';
 
 import { JobService } from '../job.service';
 import { UserService } from '../user.service';
+import { ElementEditService } from '../element-edit.service';
 
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
   styleUrls: ['./project-page.component.less'],
   providers: [
+    ElementEditService,
     JobService
   ]
 })

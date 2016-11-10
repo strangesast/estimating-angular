@@ -337,18 +337,22 @@ export class ElementService {
     let currentUsers = this._users.getValue();
     let db = this.db;
     if(db == null) throw new Error('db undefined, run init');
-    return this.getAll(db, 'users').then((arr)=>arr.map(User.create)).then((users)=>{
-      if(users.length != currentUsers.length || !users.every((v, i, arr) => {
-        if(currentUsers[i] == null) return false;
-        for(let prop in v) {
-          if(v[prop] != currentUsers[i][prop]) return false;
-        }
-        return true;
-      })) {
-        this._users.next(users);
-      }
-      return users;
+    return this.getJobs().then(jobs => {
+      let owners = jobs.map((job)=>job.owner);
+      return owners;
     });
+    //return this.getAll(db, 'users').then((arr)=>arr.map(User.create)).then((users)=>{
+    //  if(users.length != currentUsers.length || !users.every((v, i, arr) => {
+    //    if(currentUsers[i] == null) return false;
+    //    for(let prop in v) {
+    //      if(v[prop] != currentUsers[i][prop]) return false;
+    //    }
+    //    return true;
+    //  })) {
+    //    this._users.next(users);
+    //  }
+    //  return users;
+    //});
   }
 
   getAll(db: any, storeName: string): Promise<any[]> {
@@ -719,7 +723,5 @@ export class ElementService {
     });
   }
 
-  constructor() {
-    this.init();
-  }
+  constructor() { }
 }
