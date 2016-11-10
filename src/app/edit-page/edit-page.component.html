@@ -1,21 +1,15 @@
 <div class="navigation-controls">
   <div [sortablejs]="elements" [sortablejsOptions]="tabListOptions" class="navigation-bar">
-    <div *ngFor="let element of elements; let i = index;" class="tab">
-      <input id="tab-{{i}}" type="radio" name="tab-navigation" [checked]="activeElement === element">
-      <label (click)="loadElement(element)" [attr.for]="'tab-' + i">
-        <span (click)="removeElement(element); $event.stopPropagation()" class="hoverlink fa fa-remove"></span>
-        <span [class]="element.type == 'building' ? 'fa fa-building-o' : element.type == 'phase' ? 'fa fa-bookmark-o' : 'fa fa-cubes'"></span>
-        <span>{{element.name}}</span>
-      </label>
-    </div>
+    <label class="tab nostyle" *ngFor="let element of elements" [class.active]="activeElement && activeElement.id == element.id" (click)="loadElement(element)">
+      <span (click)="removeElement(element); $event.preventDefault()" class="hoverlink fa fa-remove"></span>
+      <span [class]="element.type == 'building' ? 'fa fa-building-o' : element.type == 'phase' ? 'fa fa-bookmark-o' : 'fa fa-cubes'"></span>
+      <span>{{element.name}}</span>
+    </label>
   </div>
   <div class="navigation-bar">
-    <div class="remove">
-      <input id="tab-new" type="radio" name="tab-navigation" [checked]="activeElement === null">
-      <label (click)="loadElement(null)" for="tab-new">
-        <span class="fa fa-plus"></span>
-      </label>
-    </div>
+    <label class="remove nostyle" (click)="loadElement(null)" [class.active]="!activeElement">
+      <span class="fa fa-plus"></span>
+    </label>
   </div>
 </div>
 <div class="main">

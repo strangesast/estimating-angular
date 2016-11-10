@@ -44,14 +44,17 @@
 input[type="checkbox"], input[type="radio"] {
   display: none;
 }
-label {
-  color: black;
-  background: white;
-  padding: 0 8px;
+.tab {
+  label, a {
+    color: black;
+    background: white;
+    padding: 0 8px;
+  }
+  input:checked + label {
+    .active;
+  }
 }
-input:checked + label {
-  .active;
-}
+
 
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
@@ -72,6 +75,11 @@ input:checked + label {
   &:hover {
     cursor: pointer;
   }
+}
+
+.nostyle {
+  text-decoration: none;
+  color: inherit;
 }
 
 .hoverunderline {

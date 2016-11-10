@@ -72,15 +72,21 @@ nav .container {
   flex-direction: row;
   height: @navigation-height;
   line-height: @navigation-height;
-  div label {
+  input:checked + label {
+    .active;
+  }
+  label, a {
     display: inline-block;
+    padding: 0 8px;
+    background: white;
+    color: black;
   }
   &:not(:first-child) {
     flex-shrink: 1;
   }
 }
 
-label {
+label, a {
   .noselect;
   white-space: nowrap;
   @media(max-width: @lrg) {

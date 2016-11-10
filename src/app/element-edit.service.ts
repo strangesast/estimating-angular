@@ -44,10 +44,10 @@ export class ElementEditService {
   }
 
   // kind, id || element
-  loadElement(elementOrKind: string|Folder|Component, id?:string): Observable<any> {
+  loadElement(elementOrKind: string|Folder|Component, id?:string): Promise<any> {
     if(elementOrKind == null) {
       this._activeElement.next(null)
-      return this.activeElement;
+      return Promise.resolve(null);
     }
     let prom;
     if(elementOrKind instanceof Component || elementOrKind instanceof Folder) {
@@ -69,7 +69,7 @@ export class ElementEditService {
     } else {
       throw new Error('invalid type');
     }
-    prom.then((el)=>{
+    return prom.then((el)=>{
       if(el == null) throw new Error('that element does not exist');
 
       let elements = this._elements.getValue();
@@ -79,9 +79,9 @@ export class ElementEditService {
       }
       if(isNew) this._elements.next(elements.concat(el));
       this._activeElement.next(el);
+      return el;
     });
 
-    return this.activeElement;
   }
 
   getJob() {
