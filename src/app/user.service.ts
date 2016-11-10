@@ -5,6 +5,8 @@ import { Http, Response } from '@angular/http';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 
+import { ElementService } from './element.service';
+
 class User {
   name: string;
   username: string;
@@ -17,6 +19,13 @@ export class UserService {
   isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject(false);
   users: User[];
 
-  constructor() { }
+  init() {
+    return this.elementService.init().then(()=>{
+      return this.elementService.getUsers();
+    });
+
+  }
+
+  constructor(private elementService: ElementService) { }
 
 }
