@@ -19,6 +19,8 @@ export class User {
 
 export class TreeElement {
   // reference component or folder
+  ref: any;
+
   constructor(public refid: string, public reftype: 'component'|'phase'|'building'|'folder', public level: number, public ctx: any) { }
 
   static fromElement(obj, ctx, level:number):TreeElement {

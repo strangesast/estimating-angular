@@ -89,10 +89,14 @@ export class ElementService {
   public jobs: Observable<Job[]> = this._jobs.asObservable();
 
   init(): Promise<any> {
-    return Promise.all([
-      this.initObjectStore(),
-      this.createGitRepo()
-    ]);
+    if(this.db == null || this.gitdb == null) {
+      return Promise.all([
+        this.initObjectStore(),
+        this.createGitRepo()
+      ]);
+    } else {
+      return Promise.resolve();
+    }
   }
 
   buildTree(job, roots?) {
@@ -275,6 +279,7 @@ export class ElementService {
             return [key, JSON.parse(text)];
           });
           promises.push(prom);
+
         } else if (mode == gitModes.tree) {
           let prom = this.loadAs('tree', hash).then((tree)=> {
             return this.treeToObject(tree).then((obj)=>{
@@ -299,6 +304,13 @@ export class ElementService {
       return this.loadAs('tree', t).then((tree) => this.treeToObject(tree));
     })).then((arr)=>{
       return DeepDiff.diff.apply(null, arr);
+    });
+  }
+
+  getJob(username: string, shortname: string): Promise<Job[]> {
+    return this.retrieveJob(username, shortname).then(job => {
+      if(job == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
+      return job;
     });
   }
 
@@ -396,6 +408,24 @@ export class ElementService {
     });
   }
 
+  retrieveJob(username:string, shortname:string): Promise<Job|null> {
+    let ref = [username, shortname].join('/');
+    return this.readRef(ref).then(commitHash => {
+      if(commitHash == null) return null;
+      return this.loadAs('commit', commitHash).then(commit => {
+        if(commit == null) throw new Error('ref read error!');
+        return this.loadAs('tree', commit.tree);
+      }).then(tree =>{
+        let jobRef = tree['job.json'];
+        if(jobRef == null) throw new Error('malformed tree');
+        return this.loadAs('text', jobRef.hash);
+      }).then(text => {
+        let job = Job.create(JSON.parse(text), commitHash);
+        return job;
+      });
+    });
+  }
+
   retrieveLocation(id: string) {
     return this.retrieveRecordFrom('locations', id);
   }
@@ -443,10 +473,8 @@ export class ElementService {
     return new Promise((resolve, reject) => {
       let request = indexedDB.open(name, version);
 
-
       request.onupgradeneeded = (e:any) => {
         let db = e.target.result;
-        console.log(db);
         let createStore = (name, keypath, indexes) => {
           return new Promise((resolve, reject) => {
             let store = db.createObjectStore(name, { keyPath: keypath });
@@ -524,6 +552,20 @@ export class ElementService {
   readRef(ref: string):Promise<any> {
     return promisify(this.repo.readRef.bind(this.repo), ref).then((res)=>{
       return res[0];
+    });
+  }
+
+  createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Job> {
+    // should verify that job id is unique
+    let id = random();
+    if(name == null) name = 'New Job';
+    if(description == null) description = '(no description)';
+    let folders = new FolderDef(['phase', 'building']);
+
+    let job = new Job(id, name, description, owner, shortname, folders);
+
+    return this.saveNewJob(job).then((res)=>{
+      return res.job;
     });
   }
 

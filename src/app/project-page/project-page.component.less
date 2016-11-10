@@ -1,0 +1,25 @@
+@import '../basic';
+
+.container {
+  & > .body {
+    position: relative;
+    & > .search {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+      width: @search-width;
+      transition: max-height 1s ease;
+      max-height: 100vh;
+      @media(max-width:@med) {
+        max-height: @navigation-height;
+      }
+    }
+    
+    & > .page {
+      @media(min-width:@med) {
+        margin-left: @search-width;
+      }
+    }
+  }
+}
