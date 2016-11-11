@@ -2,5 +2,13 @@
   "/api": {
     "target": "http://localhost:3000",
     "secure": false
+  },
+  "/catalog": {
+    "target": "http://10.0.20.33:9200",
+    "changeOrigin":true,
+    "pathRewrite": {
+      "^/catalog/" : "/"
+    },
+    "secure": false
   }
 }
