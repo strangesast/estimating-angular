@@ -72,8 +72,7 @@ export class EditPageComponent implements OnInit {
   }
 
   backToBuild() {
-    //let job = this.elementEditService.getJob();
-    this.location.back();
+    this.router.navigate(['build'], {relativeTo: this.route.parent});
   }
 
   ngOnDestroy() {

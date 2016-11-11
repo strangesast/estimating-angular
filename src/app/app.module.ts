@@ -14,7 +14,7 @@ import { TreeBuilderService }      from './tree-builder.service';
 import { SearchServiceService }    from './search-service.service';
 import { ElementService }          from './element.service';
 import { UserService }             from './user.service';
-
+import { JobService }              from './job.service';
 import { AppRoutingModule }           from './app-routing.module';
 import { TreeElementDetailComponent } from './tree-element-detail/tree-element-detail.component';
 import { EditPageComponent }          from './edit-page/edit-page.component';
@@ -61,7 +61,8 @@ import { JobListPageComponent } from './job-list-page/job-list-page.component';
     SearchServiceService,
     ElementRetrievalService,
     ElementService,
-    UserService
+    UserService,
+    JobService
   ],
   bootstrap: [AppComponent]
 })

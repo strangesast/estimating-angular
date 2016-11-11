@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { Observable, BehaviorSubject } from 'rxjs';
 
-import { User, Job, TreeElement } from './classes';
+import { Component, Folder, User, Job, TreeElement } from './classes';
 
 import { ElementService } from './element.service';
 
@@ -30,12 +30,7 @@ export class JobService {
         this.job = job;
 
         return this.elementService.buildTree(job).then((res)=>{
-          return Promise.all(res.map(el => {
-            return (el.reftype == 'component' ? this.elementService.retrieveComponent(el.refid) : this.elementService.retrieveFolder(el.refid)).then((ref)=>{
-              el.ref = ref;
-              return el;
-            });
-          }));
+          return Promise.all(res.map(this.addRef.bind(this)));
         });
 
       }).then((res: TreeElement[])=>{
@@ -46,5 +41,29 @@ export class JobService {
     });
 
     return Observable.fromPromise(getJobElements).flatMap(()=>this.tree.asObservable());
+  }
+
+  addRef(el:TreeElement):Promise<TreeElement> {
+    return el.reftype == 'component' ? this.elementService.retrieveComponent(el.refid) : this.elementService.retrieveFolder(el.refid).then(ref=>{
+      el.ref = ref;
+      return el;
+    });
+  }
+
+  search(query:any, options:any):Promise<TreeElement[]> {
+    let lower = !!options['ignorecase'];
+    let which = !!options['any']; // any in query vs all in query
+    let tree = this.tree.getValue();
+    let f = (t)=> {
+      let el = t.ref;
+      for(let prop in query) {
+        if(el[prop] == null) continue;
+
+        let c = (lower ? el[prop].toLowerCase() : el[prop]).indexOf(query[prop]) == -1;
+        if(!which && c || which && !c) return which;
+      }
+      return !which;
+    };
+    return Promise.all(tree.map(this.addRef.bind(this))).then(arr=>arr.filter(f));
   }
 }

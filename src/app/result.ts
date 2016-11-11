@@ -1,4 +1,3 @@
 export class Result {
-  type: string;
-  value: any;
+  constructor(public kind: string, public value: any) { }
 }

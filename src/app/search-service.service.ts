@@ -1,14 +1,20 @@
-import { Injectable }      from '@angular/core';
+import { Injectable, Optional }      from '@angular/core';
 import { Observable }      from 'rxjs/Observable';
 import { Subject }         from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import { Element } from './element';
 
+import { JobService } from './job.service';
+import { ElementService } from './element.service';
 import { TreeBuilderService } from './tree-builder.service';
 
 import { Filter, AVAILABLE_FILTERS } from './filter';
 import { Result } from './result';
+
+function removeCase(str:string, remove:boolean):string {
+  return remove ? str.toLowerCase() : str;
+}
 
 @Injectable()
 export class SearchServiceService {
@@ -20,46 +26,33 @@ export class SearchServiceService {
   private _filters: BehaviorSubject<Filter[]> = new BehaviorSubject([]);
   public filters: Observable<Filter[]> = this._filters.asObservable();
 
+  private sub: any;
 
-  constructor(private treeBuilderService: TreeBuilderService) {
-    this.query.subscribe((query) => {
-      let results = this.search(query);
-      this._results.next(results);
-    })
-    this.filters.subscribe((filters) => {
-      let results = this.search(this.query.getValue());
-      this._results.next(results);
+
+  constructor(private elementService: ElementService, private jobService: JobService) { }
+
+  init() {
+    this.sub = this.sub || this.query.debounceTime(300).distinctUntilChanged().flatMap(this.search.bind(this)).subscribe((res:Result[])=> {
+      this._results.next(res.sort((a,b)=>a.value < b.value ? -1 : a.value > b.value ? 1 : 0));
     });
   }
 
-  search(query: string): Result[] {
+  search(query: string): Observable<Result[]> {
     let ignoreCase = !/[A-Z]/.test(query);
     let filters = this._filters.getValue();
-    if(filters.find((f)=>f.value == 'filter')) {
-      return AVAILABLE_FILTERS.filter((f)=>f.value != 'filter').map((ob)=>{
-        return {
-          type: 'filter',
-          value: ob
-        };
-      });
-    }
-    let treeResults: Result[] = this.treeBuilderService.where(query.toLowerCase()).map((ob) => {
-      return {
-        type: 'element',
-        value: ob
-      };
-    });
-    let filterResults: Result[] = AVAILABLE_FILTERS.filter((f)=> {
-      if(filters.indexOf(f) != -1) return false;
-      return f.value.startsWith(query.toLowerCase());
 
-    }).map((ob)=>{
-      return {
-        type: 'filter',
-        value: ob
-      }
-    });
-    return [].concat(treeResults, filterResults);
+
+    let tree = Observable.fromPromise(this.jobService.search({name: query}, {ignorecase: ignoreCase, 'any':true}).then((res)=>{
+      return res.map((el)=>new Result('tree-element', el));
+    }));
+
+    // tree observable (jobservice)
+    // element observable (elementservice)
+    // filter observable
+    let ob = Observable.merge(tree).reduce((a,b)=>a.concat(b));
+    
+
+    return ob;
   }
 
   addFilter(value: string): Filter | null {

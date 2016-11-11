@@ -12,34 +12,29 @@ import { Filter, AVAILABLE_FILTERS } from '../filter';
 export class SearchComponent implements OnInit {
   query: string = '';
 
-  constructor(private searchService: SearchServiceService) {
-    this.query = searchService.query.getValue();
-  }
+  constructor(private searchService: SearchServiceService) { }
 
   ngOnInit() {
+    this.searchService.init();
+    this.searchService.results.subscribe(arr => {
+      console.log('results', arr);
+    });
+    this.searchService.filters.subscribe(arr => {
+      console.log('filters', arr);
+    });
   }
 
   removeFilter(filter: string): void {
-    this.searchService.removeFilter(filter);
+    //this.searchService.removeFilter(filter);
   }
 
   onKeyDown(event): void {
     if(event.key == 'Backspace' && this.query == '') {
-      this.searchService.removeLastFilter();
+      //this.searchService.removeLastFilter();
     }
   }
   onInput(): void {
     let q = this.query;
-    if(q.endsWith(':')) {
-      for(let i=0; i < AVAILABLE_FILTERS.length; i++) {
-        if(AVAILABLE_FILTERS[i].value == q.substring(0, q.length-1)) {
-          if(this.searchService.addFilter(AVAILABLE_FILTERS[i].value) != null) {
-            this.query = '';
-            break;
-          }
-        }
-      }
-    }
-    this.searchService.query.next(this.query);
+    this.searchService.query.next(q);
   }
 }

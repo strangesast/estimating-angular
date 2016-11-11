@@ -1,8 +1,20 @@
 <div class="search" [sortablejs]="searchService.results | async" [sortablejsOptions]="options">
-  <div [class.nodrag]="result.type == 'filter'" class="search-result" *ngFor="let result of searchService.results | async" tabindex=1>
-    <span [ngClass]="{'fa': true, 'fa-cube': result.type=='element', 'fa-filter': result.type=='filter'}"></span>
-    <a [class.hoverunderline]="result.type != 'filter'" class="name">{{ result.value.name }}</a>
-    <span class="spacer"></span>
-    <span class="hoverlink fa fa-plus" *ngIf="result.type == 'filter'" (click)="addFilter(result.value)"></span>
+  <div [ngSwitch]="result.kind" *ngFor="let result of searchService.results | async" tabindex=1 class="search-result">
+    <div *ngSwitchCase="'tree-element'">
+      <span class="fa fa-thumb-tack"></span>
+      <span class="fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : 'fa-building-o'"></span>
+      <a class="name hoverunderline">{{result.value.ref.name}}</a>
+      <span class="spacer"></span>
+    </div>
+    <div *ngSwitchCase="'component'">
+      <span class="fa fa-cube"></span>
+      <a class="name">{{result.value.ref.name}}</a>
+      <span class="spacer"></span>
+    </div>
+    <div *ngSwitchDefault>
+      <span class="fa fa-cubes"></span>
+      <a class="name">{{result.value.ref.name}}</a>
+      <span class="spacer"></span>
+    </div>
   </div>
 </div>

@@ -13,7 +13,7 @@ import { Filter } from '../filter';
   styleUrls: ['./search-results.component.less']
 })
 export class SearchResultsComponent implements OnInit {
-  results: Observable<Result[]>;
+  //results: Observable<Result[]>;
 
   constructor(private searchService: SearchServiceService) { }
 

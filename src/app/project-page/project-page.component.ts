@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy }      from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Location }               from '@angular/common';
 import { Observable } from 'rxjs';
@@ -15,8 +15,7 @@ import { ElementEditService } from '../element-edit.service';
   styleUrls: ['./project-page.component.less'],
   providers: [
     ElementEditService,
-    JobService
-  ]
+  ] // need to modularize jobservice
 })
 export class ProjectPageComponent implements OnInit, OnDestroy {
   private sub: any;
