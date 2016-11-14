@@ -1,18 +1,18 @@
-<div class="search" [sortablejs]="searchService.results | async" [sortablejsOptions]="options">
+<div class="search-container" [sortablejs]="searchService.results | async" [sortablejsOptions]="options">
   <div [ngSwitch]="result.kind" *ngFor="let result of searchService.results | async" tabindex=1 class="search-result">
     <div *ngSwitchCase="'tree-element'">
-      <span class="fa fa-thumb-tack"></span>
-      <span class="fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : 'fa-building-o'"></span>
+      <span class="icon fa fa-thumb-tack"></span>
+      <span class="icon fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : 'fa-building-o'"></span>
       <a class="name hoverunderline">{{result.value.ref.name}}</a>
       <span class="spacer"></span>
     </div>
     <div *ngSwitchCase="'component'">
-      <span class="fa fa-cube"></span>
+      <span class="icon fa fa-cube"></span>
       <a class="name">{{result.value.ref.name}}</a>
       <span class="spacer"></span>
     </div>
     <div *ngSwitchDefault>
-      <span class="fa fa-cubes"></span>
+      <span class="icon fa fa-cubes"></span>
       <a class="name">{{ result.value.description }}</a>
       <span class="spacer"></span>
     </div>

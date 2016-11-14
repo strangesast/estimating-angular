@@ -92,9 +92,11 @@ nav .container {
 label, a {
   .noselect;
   white-space: nowrap;
-  @media(max-width: @lrg) {
-    & > span:not(:first-child) {
-      display: none;
+  &.min {
+    @media(max-width: @lrg) {
+      & > span:not(:first-child) {
+        display: none;
+      }
     }
   }
 }
