@@ -17,20 +17,27 @@ export class SearchComponent implements OnInit {
   ngOnInit() {
     this.searchService.init();
     this.searchService.results.subscribe(arr => {
-      console.log('results', arr);
+      //this.query = this.searchService.query.getValue();
     });
     this.searchService.filters.subscribe(arr => {
       console.log('filters', arr);
+      let q = this.searchService.query.getValue();
+      console.log('query', q);
+      this.query = q;
     });
   }
 
+  filterFilter():void {
+    this.searchService.filterFilter();
+  }
+
   removeFilter(filter: string): void {
-    //this.searchService.removeFilter(filter);
+    this.searchService.removeFilter(filter);
   }
 
   onKeyDown(event): void {
     if(event.key == 'Backspace' && this.query == '') {
-      //this.searchService.removeLastFilter();
+      this.searchService.removeLastFilter();
     }
   }
   onInput(): void {

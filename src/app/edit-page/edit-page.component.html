@@ -13,6 +13,22 @@
   </div>
 </div>
 <div class="main">
-  <pre>{{activeElement | json}}</pre>
-  <button (click)="backToBuild()">Back</button>
+  <pre>{{ activeElement | json }}</pre>
+  <div *ngIf="activeElement != null">
+    <div>
+      <label>Name:</label>
+      <input [ngModel]="activeElement.name" (ngModelChange)="onChange('name', $event)">
+    </div>
+    <div>
+      <label>Description:</label>
+      <input [ngModel]="activeElement.description" (ngModelChange)="onChange('description', $event)">
+    </div>
+    <button (click)="saveChanges()">Save</button>
+
+  </div>
+  <div *ngIf="activeElement == null">
+  </div>
+  <div>
+    <button (click)="backToBuild()">Back</button>
+  </div>
 </div>

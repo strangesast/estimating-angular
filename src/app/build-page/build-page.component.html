@@ -15,10 +15,9 @@
       <span class="fa fa-cubes fa-lg"></span>
       <span>Component</span>
     </label>
-  
     <span class="spacer"></span>
     <div class="dropdown">
-      <label>
+      <label class="tab min">
         <span class="fa fa-sliders fa-lg"></span>
         <span>Options</span>
       </label>
@@ -37,7 +36,7 @@
   </div>
 </div>
 <div class="main">
-  <div [sortablejs]="tree" [sortablejsOptions]="options">
+  <div class="tree" [sortablejs]="tree" [sortablejsOptions]="options">
     <div [attr.level]="element.level" tabindex=1 *ngFor="let element of tree" class="tree-element">
       <span class="fa" [class]="element.reftype == 'phase' ? 'fa fa-bookmark-o' : element.reftype == 'building' ? 'fa fa-building-o' : 'fa fa-cubes'"></span>
       <a routerLink="../edit/{{element.getURL()}}" class="hoverunderline">{{ element.ref.name }}</a>

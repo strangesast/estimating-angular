@@ -6,5 +6,5 @@
     </span>
   </div>
   <input [(ngModel)]="query" (keydown.backspace)="onKeyDown($event)" (keyup)="onInput()" placeholder="query">
-  <span class="new-filter fa fa-filter">+</span>
+  <span (click)="filterFilter()" class="new-filter fa fa-filter">+</span>
 </div>

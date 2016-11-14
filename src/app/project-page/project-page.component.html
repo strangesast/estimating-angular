@@ -1,6 +1,14 @@
 <div class="container">
   <div class="header">
-    <h1>Project Page</h1>
+    <div *ngIf="job">
+      <h1>{{job.name}} <small>({{job.shortname}})</small></h1>
+      <label>Description:</label>
+      <p>{{job.description}}</p>
+      <p>Owned by {{job.owner.name}} ({{job.owner.username}})</p>
+      <div *ngIf="lastSave">
+        <p>Last save <a routerLink="/jobs"><q>{{ lastSave.message }}</q></a> by {{ lastSave.author.name }} on <span [title]="lastSave.author.date">{{ lastSave.author.date | date:'medium' }}</span> <a routerLink="/jobs">History</a></p>
+      </div>
+    </div>
   </div>
   <div class="body">
     <div class="search">

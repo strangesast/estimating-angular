@@ -1,20 +1,38 @@
 <div class="search-container" [sortablejs]="searchService.results | async" [sortablejsOptions]="options">
   <div [ngSwitch]="result.kind" *ngFor="let result of searchService.results | async" tabindex=1 class="search-result">
     <div *ngSwitchCase="'tree-element'">
-      <span class="icon fa fa-thumb-tack"></span>
-      <span class="icon fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : 'fa-building-o'"></span>
+      <span class="icon">
+        <span class="fa fa-thumb-tack"></span>
+        <span class="fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : 'fa-building-o'"></span>
+      </span>
       <a class="name hoverunderline">{{result.value.ref.name}}</a>
       <span class="spacer"></span>
+    </div>
+    <div *ngSwitchCase="'new-tree-element'">
+      <span class="icon">
+        <span class="fa fa-plus"></span>
+        <span class="fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : result.value.reftype == 'building' ? 'fa-building-o' : 'fa-cube'"></span>
+      </span>
+      <a class="name hoverunderline">{{result.value.description}}</a>
+      <span class="spacer"></span>
+    </div>
+    <div *ngSwitchCase="'filter-element'">
+      <span class="icon fa fa-filter"></span>
+      <a class="name">{{result.value.description}}</a>
+      <span class="spacer"></span>
+      <span (click)="addFilter(result.value)" class="hoverlink icon fa fa-plus"></span>
     </div>
     <div *ngSwitchCase="'component'">
       <span class="icon fa fa-cube"></span>
       <a class="name">{{result.value.ref.name}}</a>
       <span class="spacer"></span>
+      <span (click)="add(result)" class="hoverlink icon fa fa-plus"></span>
     </div>
     <div *ngSwitchDefault>
       <span class="icon fa fa-cubes"></span>
       <a class="name">{{ result.value.description }}</a>
       <span class="spacer"></span>
+      <span (click)="add(result)" class="hoverlink icon fa fa-plus"></span>
     </div>
   </div>
 </div>

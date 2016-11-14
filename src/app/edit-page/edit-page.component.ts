@@ -50,6 +50,10 @@ export class EditPageComponent implements OnInit {
     });
   }
 
+  onChange(prop, evt) {
+    console.log(evt);
+  }
+
   removeElement(el): void {
     this.elementEditService.removeElement(el);
   }

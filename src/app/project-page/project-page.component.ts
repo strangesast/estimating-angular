@@ -5,6 +5,9 @@ import { Observable } from 'rxjs';
 
 import { TreeElement } from '../classes';
 
+import { Job } from '../classes';
+
+import { ElementService } from '../element.service';
 import { JobService } from '../job.service';
 import { UserService } from '../user.service';
 import { ElementEditService } from '../element-edit.service';
@@ -21,8 +24,10 @@ export class ProjectPageComponent implements OnInit, OnDestroy {
   private sub: any;
   elements: TreeElement[] = [];
   tree: TreeElement[] = [];
+  job: Job;
+  lastSave: any;
 
-  constructor(private userService: UserService, private jobService: JobService, private route: ActivatedRoute, private location: Location) { }
+  constructor(private elementService: ElementService, private userService: UserService, private jobService: JobService, private route: ActivatedRoute, private location: Location) { }
 
   ngOnInit() {
     this.sub = this.route.params.subscribe(params => {
@@ -38,18 +43,28 @@ export class ProjectPageComponent implements OnInit, OnDestroy {
           console.log('elements', elements);
           this.elements = elements;
 
+          this.job = this.jobService.job;
+          this.readCommit(this.job.commit).then((res)=>{
+            this.lastSave = res;
+          });
+
         }, (err)=>{
 
           console.log('job service init error');
           console.error(err);
 
         }, () => {
-          console.log('init complete');
 
         });
       });
     });
+  }
 
+  readCommit(commit: string) {
+    return this.elementService.loadAs('commit', commit).then((res)=>{
+      console.log(res);
+      return res;
+    });
   }
 
   ngOnDestroy() {

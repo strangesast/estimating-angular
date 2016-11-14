@@ -14,6 +14,9 @@ export class JobService {
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public tree: BehaviorSubject<TreeElement[]> = new BehaviorSubject([]);
 
+  public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
+  public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
+
   constructor(private elementService: ElementService) { }
 
   init(user:User, shortname: string):Observable<TreeElement[]> {
@@ -29,9 +32,20 @@ export class JobService {
       }).then((job:Job)=>{
         this.job = job;
 
+        let folders = {};
+        let visible = {};
+        for(let i=0; i < job.folders.types.length; i++) {
+          let t = job.folders.types[i];
+          folders[t] = job.folders.roots[i];
+          visible[t] = true;
+        }
+        visible['component'] = true;
+        this.rootFolders.next(folders);
+
         return this.elementService.buildTree(job).then((res)=>{
           return Promise.all(res.map(this.addRef.bind(this)));
         });
+
 
       }).then((res: TreeElement[])=>{
         this.tree.next(res);

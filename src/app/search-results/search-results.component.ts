@@ -28,19 +28,45 @@ export class SearchResultsComponent implements OnInit {
     draggable: '.search-result',
     filter: '.nodrag',
     sort: false,
-    //store: {
-    //  get: (sortable: any) => {
-    //    console.log('get', sortable);
-    //    return [];
-    //  },
-    //  set: (sortable: any) => {
-    //    console.log('set', sortable);
-    //  }
+    //onChoose: (evt) =>{
+    //  console.log('choose');
+    //},
+    onStart: (evt) =>{
+      console.log('start');
+    },
+    onEnd: (evt) =>{
+      console.log('end');
+    },
+    onAdd: (evt) =>{
+      console.log('add');
+    },
+    onUpdate: (evt) =>{
+      console.log('update');
+    },
+    onSort: (evt) =>{
+      console.log('sort');
+    },
+    onRemove: (evt) =>{
+      console.log('remove');
+    },
+    onFilter: (evt) =>{
+      console.log('filter');
+    },
+    onMove: (evt) =>{
+      // placement checking here
+      return evt.related.className.indexOf('tree-element') !== -1;
+    },
+    //onClone: (evt) =>{
+    //  console.log('clone');
     //}
   }
 
   addFilter(filter: Filter): void {
     this.searchService.addFilter(filter.value);
+  }
+
+  add(result: Result) {
+    this.searchService.addToJob(result);
   }
 
 }

@@ -4,13 +4,15 @@
 
 .search-container {
   margin-top: @navigation-height;
+  position: relative;
 }
 
 .search-result {
-  height: @navigation-height;
+  height: @tree-element-height;
+  width: 100%;
 }
 .search-result > div {
-  padding: 0 10px;
+  width: 100%;
   display: flex;
   height: @tree-element-height;
   & > * {
@@ -18,18 +20,21 @@
   }
   span, a {
     line-height: @tree-element-height;
-    &:not(:first-child) {
+    &:not(:first-child):not(.spacer):not(.icon) {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      margin-left: 8px;
     }
   }
   .icon {
-    padding-right: 0 8px;
-  }
-  .icon + .icon {
-    padding-left: 0px; 
+    min-width: @tree-element-height;
+    width: @tree-element-height;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    & > span {
+      display: inline;
+    }
   }
   display: flex;
   flex-direction: row;
