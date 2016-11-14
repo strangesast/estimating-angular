@@ -42,9 +42,14 @@ export class SearchServiceService {
   constructor(private elementService: ElementService, private jobService: JobService, private http: Http) { }
 
   init() {
-    this.sub = this.sub || this.query.distinctUntilChanged().map(this.checkForFilters.bind(this)).debounceTime(300).flatMap(this.search.bind(this)).subscribe((res:Result[])=> {
-      this._results.next(res);
+    this.sub = this.sub || this.query.distinctUntilChanged().map(this.checkForFilters.bind(this)).debounceTime(300).map(this.search.bind(this)).subscribe((q:any)=>{
+      let r = [];
+      q.subscribe((n)=>{r.push.apply(r, n); this._results.next(r); console.log('next', n)}, (err)=>{console.log('error', err)}, (p)=>{console.log('done!!!!', r)});
     });
+    //this.sub = this.sub || this.query.distinctUntilChanged().map(this.checkForFilters.bind(this)).debounceTime(300).flatMap(this.search.bind(this)).subscribe((res:any[])=> {
+    //  console.log('res', res);
+    //  this._results.next([]);
+    //}, (err) => {console.log('error!', err)}, ()=>{console.log('done!')});
   }
 
   checkForFilters(text: string) {
@@ -62,7 +67,7 @@ export class SearchServiceService {
     return text;
   }
 
-  search(query: string) {
+  search(query: string):any {
     let ignoreCase = !/[A-Z]/.test(query);
     let filters = this._filters.getValue();
 
@@ -95,15 +100,26 @@ export class SearchServiceService {
       return (hits.hits || []).map(el => new Result('catalog-element', el._source));
     }) : Observable.fromPromise(Promise.resolve([]));
 
-    let others = Observable.fromPromise(Promise.resolve(['phase', 'building', 'component'].map((n)=>new Result('new-tree-element', {reftype: n, description: 'new ' + n}))));
+    let others = Promise.resolve(['phase', 'building', 'component'].map((n)=>new Result('new-tree-element', {reftype: n, description: 'new ' + n})));
+    // for testing
+    //let others = Observable.fromPromise(
+    //  new Promise(
+    //    (resolve)=>{
+    //      console.log('waiting 1s');
+    //      setTimeout(
+    //        ()=>{
+    //          console.log('done');
+    //          resolve(['phase', 'building', 'component'].map((n)=>new Result('new-tree-element', {reftype: n, description: 'new ' + n})))
+    //        }, 1000
+    //      )
+    //    }
+    //  )
+    //);
 
     // tree observable (jobservice)
     // element observable (elementservice)
     // filter observable
-    let ob = Observable.merge(tree, search, others).reduce((a,b)=>a.concat(b));
-    
-
-    return ob;
+    return Observable.merge(tree, search, others);
   }
 
   addFilter(value: string): Filter | null {
