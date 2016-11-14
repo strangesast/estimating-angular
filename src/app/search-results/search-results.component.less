@@ -2,7 +2,12 @@
 
 @tree-element-height: 40px;
 
+:host {
+  height: 100%;
+}
+
 .search-container {
+  height: 100%;
   margin-top: @navigation-height;
   position: relative;
 }
@@ -11,6 +16,7 @@
   height: @tree-element-height;
   width: 100%;
 }
+
 .search-result > div {
   width: 100%;
   display: flex;

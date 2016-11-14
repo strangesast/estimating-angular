@@ -15,7 +15,7 @@ import { ElementEditService } from '../element-edit.service';
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
-  styleUrls: ['./project-page.component.less'],
+  styleUrls: ['./project-page.component.less', '../app.component.less'],
   providers: [
     ElementEditService,
   ] // need to modularize jobservice

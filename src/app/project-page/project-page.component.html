@@ -6,7 +6,7 @@
       <p>{{job.description}}</p>
       <p>Owned by {{job.owner.name}} ({{job.owner.username}})</p>
       <div *ngIf="lastSave">
-        <p>Last save <a routerLink="/jobs"><q>{{ lastSave.message }}</q></a> by {{ lastSave.author.name }} on <span [title]="lastSave.author.date">{{ lastSave.author.date | date:'medium' }}</span> <a routerLink="/jobs">History</a></p>
+        <p>Last save <a [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a> by {{ lastSave.author.name }} on <span [title]="lastSave.author.date">{{ lastSave.author.date | date:'medium' }}</span> <a [routerLink]="['saves']">History</a></p>
       </div>
     </div>
   </div>

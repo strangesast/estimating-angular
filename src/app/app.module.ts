@@ -29,6 +29,7 @@ import { UserCreateComponent } from './start-page/user-create/user-create.compon
 import { JobSelectComponent } from './start-page/job-select/job-select.component';
 import { JobCreateComponent } from './start-page/job-create/job-create.component';
 import { JobListPageComponent } from './job-list-page/job-list-page.component';
+import { SavePageComponent } from './save-page/save-page.component';
 
 @NgModule({
   declarations: [
@@ -47,7 +48,8 @@ import { JobListPageComponent } from './job-list-page/job-list-page.component';
     UserCreateComponent,
     JobSelectComponent,
     JobCreateComponent,
-    JobListPageComponent
+    JobListPageComponent,
+    SavePageComponent
   ],
   imports: [
     BrowserModule,

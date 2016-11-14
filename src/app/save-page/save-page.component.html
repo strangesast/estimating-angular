@@ -1,0 +1,9 @@
+<div class="navigation-controls">
+  <div class="navigation-bar">Save History</div>
+</div>
+<div class="main">
+  <div *ngFor="let commit of commits | async">
+    <h3>{{commit.message}}</h3>
+    <p>by {{commit.author.name}} ({{commit.author.email}}) on {{commit.author.date | date:'medium'}}</p>
+  </div>
+</div>
