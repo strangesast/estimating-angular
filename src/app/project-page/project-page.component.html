@@ -3,26 +3,40 @@
     <div class="left">
       <div>
         <span class="name">{{job.name}}</span><span class="shortname">({{job.shortname}})</span>
+        <a class="save hoverunderline" *ngIf="lastSave" [title]="lastSave.author.date + ' by ' + lastSave.author.name" [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a>
       </div>
     </div>
     <div class="right">
       <div>
-        <span class="tab hoverunderline">Details</span>
-        <span class="tab hoverunderline active">Build</span>
-        <span class="tab hoverunderline">Edit</span>
+        <a [routerLink]="['./details']" routerLinkActive="active" class="tab hoverunderline">Details</a>
+        <a [routerLink]="['./build']" routerLinkActive="active" class="tab hoverunderline">Build</a>
+        <a [routerLink]="['./edit']" routerLinkActive="active" class="tab hoverunderline">Edit</a>
+        <a [routerLink]="['./estimate']" routerLinkActive="active" class="tab hoverunderline">Estimate</a>
       </div>
     </div>
   </div>
 </div>
-<div class="container">
+<div class="container main">
   <div *ngIf="job">
-    <span class="description">{{job.description}}</span>
-    <span class="owner">{{job.owner.name}} ({{job.owner.username}})</span>
-    <div *ngIf="lastSave">
-      <p>Last save <a [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a> by {{ lastSave.author.name }} on <span [title]="lastSave.author.date">{{ lastSave.author.date | date:'medium' }}</span> <a [routerLink]="['saves']">History</a></p>
+    <div class="bar">
+      <div class="piece">
+        <span>Part count</span>
+        <span class="val">123</span>
+      </div>
+      <span class="spacer"></span>
+      <div class="piece">
+        <span>Cost</span>
+        <span class="val">$20,100</span>
+      </div>
+      <div class="piece">
+        <span>Sell</span>
+        <span class="val">$30,100</span>
+      </div>
+      <div class="piece">
+        <span>Margin</span>
+        <span class="val">$10,100</span>
+      </div>
     </div>
-  </div>
-  <div>
   </div>
   <div class="body">
     <div class="search">

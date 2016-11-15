@@ -4,12 +4,14 @@
 
 :host {
   height: 100%;
+  position: relative;
 }
 
 .search-container {
-  height: 100%;
+  height: ~"calc(100% -" @navigation-height ~");";
   margin-top: @navigation-height;
   position: relative;
+  overflow-y: auto;
 }
 
 .search-result {

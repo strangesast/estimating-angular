@@ -21,12 +21,6 @@ nav .container {
     line-height: @nav-height;
     white-space: nowrap;
     padding: 0 8px;
-    &:first-child {
-      padding-left: 0;
-    }
-    &:last-child {
-      padding-right: 0;
-    }
   }
 }
 
@@ -44,7 +38,7 @@ nav {
   display:flex;
   flex-direction:row;
   margin-left: @gutter;
-  @media(max-width:@med) {
+  @media(max-width:@lrg) {
     margin-left: @search-width;
   }
   flex-grow: 1;
