@@ -6,11 +6,11 @@
 @navigation-height: 40px;
 @search-width: 300px;
 
-@blue1: #16193B;
-@blue2: #35478C;
-@blue3: #4E7AC7;
-@blue4: #7FB2F0;
-@blue5: #ADD5F7;
+@blue1: #FFFFFF;
+@blue2: #E5E1D1;
+@blue3: #52616D;
+@blue4: #2C343B;
+@blue5: #C44741;
 
 @mp: 0.1; // minimum percentage
 @lrgm: (@lrg * ((2*@mp)*(1 + (2*@mp)) + 1));
@@ -37,7 +37,7 @@
   flex-grow: 1;
 }
 
-.active {
+.active-mixin {
   filter: invert(100%);
 }
 
@@ -51,7 +51,7 @@ input[type="checkbox"], input[type="radio"] {
     padding: 0 8px;
   }
   input:checked + label {
-    .active;
+    .active-mixin;
   }
 }
 

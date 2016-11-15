@@ -1,32 +1,52 @@
 @import '../basic';
 
-.container {
-  & > .header {
-    h1 {
-      margin-top: 0;
+.header {
+  color: @blue1;
+  background: @blue4;
+
+  & > .container {
+    height: 60px;
+    line-height: 60px;
+    display: flex;
+    flex-direction: row;
+    .left {
+      flex-grow: 1;
+    }
+    .name {
+      font-size: 1.5em;
+    }
+    .shortname {
+      font-size: 1.25em;
+      padding: 0 8px;
+    }
+    .tab {
+      padding: 0 8px;
+      &.active {
+        font-style: italic;
+      }
     }
   }
-  & > .body {
-    position: relative;
-    min-height: 600px;
-    & > .search {
-      position: absolute;
-      top: 0;
-      left: 0;
-      overflow: hidden;
-      width: @search-width;
-      transition: max-height 1s ease;
-      min-height: 100%;
-      max-height: 100vh;
-      @media(max-width:@med) {
-        max-height: @navigation-height;
-      }
+}
+.body {
+  position: relative;
+  min-height: 600px;
+  & > .search {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    width: @search-width;
+    transition: max-height 1s ease;
+    min-height: 100%;
+    max-height: 100vh;
+    @media(max-width:@med) {
+      max-height: @navigation-height;
     }
-    
-    & > .page {
-      @media(min-width:@med) {
-        margin-left: @search-width;
-      }
+  }
+  
+  & > .page {
+    @media(min-width:@med) {
+      margin-left: @search-width;
     }
   }
 }

@@ -1,46 +1,19 @@
-<div class="container">
-  <h1>Jobs</h1>
+<div class="small-container">
   <div class="list">
-    <div *ngFor="let job of jobs | async" class="list-item" tabindex=1>
-      <div class="left">
-        <a routerLink="{{job.getURL()}}" class="hoverunderline"><h3>{{ job.name }}</h3></a>
-        <p>{{ job.description }}</p>
+    <div class="header-item">Jobs</div>
+    <div *ngFor="let job of jobs" class="list-item" tabindex=1>
+      <div>
+        <span class="name hoverunderline" routerLink="{{job.getURL()}}">{{ job.name }}</span>
+        <span class="description">{{ job.description }}</span>
       </div>
-      <div class="right">
-        <span class="fa-stack icon hoverlink status-icon">
-          <span class="fa fa-cloud fa-stack-2x"></span>
-          <span [ngClass]="(!job.remote && job.local) ? 'fa-arrow-up' : (!job.local) ? 'fa-arrow-down' : 'fa-check'" class="fa fa-inverse fa-stack-1x"></span>
-        </span>
+      <div class="cnts">
+        <span class="cnt">10</span><span class="cnt fa fa-building-o"></span>
+        <span class="cnt">4</span><span class="cnt fa fa-bookmark-o"></span>
+        <span class="cnt">223</span><span class="cnt fa fa-cubes"></span>
       </div>
     </div>
-  </div>
-  <div *ngIf="job">
-    <h1>New Job</h1>
-    <div class="form">
-      <pre>{{job | json}}</pre>
-      <div class="form-control">
-        <label>Name</label>
-        <input [(ngModel)]="job.name" type="text">
-      </div>
-      <div class="form-control">
-        <label>Description</label>
-        <textarea [(ngModel)]="job.description"></textarea>
-      </div>
-      <div class="form-control">
-        <label>Start Date</label>
-        <input [(ngModel)]="job.start_date" type="text">
-      </div>
-      <div class="form-control">
-        <label>End Date</label>
-        <input [(ngModel)]="job.end_date" type="text">
-      </div>
-      <div class="form-control">
-        <label>Owner</label>
-        <select [(ngModel)]="job.owner">
-          <option [value]="user.id" *ngFor="let user of users | async">{{user.name}}</option> 
-        </select>
-      </div>
-      <button (click)="createNewJob()">Create</button>
+    <div class="last-item">
+      <span class="hoverunderline">Create New Job</span>
     </div>
   </div>
 </div>

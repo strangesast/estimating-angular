@@ -2,11 +2,20 @@
 
 @gutter: 10px;
 
-
 nav .container {
   display: flex;
   flex-direction: row;
   height: @nav-height;
+
+  .title {
+    font-size: 1.25em;
+    .nostyle;
+  }
+
+  .link.active {
+    color: inherit;
+    font-style: italic;
+  }
 
   & > * {
     line-height: @nav-height;
@@ -19,6 +28,12 @@ nav .container {
       padding-right: 0;
     }
   }
+}
+
+nav {
+  border-bottom: 1px solid @blue3;
+  background: @blue1;
+  color: @blue4;
 }
 
 .navigation-controls, .search-box {
@@ -76,13 +91,17 @@ nav .container {
   height: @navigation-height;
   line-height: @navigation-height;
   input:checked + label {
-    .active;
+    background: @blue4;
+    color: @blue1;
   }
   label, a {
     display: inline-block;
     padding: 0 8px;
-    background: white;
-    color: black;
+    color: @blue4;
+    &.active {
+      background: @blue4;
+      color: @blue1;
+    }
   }
   &:not(:first-child) {
     flex-shrink: 1;

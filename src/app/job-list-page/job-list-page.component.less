@@ -1,26 +1,84 @@
 @import '../basic';
 
+.small-container {
+  max-width: 500px;
+  margin: 0 auto;
+  margin-top: 10vh;
+  background: @blue1;
+  color: @blue4;
+}
+
 .icon {
   padding: 8px;
 }
 
-.status-icon {
-  font-size: 0.75em;
-}
-
 .list {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  border-radius: 4px;
+  .header-item, .last-item {
+    padding: 0 10px;
+  }
+  .header-item {
+    height: 60px;
+    font-size: 1.75em;
+    line-height: 70px;
+    border-color: @blue3;
+    border-style: solid;
+    border-width: 1.25px 1.25px 0 1.25px;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 1px solid @blue3;
+  }
+  .last-item {
+    height: 80px;
+    line-height: 80px;
+    font-size: 1.25em;
+    border-color: @blue3;
+    border-style: solid;
+    border-width: 0 1.25px 1.25px 1.25px;
+    border-radius: 0 0 4px 4px;
+  }
   .list-item {
+    height: 60px;
+    padding: 4px 10px;
     display: flex;
     flex-direction: row;
+    border-color: @blue3;
+    border-style: solid;
+    border-width: 0 1.25px 0 1.25px;
+    border-bottom: 1px solid @blue3;
 
-    .left, .right {
+    & > div {
+      margin: auto 0;
+      min-width: 0;
       &:first-child {
         flex-grow: 1;
+        flex-shrink: 1;
       }
-      display: flex;
-      flex-direction: column;
     }
-    margin-bottom: 10px;
+    .name, .description {
+      display: block;
+    }
+    .name {
+      font-size: 1.5em;
+    }
+    .description {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .cnts, .cnt {
+      white-space: nowrap;
+      flex-basis: auto;
+    }
+    .cnt {
+      font-size: 1.5em;
+    }
+    .cnt + .cnt.fa {
+      padding-left: 3px;
+    }
+    .cnt + .cnt.fa + .cnt {
+      margin-left: 10px;
+    }
   }
 }
 

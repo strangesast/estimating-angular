@@ -1,14 +1,28 @@
-<div class="container">
-  <div class="header">
-    <div *ngIf="job">
-      <h1>{{job.name}} <small>({{job.shortname}})</small></h1>
-      <label>Description:</label>
-      <p>{{job.description}}</p>
-      <p>Owned by {{job.owner.name}} ({{job.owner.username}})</p>
-      <div *ngIf="lastSave">
-        <p>Last save <a [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a> by {{ lastSave.author.name }} on <span [title]="lastSave.author.date">{{ lastSave.author.date | date:'medium' }}</span> <a [routerLink]="['saves']">History</a></p>
+<div *ngIf="job" class="header">
+  <div class="container">
+    <div class="left">
+      <div>
+        <span class="name">{{job.name}}</span><span class="shortname">({{job.shortname}})</span>
       </div>
     </div>
+    <div class="right">
+      <div>
+        <span class="tab hoverunderline">Details</span>
+        <span class="tab hoverunderline active">Build</span>
+        <span class="tab hoverunderline">Edit</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div *ngIf="job">
+    <span class="description">{{job.description}}</span>
+    <span class="owner">{{job.owner.name}} ({{job.owner.username}})</span>
+    <div *ngIf="lastSave">
+      <p>Last save <a [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a> by {{ lastSave.author.name }} on <span [title]="lastSave.author.date">{{ lastSave.author.date | date:'medium' }}</span> <a [routerLink]="['saves']">History</a></p>
+    </div>
+  </div>
+  <div>
   </div>
   <div class="body">
     <div class="search">
