@@ -14,6 +14,10 @@ import { ProjectPageComponent } from './project-page/project-page.component';
 import { BuildPageComponent }   from './build-page/build-page.component';
 import { EditPageComponent }    from './edit-page/edit-page.component';
 
+import { ElementService } from './element.service';
+import { JobService } from './job.service';
+import { UserService } from './user.service';
+
 const routes: Routes = [
   {
     path: '',
@@ -21,30 +25,45 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   {
-    path: 'jobs/:username/:shortname',
-    component: ProjectPageComponent,
+    path: 'jobs/:username',
+    resolve: {
+      elements: ElementService
+    },
     children: [
       {
-        path: 'edit',
-        component: EditPageComponent
-      },
-      {
-        path: 'edit/:kind/:id',
-        component: EditPageComponent
-      },
-      {
-        path: 'build',
-        component: BuildPageComponent
-      },
-      {
-        path: 'saves',
-        component: SavePageComponent
+        path: ':shortname',
+        component: ProjectPageComponent,
+        resolve: {
+          job: JobService,
+          users: UserService
+        },
+        children: [
+          {
+            path: 'edit',
+            component: EditPageComponent
+          },
+          {
+            path: 'edit/:kind/:id',
+            component: EditPageComponent
+          },
+          {
+            path: 'build',
+            component: BuildPageComponent
+          },
+          {
+            path: 'saves',
+            component: SavePageComponent
+          }
+        ]
       }
     ]
   },
   {
     path: 'jobs',
-    component: JobListPageComponent
+    component: JobListPageComponent,
+    resolve: {
+      elements: ElementService
+    }
   },
   {
     path: 'edit',
@@ -62,6 +81,11 @@ const routes: Routes = [
   ],
   exports: [
     RouterModule
+  ],
+  providers: [
+    ElementService,
+    JobService,
+    UserService
   ]
 })
 export class AppRoutingModule { }

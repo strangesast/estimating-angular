@@ -16,18 +16,9 @@ class Save {
 export class SavePageComponent implements OnInit {
   commits: BehaviorSubject<any[]> = new BehaviorSubject([]);
 
-  constructor(private jobService: JobService, private elementService: ElementService) { }
+  constructor(private elementService: ElementService) { }
 
   ngOnInit() {
-    this.jobService.rootFolders.subscribe(res => {
-      let job = this.jobService.job;
-      if(job == null) return;
-      console.log('job', job);
-      this.getHistory(job.commit).then(arr => {
-        console.log(arr);
-        this.commits.next(arr);
-      });
-    });
   }
 
   getHistory(start:string, arr?) : Promise<any[]> {

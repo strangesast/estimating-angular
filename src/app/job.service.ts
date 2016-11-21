@@ -1,15 +1,25 @@
 import { Injectable } from '@angular/core';
 
+import {
+  CanActivate,
+  Router,
+  Resolve,
+  ActivatedRouteSnapshot,
+  RouterStateSnapshot
+} from '@angular/router';
+
 import { Observable, BehaviorSubject } from 'rxjs';
 
 import { Component, Folder, User, Job, TreeElement } from './classes';
 
 import { ElementService } from './element.service';
+import { UserService } from './user.service';
+
+//import { hierarchy, tree, treemap } from 'd3-hierarchy';
+
 
 @Injectable()
 export class JobService {
-
-  public job: Job;
 
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public tree: BehaviorSubject<TreeElement[]> = new BehaviorSubject([]);
@@ -17,45 +27,60 @@ export class JobService {
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
 
-  constructor(private elementService: ElementService) { }
+  constructor(private elementService: ElementService, private userService: UserService, private router: Router) { }
 
-  init(user:User, shortname: string):Observable<TreeElement[]> {
-    console.log('job service init');
+  resolve(route: ActivatedRouteSnapshot): Promise<Job>|boolean {
+    let username = route.params['username'];
+    let shortname = route.params['shortname'];
 
-    let getJobElements = this.elementService.init().then((both)=>{
+    return this.userService.userFromUsername(username).then(user => {
+      if(!user) this.router.navigate(['/jobs']); // should be 404
 
-      console.log('element service init');
-      return this.elementService.getJob(user.username, shortname).catch((err)=>{
-        console.log('error', err);
-        return this.elementService.createJob(user, shortname);
-
-      }).then((job:Job)=>{
-        this.job = job;
-
-        let folders = {};
-        let visible = {};
-        for(let i=0; i < job.folders.types.length; i++) {
-          let t = job.folders.types[i];
-          folders[t] = job.folders.roots[i];
-          visible[t] = true;
+      return this.elementService.getJob(user.username, shortname).then(job => {
+        if(!job) {
+          this.router.navigate(['/jobs']); // should be 404
+          return false;
         }
-        visible['component'] = true;
-        this.rootFolders.next(folders);
 
-        return this.elementService.buildTree(job).then((res)=>{
-          return Promise.all(res.map(this.addRef.bind(this)));
-        });
-
-
-      }).then((res: TreeElement[])=>{
-        this.tree.next(res);
+        return job;
       });
-
-
     });
-
-    return Observable.fromPromise(getJobElements).flatMap(()=>this.tree.asObservable());
   }
+
+  //  let getJobElements = this.elementService.init().then((both)=>{
+
+  //    console.log('element service init');
+  //    return this.elementService.getJob(user.username, shortname).catch((err)=>{
+  //      console.log('error', err);
+  //      return this.elementService.createJob(user, shortname);
+
+  //    }).then((job:Job)=>{
+  //      this.job = job;
+
+  //      let folders = {};
+  //      let visible = {};
+  //      for(let i=0; i < job.folders.types.length; i++) {
+  //        let t = job.folders.types[i];
+  //        folders[t] = job.folders.roots[i];
+  //        visible[t] = true;
+  //      }
+  //      visible['component'] = true;
+  //      this.rootFolders.next(folders);
+
+  //      return this.elementService.buildTree(job).then((res)=>{
+  //        return Promise.all(res.map(this.addRef.bind(this)));
+  //      });
+
+
+  //    }).then((res: TreeElement[])=>{
+  //      this.tree.next(res);
+  //    });
+
+
+  //  });
+
+  //  return Observable.fromPromise(getJobElements).flatMap(()=>this.tree.asObservable());
+  //}
 
   addRef(el:TreeElement):Promise<TreeElement> {
     return el.reftype == 'component' ? this.elementService.retrieveComponent(el.refid) : this.elementService.retrieveFolder(el.refid).then(ref=>{

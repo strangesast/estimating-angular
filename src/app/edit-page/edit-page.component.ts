@@ -4,7 +4,6 @@ import { Location }                 from '@angular/common';
 
 import { Element } from '../element';
 import { TreeBuilderService } from '../tree-builder.service';
-import { ElementEditService } from '../element-edit.service';
 
 import { SortablejsOptions } from 'angular-sortablejs';
 
@@ -23,30 +22,27 @@ export class EditPageComponent implements OnInit {
   sub: any;
 
   constructor(
-    private elementEditService: ElementEditService,
     private route: ActivatedRoute,
     private router: Router,
     private location: Location
   ) { }
 
-  ngOnInit() : Promise<void> {
-    return this.elementEditService.init().then(()=>{
-      this.sub = this.route.params.subscribe((params: Params) => {
-        let kind = params['kind'];
-        let id = params['id'];
-        this.elementEditService.loadElement(kind, id).then((res)=>{
-          this.activeElement = res;
+  ngOnInit():void{
+    this.sub = this.route.params.subscribe((params: Params) => {
+      let kind = params['kind'];
+      let id = params['id'];
+      //this.elementEditService.loadElement(kind, id).then((res)=>{
+      //  this.activeElement = res;
 
-          this.elementsSub = this.elementsSub || this.elementEditService.elements.subscribe(els=>{
-            this.elements = els;
-          });
-          this.activeSub = this.activeSub || this.elementEditService.activeElement.subscribe(el=>{
-            this.activeElement = el;
-            let arr = el == null ? ['edit'] : ['edit', el.type || 'component', el.id];
-            this.router.navigate(arr, {relativeTo: this.route.parent});
-          });
-        });
-      });
+      //  this.elementsSub = this.elementsSub || this.elementEditService.elements.subscribe(els=>{
+      //    this.elements = els;
+      //  });
+      //  this.activeSub = this.activeSub || this.elementEditService.activeElement.subscribe(el=>{
+      //    this.activeElement = el;
+      //    let arr = el == null ? ['edit'] : ['edit', el.type || 'component', el.id];
+      //    this.router.navigate(arr, {relativeTo: this.route.parent});
+      //  });
+      //});
     });
   }
 
@@ -55,11 +51,11 @@ export class EditPageComponent implements OnInit {
   }
 
   removeElement(el): void {
-    this.elementEditService.removeElement(el);
+    //this.elementEditService.removeElement(el);
   }
 
   loadElement(el): void {
-    this.elementEditService.loadElement(el);
+    //this.elementEditService.loadElement(el);
   }
 
   childListOptions: SortablejsOptions = {

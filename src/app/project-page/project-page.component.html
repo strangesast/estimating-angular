@@ -1,10 +1,13 @@
-<div *ngIf="job" class="header">
+<div class="header">
   <div class="container">
     <div class="left">
-      <div>
-        <span class="name">{{job.name}}</span><span class="shortname">({{job.shortname}})</span>
-        <a class="save hoverunderline" *ngIf="lastSave" [title]="lastSave.author.date + ' by ' + lastSave.author.name" [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a>
-      </div>
+      <span class="name">{{job.name}}</span><span class="shortname">({{job.shortname}})</span>
+      <a class="save hoverunderline" *ngIf="lastSave" [title]="lastSave.author.date + ' by ' + lastSave.author.name" [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a>
+      <span class="details">
+        <span class="hoverunderline fa fa-balance-scale"></span>
+        <span class="arrow"></span>
+        <span class="arrow"></span>
+      </span>
     </div>
     <div class="right">
       <div>
@@ -13,31 +16,37 @@
         <a [routerLink]="['./edit']" routerLinkActive="active" class="tab hoverunderline">Edit</a>
         <a [routerLink]="['./estimate']" routerLinkActive="active" class="tab hoverunderline">Estimate</a>
       </div>
+      <div class="search">
+        <div>
+          <input type="text" placeholder="search">
+          <span class="icon fa fa-search"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="bar">
+  <div class="container">
+    <div class="piece">
+      <span>Part count</span>
+      <span class="val">123</span>
+    </div>
+    <span class="spacer"></span>
+    <div class="piece">
+      <span>Cost</span>
+      <span class="val">$20,100</span>
+    </div>
+    <div class="piece">
+      <span>Sell</span>
+      <span class="val">$30,100</span>
+    </div>
+    <div class="piece">
+      <span>Margin</span>
+      <span class="val">$10,100</span>
     </div>
   </div>
 </div>
 <div class="container main">
-  <div *ngIf="job">
-    <div class="bar">
-      <div class="piece">
-        <span>Part count</span>
-        <span class="val">123</span>
-      </div>
-      <span class="spacer"></span>
-      <div class="piece">
-        <span>Cost</span>
-        <span class="val">$20,100</span>
-      </div>
-      <div class="piece">
-        <span>Sell</span>
-        <span class="val">$30,100</span>
-      </div>
-      <div class="piece">
-        <span>Margin</span>
-        <span class="val">$10,100</span>
-      </div>
-    </div>
-  </div>
   <div class="body">
     <div class="search">
       <app-search></app-search>

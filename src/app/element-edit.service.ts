@@ -18,12 +18,6 @@ export class ElementEditService {
 
   constructor(private jobService: JobService, private elementService: ElementService) { }
 
-  init(): Promise<void>{
-    return this.elementService.init().then(() => {
-
-    });
-  }
-
   getElements() {
     return this._elements.getValue();
   }
@@ -82,9 +76,5 @@ export class ElementEditService {
       return el;
     });
 
-  }
-
-  getJob() {
-    return this.jobService.job;
   }
 }

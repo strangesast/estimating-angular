@@ -44,12 +44,16 @@ export class SearchServiceService {
   init() {
     this.sub = this.sub || this.query.distinctUntilChanged().map(this.checkForFilters.bind(this)).debounceTime(300).map(this.search.bind(this)).subscribe((q:any)=>{
       let r = [];
-      q.subscribe((n)=>{r.push.apply(r, n); this._results.next(r); console.log('next', n)}, (err)=>{console.log('error', err)}, (p)=>{console.log('done!!!!', r)});
+      q.subscribe((n)=>{
+        // each
+        r.push.apply(r, n); this._results.next(r);
+      }, (err)=>{
+        // error
+        console.log('error', err)
+      }, (p)=>{
+        // done
+      });
     });
-    //this.sub = this.sub || this.query.distinctUntilChanged().map(this.checkForFilters.bind(this)).debounceTime(300).flatMap(this.search.bind(this)).subscribe((res:any[])=> {
-    //  console.log('res', res);
-    //  this._results.next([]);
-    //}, (err) => {console.log('error!', err)}, ()=>{console.log('done!')});
   }
 
   checkForFilters(text: string) {

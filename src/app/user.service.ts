@@ -21,14 +21,18 @@ export class UserService {
   _isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject(false);
   users: User[] = [TEST_USER];
 
-  init() {
-    return this.elementService.init().then(()=>{
-      return this.elementService.getUsers();
-    });
+  constructor(private elementService: ElementService) { }
+
+  resolve():Promise<any>|boolean {
+    return this.elementService.getUsers();
   }
 
   isAuthenticated():Observable<Boolean> {
     return this._isAuthenticated.asObservable();
+  }
+
+  userFromUsername(username: string): Promise<User> {
+    return this.elementService.retrieveUser(username);
   }
 
   getActiveUser(): User {
@@ -40,6 +44,5 @@ export class UserService {
     return Promise.resolve(this.users);
   }
 
-  constructor(private elementService: ElementService) { }
 
 }

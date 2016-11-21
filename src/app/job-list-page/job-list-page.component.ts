@@ -17,16 +17,14 @@ export class JobListPageComponent implements OnInit {
   constructor(private elementService: ElementService) { }
 
   ngOnInit() {
-    this.elementService.init().then(()=>{
-      return Promise.all([
-        this.elementService.getJobs().then((jobs: Job[])=> {
-          this.jobs = jobs;
-        }),
-        this.elementService.getUsers().then((users: User[])=>{
-          this.users = users;
-        })
-      ]);
-    });
+    return Promise.all([
+      this.elementService.getJobs().then((jobs: Job[])=> {
+        this.jobs = jobs;
+      }),
+      this.elementService.getUsers().then((users: User[])=>{
+        this.users = users;
+      })
+    ]);
   }
 
   createNewJob():void {

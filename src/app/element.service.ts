@@ -14,6 +14,8 @@ import * as gitFormats      from 'js-git/mixins/formats';
 
 import * as DeepDiff from 'deep-diff';
 
+import { Router, Resolve, ActivatedRouteSnapshot } from '@angular/router';
+
 import {
   User,
   TreeElement,
@@ -29,6 +31,8 @@ import {
 
 // useful
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
+
+const USER_COLLECTION = 'users';
 
 const stores = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
@@ -88,7 +92,9 @@ export class ElementService {
   public _jobs: BehaviorSubject<Job[]> = new BehaviorSubject([]);
   public jobs: Observable<Job[]> = this._jobs.asObservable();
 
-  init(): Promise<any> {
+  constructor() { }
+
+  resolve(): Promise<any>|boolean {
     if(this.db == null || this.gitdb == null) {
       return Promise.all([
         this.initObjectStore(),
@@ -307,7 +313,7 @@ export class ElementService {
     });
   }
 
-  getJob(username: string, shortname: string): Promise<Job[]> {
+  getJob(username: string, shortname: string): Promise<Job> {
     return this.retrieveJob(username, shortname).then(job => {
       if(job == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
       return job;
@@ -334,28 +340,21 @@ export class ElementService {
   };
 
   getUsers(): Promise<User[]> {
-    let currentUsers = this._users.getValue();
     let db = this.db;
-    if(db == null) throw new Error('db undefined, run init');
-    return this.getJobs().then(jobs => {
-      let owners = jobs.map((job)=>job.owner);
-      return owners;
+    return this.getAll(db, USER_COLLECTION).then(savedUsers => {
+      let savedUsernames = savedUsers.map(user => user.username);
+      return this.getJobs().then(jobs => {
+        let owners = jobs.map(job => job.owner);
+        return Promise.all(owners.map(owner => {
+          let i = savedUsernames.indexOf(owner.username);
+          return i == -1 ? this.saveRecord(this.db, USER_COLLECTION, owner).then(this.retrieveUser) : Promise.resolve(User.create(savedUsers[i]));
+        }));
+      });
     });
-    //return this.getAll(db, 'users').then((arr)=>arr.map(User.create)).then((users)=>{
-    //  if(users.length != currentUsers.length || !users.every((v, i, arr) => {
-    //    if(currentUsers[i] == null) return false;
-    //    for(let prop in v) {
-    //      if(v[prop] != currentUsers[i][prop]) return false;
-    //    }
-    //    return true;
-    //  })) {
-    //    this._users.next(users);
-    //  }
-    //  return users;
-    //});
   }
 
   getAll(db: any, storeName: string): Promise<any[]> {
+    if(db == null) throw new Error('db undefined, run init');
     return new Promise((resolve, reject) => {
       let trans = db.transaction([storeName]);
       let store = trans.objectStore(storeName);
@@ -409,6 +408,16 @@ export class ElementService {
         return Component.create(res);
       }
       return null;
+    });
+  }
+
+  retrieveUser(username: string): Promise<User|null> {
+    return this.retrieveRecordFrom('users', username).then(res => {
+      if(res != null) {
+        return User.create(res);
+      } else {
+        return null;
+      }
     });
   }
 
@@ -723,5 +732,4 @@ export class ElementService {
     });
   }
 
-  constructor() { }
 }
