@@ -16,8 +16,8 @@
         <a [routerLink]="['./edit']" routerLinkActive="active" class="tab hoverunderline">Edit</a>
         <a [routerLink]="['./estimate']" routerLinkActive="active" class="tab hoverunderline">Estimate</a>
       </div>
-      <div class="search">
-        <div>
+      <div>
+        <div class="search">
           <input type="text" placeholder="search">
           <span class="icon fa fa-search"></span>
         </div>
@@ -48,12 +48,28 @@
 </div>
 <div class="container main">
   <div class="body">
-    <div class="search">
-      <app-search></app-search>
-      <app-search-results></app-search-results>
-    </div>
     <div class="page">
       <router-outlet></router-outlet>
+    </div>
+    <div class="mini-tree">
+      <div class="search tree-search">
+        <input type="text" placeholder="filter">
+      </div>
+      <ul class="tree">
+        <li class="open" level=0>Parent A</li>
+        <li level=1>Child 1</li>
+        <li level=1>Child 2</li>
+        <li level=1>Child 3</li>
+        <li level=1>Child 4</li>
+        <li level=1>Child 5</li>
+        <li level=1>Child 6</li>
+        <li level=1>Child 7</li>
+        <li level=1>Child 8</li>
+        <li level=1>Child 9</li>
+        <li level=1>Child 10</li>
+        <li level=1>Child 11</li>
+        <li level=1>Child 12</li>
+      </ul>
     </div>
   </div>
 </div>

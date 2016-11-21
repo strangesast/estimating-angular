@@ -1,5 +1,71 @@
 @import '../basic';
 
+.search {
+  display: inline-block;
+  line-height: 0;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 4px;
+  display: flex;
+  & > input {
+    flex-grow: 1;
+    border-radius: 4px 0 0 4px;
+    font-size: 1em;
+    border: none;
+    color: inherit;
+    outline: none;
+    padding: 4px 0 4px 4px;
+    background: inherit;
+  }
+  & > .icon {
+    padding: 4px;
+    .hoverlink;
+  }
+}
+
+.tree-search {
+  border: none;
+  height: 40px;
+  line-height: 40px;
+  background: lighten(@blue2, 5%);
+  border: 1px inset;
+  input {
+    border-radius: 4px;
+  }
+}
+
+ul.tree {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 10px 0 0 0;
+  li {
+    min-height: 40px;
+    .generate-levels(10);
+    .generate-levels(@n, @i: 0) when(@i =< @n) {
+      &[level='@{i}'] {
+        margin-left: @i * 20px;
+      }
+      &[level='@{i}'] + &[level='@{i}']:before {
+        content: 'toast';
+        
+      }
+      .generate-levels(@n, (@i + 1));
+    }
+    &:hover {
+      font-weight: bold;
+      cursor: pointer;
+    }
+    &:before {
+      padding: 4px;
+      content: "\002B";
+    }
+    &.open:before {
+      content: "\2212";
+    }
+  }
+}
+
+
 .header {
   color: @blue2;
   background: @blue4;
@@ -44,27 +110,10 @@
       display: inline-block;
     }
     .search {
-      div {
-        background: lighten(@blue4, 10%);
-        display: inline-block;
-        line-height: 0;
-        border-width: 2px;
-        border-style: solid;
-        border-color: @blue4;
-        border-radius: 4px;
-        input {
-          border-radius: 4px 0 0 4px;
-          font-size: 1em;
-          border: none;
-          color: inherit;
-          outline: none;
-          padding: 4px 0 4px 4px;
-          background: inherit;
-        }
-        .icon {
-          padding: 4px;
-          .hoverlink;
-        }
+      background: lighten(@blue4, 10%);
+      border-color: @blue4;
+      input {
+        font-size: 1em;
       }
     }
     .save a {
@@ -91,6 +140,10 @@
   margin: 0 -4px;
   //box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   border-radius: 0 0 4px 4px;
+  /* hack */
+  .body {
+    min-height: ~"calc(100vh - " 162px ~");";
+  }
 }
 @bar-height: 32px;
 .bar {
@@ -128,10 +181,11 @@
 .body {
   position: relative;
   min-height: 600px;
-  & > .search {
+  & > .mini-tree {
     position: absolute;
     top: 0;
     left: 0;
+    padding-right: 5px;
     overflow: hidden;
     width: @search-width;
     transition: max-height 1s ease;

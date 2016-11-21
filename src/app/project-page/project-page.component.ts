@@ -42,6 +42,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy {
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('job', data.job);
       this.job = data.job;
+
       //this.jobService.init(user, shortname).subscribe(elements => {
 
       //  console.log('elements', elements);
