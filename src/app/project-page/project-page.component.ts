@@ -2,7 +2,11 @@ import {
   Component,
   OnInit,
   OnDestroy,
-  Inject
+  Inject,
+  AfterViewInit,
+  ElementRef,
+  OnChanges, // used with input
+  ViewChild
 } from '@angular/core';
 
 import {
@@ -29,50 +33,34 @@ import { UserService }        from '../user.service';
     JobService
   ] // need to modularize jobservice
 })
-export class ProjectPageComponent implements OnInit, OnDestroy {
+export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit {
   private sub: any;
   job: Job;
   elements: TreeElement[] = [];
   tree: TreeElement[] = [];
   lastSave: any;
 
-  constructor(private elementService: ElementService, private userService: UserService, private jobService: JobService, private route: ActivatedRoute, private location: Location) { }
+  constructor(
+    private elementService: ElementService,
+    private userService: UserService,
+    private jobService: JobService,
+    private route: ActivatedRoute,
+    private location: Location,
+    private htmlElement
+  ) { }
 
   ngOnInit() {
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('job', data.job);
       this.job = data.job;
-
-      //this.jobService.init(user, shortname).subscribe(elements => {
-
-      //  console.log('elements', elements);
-      //  this.elements = elements;
-
-      //  this.job = this.jobService.job;
-      //  this.readCommit(this.job.commit).then((res)=>{
-      //    this.lastSave = res;
-      //  });
-
-      //}, (err)=>{
-
-      //  console.log('job service init error');
-      //  console.error(err);
-
-      //}, () => {
-
-      //});
     });
   }
 
-  readCommit(commit: string) {
-    return this.elementService.loadAs('commit', commit).then((res)=>{
-      console.log(res);
-      return res;
-    });
+  ngAfterViewInit() {
+    this.htmlElement = this.element.nativeElement;
   }
 
   ngOnDestroy() {
     this.sub.unsubscribe();
   }
-
 }
