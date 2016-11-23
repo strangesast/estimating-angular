@@ -16,6 +16,7 @@ import { ElementService } from './element.service';
 import { UserService } from './user.service';
 
 //import { hierarchy, tree, treemap } from 'd3-hierarchy';
+import * as D3 from 'd3';
 
 let DATA = [
   {
@@ -56,10 +57,19 @@ export class JobService {
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
 
-  public data = DATA;
+  public data: BehaviorSubject<any[]> = new BehaviorSubject(DATA);
 
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
-    console.log('job service created');
+    setTimeout(()=>{
+      setInterval(()=>{
+        let data = this.data.getValue();
+        data.reverse();
+        let id =  Math.floor(Math.random()*100000);
+        data.push({level: Math.floor(Math.random()*4), value: 'new toast '+ id, id:id});
+        data = D3.shuffle(data).slice(0, 8);
+        this.data.next(data);
+      }, 5000);
+    }, 1000);
   }
 
   resolve(route: ActivatedRouteSnapshot): Promise<Job>|boolean {
@@ -74,9 +84,7 @@ export class JobService {
           this.router.navigate(['/jobs']); // should be 404
           return false;
         }
-        console.log('sending job...', job);
         this._job.next(job);
-        console.log('just set to:', this._job.getValue());
         return job;
       });
     });
