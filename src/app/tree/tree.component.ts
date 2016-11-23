@@ -45,13 +45,10 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       .attr('tabindex', 1)
       .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
       .style('margin-left', (el)=>el.level * 20 + 'px')
-      .style('width', (el)=>'calc(100% - ' + el.level * 20 + 'px)')
+      .style('width', (el)=>'calc(100% - ' + (el.level * 20) + 'px)')
       .style('z-index', (el, i)=>i)
       .style('opacity', 1)
       .text((d:any)=>d.value)
-
-    //update(this.elements);
-
   }
 
   update(arr:any[]) {
@@ -69,7 +66,7 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
 
     text.style('opacity', 1)
       .style('margin-left', (el)=>el.level * 20 + 'px')
-      .style('width', (el)=>'calc(100% - ' + el.level * 20 + 'px)')
+      .style('width', (el)=>'calc(100% - ' + (el.level * 20) + 'px)')
       .style('z-index', (el, i)=>i)
       .transition(t)
       .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
@@ -78,7 +75,7 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       .attr('tabindex', 1)
       .style('transform', (el, i)=>'translate(-100%, ' + (i*40) + 'px)')
       .style('margin-left', (el)=>el.level * 20 + 'px')
-      .style('width', (el)=>'calc(100% - ' + el.level * 20 + 'px)')
+      .style('width', (el)=>'calc(100% - ' + (el.level * 20) + 'px)')
       .style('opacity', 0)
       .style('z-index', (el, i)=>i)
       .text((d:any)=>d.value)

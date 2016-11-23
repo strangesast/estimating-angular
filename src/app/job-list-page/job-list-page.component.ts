@@ -28,6 +28,14 @@ export class JobListPageComponent implements OnInit {
   }
 
   createNewJob():void {
+    // createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Job> {
+    let owner = new User('Sam Zagrobelny', 'sazagrobelny', 'Samuel.Zagrobelny@dayautomation.com');
+    let shortname = 'test_job_' + Math.floor(Math.random()*10);
+    let name = shortname.split('_').map((n)=>n[0].toUpperCase()+n.slice(1)).join(' ');
+    this.elementService.createJob(owner, shortname, name, 'blank description').then(job => {
+      console.log('created new job', job);
+      this.jobs.push(job);
+    });
   }
 
 }

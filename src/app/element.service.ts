@@ -37,7 +37,8 @@ const USER_COLLECTION = 'users';
 const stores = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
                                                        { on: 'email',     name: 'email',     unique: true  }] },
-  { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true }] },
+  { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
+                                                       { on: 'job',       name: 'job',       unique: false }] },
   { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false },
                                                        { on: 'job',       name: 'job',       unique: false }] },
   { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
@@ -368,6 +369,38 @@ export class ElementService {
     });
   }
 
+  getAllOfJob(jobid):Promise<any> {
+    let db = this.db;
+    let stores = ['components', 'folders', 'locations'];
+    return Promise.all(stores.map((store)=>{
+      return new Promise((resolve, reject)=> {
+        let r = IDBKeyRange.only(jobid);
+        let req = db.transaction([store], 'readonly')
+          .objectStore(store)
+          .index('job')
+          .openCursor(r);
+        let res = [];
+        req.onsuccess = (e:any) => {
+          let cursor = e.target.result;
+          if(cursor) {
+            res.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(res);
+          }
+        }
+        req.onerror = (e:any) => reject(e.target.error);
+      });
+    })).then((arr:any)=>{
+      arr[0] = arr[0].map(Component.create);
+      arr[1] = arr[1].map(Folder.create);
+      arr[2] = arr[2].map(Location.create);
+      let ob = {};
+      stores.forEach((s, i)=>ob[s] = arr[i]);
+      return ob;
+    });
+  }
+
   allLocations(jobId:string) {
     return new Promise((resolve, reject) => {
       let storeName = 'locations';
@@ -394,6 +427,7 @@ export class ElementService {
   }
 
   retrieveFolder(id: string): Promise<Folder|null> {
+    console.log('here 1');
     return this.retrieveRecordFrom('folders', id).then((res)=>{
       if(res != null) {
         return Folder.create(res);
@@ -403,6 +437,7 @@ export class ElementService {
   }
 
   retrieveComponent(id: string): Promise<Component|null> {
+    console.log('here 2');
     return this.retrieveRecordFrom('components', id).then((res)=>{
       if(res != null) {
         return Component.create(res);
@@ -412,6 +447,7 @@ export class ElementService {
   }
 
   retrieveUser(username: string): Promise<User|null> {
+    console.log('here 3');
     return this.retrieveRecordFrom('users', username).then(res => {
       if(res != null) {
         return User.create(res);
@@ -440,10 +476,12 @@ export class ElementService {
   }
 
   retrieveLocation(id: string) {
+    console.log('here 4');
     return this.retrieveRecordFrom('locations', id);
   }
 
   retrieveRecordFrom(storeName: string, id: string) {
+    console.log('here 5');
     return this.retrieveRecord(this.db, storeName, id);
   }
 
@@ -491,10 +529,10 @@ export class ElementService {
         let createStore = (name, keypath, indexes) => {
           return new Promise((resolve, reject) => {
             let store = db.createObjectStore(name, { keyPath: keypath });
-            store.transaction.oncomplete = resolve;
             indexes.forEach((index)=> {
               store.createIndex(index.name, index.on, { unique: index.unique, multiEntry: !!index.multiEntry });
             });
+            resolve(store);
           });
         }
 
@@ -631,8 +669,8 @@ export class ElementService {
 
       return this.updateRef(ref, commit).then(()=>{
         job.commit = commit;
-        return Promise.all([this.updateRecord(job), folders.map((folder)=>this.updateRecord(folder))]).then((ids)=>{
-
+        return Promise.all([this.updateRecord(job), Promise.all(folders.map((folder)=>this.updateRecord(folder)))]).then((ids)=>{
+          let newids = ids.slice(0, 1).concat(ids[1]);
           return {job: job, folders: folders};
         });
       });

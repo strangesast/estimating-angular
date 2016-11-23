@@ -1,20 +1,19 @@
 <div class="navigation-controls">
-  <div class="navigation-bar spacer">
-    <input id="phase-enabled" type="checkbox">
-    <label class="tab min" for="phase-enabled">
-      <span class="fa fa-bookmark-o fa-lg"></span>
-      <span>Phase</span>
-    </label>
-    <input id="building-enabled" type="checkbox">
-    <label class="tab min" for="building-enabled">
-      <span class="fa fa-building-o fa-lg"></span>
-      <span>Building</span>
-    </label>
-    <input id="component-enabled" type="checkbox">
-    <label class="tab min" for="component-enabled">
-      <span class="fa fa-cubes fa-lg"></span>
-      <span>Component</span>
-    </label>
+  <div *ngIf="job" class="navigation-bar spacer">
+    <div *ngFor="let type of job.folders.types">
+      <input [attr.id]="type + '-enabled'" type="checkbox">
+      <label class="tab min" [attr.for]="type + '-enabled'">
+        <span [ngClass]="FOLDER_ICONS[type]"></span>
+        <span>{{ type[0].toUpperCase() + type.slice(1) }}</span>
+      </label>
+    </div>
+    <div>
+      <input id="component-enabled" type="checkbox">
+      <label class="tab min" for="component-enabled">
+        <span class="fa fa-cubes fa-lg"></span>
+        <span>Component</span>
+      </label>
+    </div>
     <span class="spacer"></span>
     <div class="dropdown">
       <label class="tab min">

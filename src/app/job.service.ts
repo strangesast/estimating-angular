@@ -15,7 +15,7 @@ import { Component, Folder, User, Job, TreeElement } from './classes';
 import { ElementService } from './element.service';
 import { UserService } from './user.service';
 
-//import { hierarchy, tree, treemap } from 'd3-hierarchy';
+import { hierarchy, tree, treemap } from 'd3-hierarchy';
 import * as D3 from 'd3';
 
 let DATA = [
@@ -57,7 +57,7 @@ export class JobService {
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
 
-  public data: BehaviorSubject<any[]> = new BehaviorSubject(DATA);
+  public data: BehaviorSubject<any[]> = new BehaviorSubject([]);
 
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
     setTimeout(()=>{
@@ -77,7 +77,7 @@ export class JobService {
     let shortname = route.params['shortname'];
 
     return this.userService.userFromUsername(username).then(user => {
-      if(!user) this.router.navigate(['/jobs']); // should be 404
+      if(!user) return this.router.navigate(['/jobs']); // should be 404
 
       return this.elementService.getJob(user.username, shortname).then((job:Job|null) => {
         if(!job) {
@@ -86,7 +86,46 @@ export class JobService {
         }
         this._job.next(job);
         return job;
+      }).catch(err => {
+        // get job error
+
       });
+    }).catch(err => {
+      // get user error
+
+    });
+  }
+
+  resolveChildren(rootid, folders): any[] {
+    let root = folders.find(f=>f.id==rootid);
+    if(root == null) throw new Error('root not found');
+    if(root.children) {
+      root.children = root.children.map(id=>this.resolveChildren(id, folders));
+    }
+    return root;
+  }
+
+  getJobElements(job: Job): void {
+    this.elementService.getAllOfJob(job.id).then((els:any) => {
+      let resolved = {};
+      job.folders.types.forEach((t, i)=>{
+        let folders = els.folders.filter(f=>f['type']==t);
+        let root = folders.find(f=>f.id==job.folders.roots[i]);
+        if(root == null) throw new Error('root not found in folders');
+        if(folders.map((f)=>f.id).indexOf(root.id) == -1) throw new Error('missing root folder "'+root+'" in db');
+        root.children = root.children.map(id=>this.resolveChildren(id, folders))
+        resolved[t] = root;
+      });
+      console.log(resolved['phase'])
+
+      let enabled = ['phase', 'building', 'component'];
+      let tree = D3.hierarchy(resolved['phase'], (el) => {
+        let i = enabled.indexOf(el['type']);
+        if(i<enabled.length-1) return [resolved[enabled[i+1]]].concat(el.children);
+        return el.children;
+      });
+      console.log('tree', tree);
+      console.log('descendants', tree.descendants());
     });
   }
 

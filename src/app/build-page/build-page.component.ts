@@ -16,27 +16,39 @@ import { Job } from '../classes';
   providers: [TreeComponent]
 })
 export class BuildPageComponent implements OnInit, OnDestroy {
-  private sub: Subscription;
+  private jobSub: Subscription;
+  private elSub: Subscription;
   private elements: any[] = [];
+  private job: Job;
+
+  private FOLDER_ICONS = {
+    phase: 'fa fa-bookmark-o fa-lg',
+    building: 'fa fa-building-o fa-lg',
+    component: 'fa fa-cubes fa-lg'
+  };
 
   private data;
 
   constructor(
-    private jobService: JobService
+    private jobService: JobService,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit() {
+    this.jobSub = this.route.parent.data.subscribe((data:any) => {
+      let job = data.job;
+      this.jobService.getJobElements(job);
+      this.job = job;
+    });
     this.jobService.data.subscribe(data => {
       this.data = data;
     });
+  }
 
-
-    this.sub = this.jobService.job.subscribe(job => {
-      console.log('child job', job);
-    });
+  buildTree() {
   }
 
   ngOnDestroy() {
-    this.sub.unsubscribe();
+    this.jobSub.unsubscribe();
   }
 }
