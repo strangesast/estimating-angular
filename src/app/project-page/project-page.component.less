@@ -38,19 +38,19 @@ ul.tree {
   list-style-type: none;
   padding-left: 0;
   margin: 10px 0 0 0;
-  li {
-    min-height: 40px;
-    .generate-levels(10);
-    .generate-levels(@n, @i: 0) when(@i =< @n) {
-      &[level='@{i}'] {
-        margin-left: @i * 20px;
-      }
-      &[level='@{i}'] + &[level='@{i}']:before {
-        content: 'toast';
-        
-      }
-      .generate-levels(@n, (@i + 1));
-    }
+  position: relative;
+  & /deep/ li {
+    height: 40px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: lighten(@blue2, 10%);
+    width: 100%;
+    border: 1px solid @blue2;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    z-index: 9;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
     &:hover {
       font-weight: bold;
       cursor: pointer;
