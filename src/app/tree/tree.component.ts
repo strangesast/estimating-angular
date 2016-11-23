@@ -1,47 +1,50 @@
 import {
+  Input,
   Component,
   OnInit,
+  OnDestroy,
+  AfterViewInit,
+  OnChanges, // used with input
+  ElementRef,
+  ViewChild,
   trigger,
   state,
   animate,
-  transition,
-  style } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
-import { SortablejsOptions } from 'angular-sortablejs';
+  style,
+  transition
+} from '@angular/core';
 
-import { Element } from '../element';
-import { Phase as PhaseElement } from '../phase';// as PhaseElement;
-import { Component as ComponentElement } from '../component';// as ComponentElement;
-
-import { TreeBuilderService } from '../tree-builder.service';
+import * as D3 from 'd3';
 
 @Component({
   selector: 'app-tree',
-  animations: [
-    trigger('offset', [])
-  ],
+  animations: [],
   templateUrl: './tree.component.html',
   styleUrls: ['./tree.component.less']
 })
-export class TreeComponent implements OnInit {
-  elements: Element[] = [];
+export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
+  private host;
+  private htmlElement: HTMLElement;
+  @Input() elements: any[];
 
-  options: SortablejsOptions = {
-    group: {
-      name: 'elements', pull: true, put: true
-    },
-    draggable: '.tree-element',
-    ghostClass: 'ghost',
-    chosenClass: 'dragged',
-    animation: 150
+  constructor(
+    private element: ElementRef
+  ) { }
+
+  ngOnInit(): void {
+  };
+
+  ngAfterViewInit() {
+    this.htmlElement = this.element.nativeElement;
+    this.host = D3.select(this.htmlElement)
+    this.host.html('');
+
+    console.log(this.htmlElement);
   }
 
-  constructor(private route: ActivatedRoute, private treeBuilderService: TreeBuilderService) { }
+  ngOnDestroy(): void {
+  };
 
-  ngOnInit() {
-    let subject = this.treeBuilderService.buildTree();
-    subject.subscribe(res => {
-      this.elements = res;
-    });
+  ngOnChanges() {
   };
 }

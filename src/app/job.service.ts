@@ -8,7 +8,7 @@ import {
   RouterStateSnapshot
 } from '@angular/router';
 
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Subject, Observable, BehaviorSubject } from 'rxjs';
 
 import { Component, Folder, User, Job, TreeElement } from './classes';
 
@@ -20,6 +20,8 @@ import { UserService } from './user.service';
 
 @Injectable()
 export class JobService {
+  private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
+  public job: Observable<Job> = this._job.asObservable();
 
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public tree: BehaviorSubject<TreeElement[]> = new BehaviorSubject([]);
@@ -27,7 +29,9 @@ export class JobService {
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
 
-  constructor(private elementService: ElementService, private userService: UserService, private router: Router) { }
+  constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
+    console.log('job service created');
+  }
 
   resolve(route: ActivatedRouteSnapshot): Promise<Job>|boolean {
     let username = route.params['username'];
@@ -36,12 +40,14 @@ export class JobService {
     return this.userService.userFromUsername(username).then(user => {
       if(!user) this.router.navigate(['/jobs']); // should be 404
 
-      return this.elementService.getJob(user.username, shortname).then(job => {
+      return this.elementService.getJob(user.username, shortname).then((job:Job|null) => {
         if(!job) {
           this.router.navigate(['/jobs']); // should be 404
           return false;
         }
-
+        console.log('sending job...', job);
+        this._job.next(job);
+        console.log('just set to:', this._job.getValue());
         return job;
       });
     });

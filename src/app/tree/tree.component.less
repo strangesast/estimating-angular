@@ -2,27 +2,17 @@
 
 @tree-element-height: 40px;
 
-.tree-element {
+:host /deep/ li {
+  list-style-type: none;
   padding: 0 10px;
   height: @tree-element-height;
-  span, a {
-    line-height: @tree-element-height;
-    &:not(:first-child) {
-      margin-left: 8px;
-    }
-  }
+  line-height: @tree-element-height;
   display: flex;
   flex-direction: row;
-}
-
-.ghost {
-  background: green;
-}
-
-.dragged {
-  background: red;
-}
-
-.dragging {
-  background: blue;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  background: lighten(@blue2, 10%);
+  border: 1px solid @blue2;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  z-index: 9;
 }

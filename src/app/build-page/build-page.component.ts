@@ -1,81 +1,35 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Input, Component, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
-import { TreeElement } from '../classes';
+
+import { Subscription } from 'rxjs';
+
+import { TreeComponent } from '../tree/tree.component';
+
 import { JobService } from '../job.service';
-
-import { SortablejsOptions } from 'angular-sortablejs';
+import { Job } from '../classes';
 
 @Component({
   selector: 'app-build-page',
   templateUrl: './build-page.component.html',
-  styleUrls: ['./build-page.component.less', '../app.component.less']
+  styleUrls: ['./build-page.component.less', '../app.component.less'],
+  providers: [TreeComponent]
 })
 export class BuildPageComponent implements OnInit, OnDestroy {
-  tree: TreeElement[];
-  visible: any;
+  private sub: Subscription;
+  private elements: any[] = [];
 
-  sub: any;
-
-  constructor(private jobService: JobService) { }
+  constructor(
+    private jobService: JobService
+  ) { }
 
   ngOnInit() {
-    this.sub = this.jobService.tree.asObservable().subscribe(tree => {
-      this.tree = tree;
+    this.sub = this.jobService.job.subscribe(job => {
+      console.log('child job', job);
     });
   }
 
   ngOnDestroy() {
     this.sub.unsubscribe();
-  }
-
-  setVisible(folderType:string, enabled:boolean) {
-    let visible = this.jobService.visibleFolders.getValue();
-    console.log(visible);
-  }
-
-  options: SortablejsOptions = {
-    group: {
-      name: 'elements', pull: true, put: true
-    },
-    draggable: '.tree-element',
-    ghostClass: 'ghost',
-    chosenClass: 'dragged',
-    animation: 150,
-    onStart: (evt) =>{
-      console.log('tree start');
-    },
-    onEnd: (evt) =>{
-      console.log('tree end');
-    },
-    onAdd: (evt) =>{
-      console.log('tree add');
-    },
-    onUpdate: (evt) =>{
-      console.log('tree update');
-    },
-    onSort: (evt) =>{
-      console.log('tree sort');
-    },
-    onRemove: (evt) =>{
-      console.log('tree remove');
-    },
-    onFilter: (evt) =>{
-      console.log('tree filter');
-    },
-    onMove: (evt) =>{
-      // placement checking here
-      //return evt.related.className.indexOf('tree-element') !== -1;
-      return false;
-    }
-    //store: {
-    //  get: (sortable):any[] => {
-    //    console.log('get');
-    //    return [];
-    //  },
-    //  set: (sortable):any[] => {
-    //    console.log('set');
-    //    return [];
-    //  }
-    //}
   }
 }

@@ -36,13 +36,5 @@
   </div>
 </div>
 <div class="main">
-  <div class="tree" [sortablejs]="tree" [sortablejsOptions]="options">
-    <div [attr.level]="element.level" tabindex=1 *ngFor="let element of tree" class="tree-element">
-      <span class="fa" [class]="element.reftype == 'phase' ? 'fa fa-bookmark-o' : element.reftype == 'building' ? 'fa fa-building-o' : 'fa fa-cubes'"></span>
-      <a routerLink="../edit/{{element.getURL()}}" class="hoverunderline">{{ element.ref.name }}</a>
-      <span class="spacer"></span>
-      <span>({{ element.refid }} - {{ element.reftype }})</span>
-      <!--<app-tree-element *ngFor="let element of tree" [element]='element' class="tree-element"></app-tree-element>-->
-    </div>
-  </div>
+  <app-tree [elements]="elements"></app-tree>
 </div>

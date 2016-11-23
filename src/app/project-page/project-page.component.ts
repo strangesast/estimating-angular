@@ -57,14 +57,12 @@ let DATA = [
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
-  styleUrls: ['./project-page.component.less', '../app.component.less'],
-  providers: [
-    JobService
-  ] // need to modularize jobservice
+  styleUrls: ['./project-page.component.less', '../app.component.less']
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit {
   private sub: any;
   job: Job;
+  private data: any[] = DATA;
 
 
   private htmlElement: HTMLElement;
@@ -76,7 +74,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit {
     private jobService: JobService,
     private route: ActivatedRoute,
     private element: ElementRef
-  ) { }
+  ) {
+    console.log('project page created');
+  }
 
   ngOnInit() {
     this.sub = this.route.data.subscribe((data:any) => {
@@ -122,15 +122,15 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit {
         .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
     };
 
-    update(DATA);
+    update(this.data);
 
     setTimeout(()=>{
       setInterval(()=>{
-        DATA.reverse();
+        this.data.reverse();
         let id =  Math.floor(Math.random()*100000);
-        DATA.push({level: Math.floor(Math.random()*4), value: 'new toast '+ id, id:id});
-        DATA = D3.shuffle(DATA).slice(0, 8)
-        update(DATA);
+        this.data.push({level: Math.floor(Math.random()*4), value: 'new toast '+ id, id:id});
+        this.data = D3.shuffle(this.data).slice(0, 8)
+        update(this.data);
       }, 5000);
     }, 1000);
   }
