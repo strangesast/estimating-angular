@@ -19,11 +19,14 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private sub: Subscription;
   private elements: any[] = [];
 
+  private data;
+
   constructor(
     private jobService: JobService
   ) { }
 
   ngOnInit() {
+    this.data = this.jobService.data;
     this.sub = this.jobService.job.subscribe(job => {
       console.log('child job', job);
     });

@@ -3,38 +3,6 @@
 
 @tree-element-height: 40px;
 
-.tree {
-  margin-left: 10px;
-}
-.tree-element {
-  padding: 0 10px;
-  height: @tree-element-height;
-  span, a {
-    line-height: @tree-element-height;
-    &:not(:first-child) {
-      margin-left: 8px;
-    }
-  }
-  display: flex;
-  flex-direction: row;
-  .generate-levels(10);
-  .generate-levels(@n, @i: 0) when(@i =< @n) {
-    &[level='@{i}'] {
-      margin-left: @i * 20px;
-    }
-    .generate-levels(@n, (@i + 1));
-  }
-
-}
-
-.ghost {
-  background: green;
-}
-
-.dragged {
-  background: red;
-}
-
-.dragging {
-  background: blue;
+.main {
+  padding-top: 10px;
 }

@@ -26,34 +26,6 @@ import { UserService }        from '../user.service';
 
 import * as D3 from 'd3';
 
-let DATA = [
-  {
-    value: 'One',
-    level: 0,
-    id: 0
-  },
-  {
-    value: 'Two',
-    level: 1,
-    id: 1
-  },
-  {
-    value: 'Three',
-    level: 2,
-    id: 2
-  },
-  {
-    value: 'One',
-    level: 0,
-    id: 3
-  },
-  {
-    value: 'Two',
-    level: 1,
-    id: 4
-  }
-];
-
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
@@ -62,7 +34,7 @@ let DATA = [
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit {
   private sub: any;
   job: Job;
-  private data: any[] = DATA;
+  private data: any[];
 
 
   private htmlElement: HTMLElement;
@@ -74,11 +46,10 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit {
     private jobService: JobService,
     private route: ActivatedRoute,
     private element: ElementRef
-  ) {
-    console.log('project page created');
-  }
+  ) { }
 
   ngOnInit() {
+    this.data = this.jobService.data;
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('job', data.job);
       this.job = data.job;

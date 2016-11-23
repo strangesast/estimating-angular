@@ -17,6 +17,33 @@ import { UserService } from './user.service';
 
 //import { hierarchy, tree, treemap } from 'd3-hierarchy';
 
+let DATA = [
+  {
+    value: 'One',
+    level: 0,
+    id: 0
+  },
+  {
+    value: 'Two',
+    level: 1,
+    id: 1
+  },
+  {
+    value: 'Three',
+    level: 2,
+    id: 2
+  },
+  {
+    value: 'One',
+    level: 0,
+    id: 3
+  },
+  {
+    value: 'Two',
+    level: 1,
+    id: 4
+  }
+];
 
 @Injectable()
 export class JobService {
@@ -28,6 +55,8 @@ export class JobService {
 
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
+
+  public data = DATA;
 
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
     console.log('job service created');

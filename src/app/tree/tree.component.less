@@ -2,17 +2,32 @@
 
 @tree-element-height: 40px;
 
-:host /deep/ li {
-  list-style-type: none;
-  padding: 0 10px;
-  height: @tree-element-height;
-  line-height: @tree-element-height;
-  display: flex;
-  flex-direction: row;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-  background: lighten(@blue2, 10%);
-  border: 1px solid @blue2;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  z-index: 9;
+:host .tree {
+  position: relative;
+}
+
+:host {
+  & .tree {
+    & /deep/ li {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      list-style-type: none;
+      padding: 0 10px;
+      height: @tree-element-height;
+      line-height: @tree-element-height;
+      display: flex;
+      flex-direction: row;
+      z-index: 9;
+    }
+  }
+
+  &:not(.noshadow) .tree /deep/ li {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    background: lighten(@blue2, 10%);
+    border: 1px solid @blue2;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+  }
 }
