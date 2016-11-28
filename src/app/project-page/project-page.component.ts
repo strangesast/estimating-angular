@@ -32,7 +32,7 @@ import { UserService }        from '../user.service';
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private sub: any;
   job: Job;
-  private data: any[];
+  //private data: any[];
 
 
   private htmlElement: HTMLElement;
@@ -47,9 +47,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ) { }
 
   ngOnInit() {
-    this.jobService.data.subscribe(data => {
-      this.data = data;
-    });
+    //this.jobService.data.subscribe(data => {
+    //  this.data = data;
+    //});
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('job', data.job);
       this.job = data.job;

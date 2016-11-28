@@ -18,7 +18,9 @@ import { Job } from '../classes';
 export class BuildPageComponent implements OnInit, OnDestroy {
   private jobSub: Subscription;
   private elSub: Subscription;
-  private elements: any[] = [];
+
+  private config: any = {};
+
   private job: Job;
 
   private FOLDER_ICONS = {
@@ -27,7 +29,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     component: 'fa fa-cubes fa-lg'
   };
 
-  private data;
 
   constructor(
     private jobService: JobService,
@@ -37,12 +38,26 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.jobSub = this.route.parent.data.subscribe((data:any) => {
       let job = data.job;
-      this.jobService.getJobElements(job);
+      this.jobService.getJobElements(job).then(els=>{
+        let enabled = ['phase', 'building', 'component'];
+        // order
+        //      folder hierarchies
+        //              nested stuff
+        this.config = {
+          enabled: enabled,
+          folders: els[0],
+          components: els[1]
+        };
+        //this.folders = both[0].descendants();
+
+        //this.components = both[1];
+      });
       this.job = job;
     });
-    this.jobService.data.subscribe(data => {
-      this.data = data;
-    });
+    //this.jobService.folders.subscribe(folders => {
+    //  console.log('folders...', folders);
+    //  this.folders = folders;
+    //});
   }
 
   buildTree() {

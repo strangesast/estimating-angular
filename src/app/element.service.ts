@@ -476,7 +476,6 @@ export class ElementService {
   }
 
   retrieveLocation(id: string) {
-    console.log('here 4');
     return this.retrieveRecordFrom('locations', id);
   }
 
@@ -616,7 +615,18 @@ export class ElementService {
     let job = new Job(id, name, description, owner, shortname, folders);
 
     return this.saveNewJob(job).then((res)=>{
-      return res.job;
+      let id = random();
+      let component = new Component(
+        id,
+        'blank component',
+        'description',
+        res.job.id,
+        []
+      )
+      return this.addComponent(component, res.job, {}).then((res2)=>{
+        console.log(res2);
+        return res.job;
+      });
     });
   }
 

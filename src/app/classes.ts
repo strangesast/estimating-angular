@@ -59,14 +59,15 @@ export class Child {
   constructor(
     public id: string,
     public qty: number,
-    public _id?: string
+    public _id?: string,
+    public data?: any
   ) { }
   toJSON() {
     let copy = Object.assign({}, this);
     return copy;
   }
   static create(obj) {
-    return new Child(obj.id, obj.qty, obj._id);
+    return new Child(obj.id, obj.qty, obj._id, obj.data);
   }
 }
 
