@@ -25,7 +25,7 @@ nav .container {
 }
 
 nav {
-  border-bottom: 1px solid @blue3;
+  border-bottom: 1px solid lighten(@blue2, 10%);
   background: @blue2;
   color: @blue4;
 }
@@ -37,7 +37,7 @@ nav {
 .navigation-controls {
   display:flex;
   flex-direction:row;
-  margin-left: @gutter;
+  //margin-left: @gutter;
   @media(max-width:@lrg) {
     margin-left: @search-width;
   }
@@ -84,39 +84,40 @@ nav {
   flex-direction: row;
   height: @navigation-height;
   line-height: @navigation-height;
+  &:not(:first-child) {
+    flex-shrink: 1;
+  }
   input:checked + label {
     background: @blue4;
     color: @blue1;
   }
-  label, a {
+}
+
+.navigation-bar > div {
+  & > label, & > a, & > span {
     display: inline-block;
     padding: 0 8px;
     color: @blue4;
+    .noselect;
+    .hoverlight;
+    white-space: nowrap;
     &.active {
       background: @blue4;
       color: @blue1;
     }
-  }
-  &:not(:first-child) {
-    flex-shrink: 1;
-  }
-}
-
-label, a {
-  .noselect;
-  white-space: nowrap;
-  &.min {
-    @media(max-width: @lrg) {
-      & > span:not(:first-child) {
-        display: none;
+    &.min {
+      @media(max-width: @lrg) {
+        & > span:not(:first-child) {
+          display: none;
+        }
       }
     }
-  }
-  &.tab {
-    max-width: 200px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    &.tab {
+      max-width: 200px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
   }
 }
 
@@ -133,18 +134,21 @@ label, a {
     line-height: @navigation-height;
   }
   .dropdown-body {
-    z-index: 20;
-    position: absolute;
-    min-width: 100px;
-    top: 0; // or 100%;
-    right: 0;
     display: none; //flex;
     flex-direction: column;
     align-items: flex-end;
+    position: absolute;
+    top: 0; // or 100%;
+    right: 0;
+    min-width: 100%;
+
+    overflow: hidden;
     background: lighten(@blue2, 5%);
     border: 1px solid darken(@blue2, 10%);
+    transition: max-height 1s ease, max-width 1s ease;
     & > * {
       height: @navigation-height;
+      min-width:100%;
       text-align: right;
       background: inherit;
       & > * {
@@ -153,6 +157,7 @@ label, a {
       }
       .hoverlight;
     }
+    z-index: 20;
 
   }
   &.bottom > .dropdown-body {
@@ -161,6 +166,8 @@ label, a {
   &:hover {
     .dropdown-body {
       display: flex;
+      max-height: 300px;
+      max-width: 300px;
       box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
     }
   }

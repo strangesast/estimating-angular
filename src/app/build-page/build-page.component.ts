@@ -37,22 +37,10 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.jobSub = this.route.parent.data.subscribe((data:any) => {
-      let job = data.job;
-      this.jobService.getJobElements(job).then(els=>{
-        let enabled = ['phase', 'building', 'component'];
-        // order
-        //      folder hierarchies
-        //              nested stuff
-        this.config = {
-          enabled: enabled,
-          folders: els[0],
-          components: els[1]
-        };
-        //this.folders = both[0].descendants();
-
-        //this.components = both[1];
-      });
+      let job = data.jobService.job;
+      let config = data.jobService.treeConfig;
       this.job = job;
+      this.config = config;
     });
     //this.jobService.folders.subscribe(folders => {
     //  console.log('folders...', folders);

@@ -28,15 +28,15 @@ const routes: Routes = [
   {
     path: 'jobs/:username',
     resolve: {
-      elements: ElementService
+      elementService: ElementService
     },
     children: [
       {
         path: ':shortname',
         component: ProjectPageComponent,
         resolve: {
-          job: JobService,
-          users: UserService
+          jobService: JobService,
+          userService: UserService
         },
         children: [
           {

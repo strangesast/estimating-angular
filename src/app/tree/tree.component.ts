@@ -41,6 +41,7 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     this.host = D3.select(this.htmlElement);
     this.host.html('');
     console.log('config', this.config);
+    this.update(this.config);
 
     /*
 
@@ -83,7 +84,7 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
         b['parent'] = a;
         data.push(b);
         let c = res[a.data.id][b.data.id].map((e,k)=>{
-          let node = D3.hierarchy(e.data, x=>x.data.children);
+          let node:any = D3.hierarchy(e.data, x=>x.data.children);
           node['depth'] = cd + j + k + 2;
           node['parent'] = b;
           return node;

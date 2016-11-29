@@ -51,8 +51,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     //  this.data = data;
     //});
     this.sub = this.route.data.subscribe((data:any) => {
-      console.log('job', data.job);
-      this.job = data.job;
+      this.job = data.jobService.job;
     });
   }
 

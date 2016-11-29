@@ -100,7 +100,12 @@ export class ElementService {
       return Promise.all([
         this.initObjectStore(),
         this.createGitRepo()
-      ]);
+      ]).then(both => {
+        return {
+          store: both[0],
+          repo: both[1]
+        };
+      });
     } else {
       return Promise.resolve();
     }

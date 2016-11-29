@@ -28,34 +28,6 @@ class TreeNode {
   parent: TreeNode|null;
 }
 
-let DATA = [
-  {
-    value: 'One',
-    depth: 0,
-    id: 0
-  },
-  {
-    value: 'Two',
-    depth: 1,
-    id: 1
-  },
-  {
-    value: 'Three',
-    depth: 2,
-    id: 2
-  },
-  {
-    value: 'One',
-    depth: 0,
-    id: 3
-  },
-  {
-    value: 'Two',
-    depth: 1,
-    id: 4
-  }
-];
-
 @Injectable()
 export class JobService {
   private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
@@ -83,20 +55,42 @@ export class JobService {
     //}, 1000);
   }
 
-  resolve(route: ActivatedRouteSnapshot): Promise<Job>|boolean {
+  resolve(route: ActivatedRouteSnapshot): Promise<any> {
     let username = route.params['username'];
     let shortname = route.params['shortname'];
 
     return this.userService.userFromUsername(username).then(user => {
-      if(!user) return this.router.navigate(['/jobs']); // should be 404
+      //if(!user) {
+      //  this.router.navigate(['/jobs']); // should be 404
+      //  return false;
+      //}
 
-      return this.elementService.getJob(user.username, shortname).then((job:Job|null) => {
-        if(!job) {
-          this.router.navigate(['/jobs']); // should be 404
-          return false;
-        }
-        this._job.next(job);
-        return job;
+      return this.elementService.getJob(user.username, shortname).then((job:Job) => {
+        //if(!job) {
+        //  this.router.navigate(['/jobs']); // should be 404
+        //  return false;
+        //}
+
+        return this.getJobElements(job).then((els)=>{
+          let enabled = ['phase', 'building', 'component'];
+          // order
+          //      folder hierarchies
+          //              nested stuff
+          let config = {
+            enabled: enabled,
+            folders: els[0],
+            components: els[1]
+          };
+          //this.folders = both[0].descendants();
+
+          //this.components = both[1];
+          this._job.next(job);
+          return {
+            job: job,
+            treeConfig: config
+          };
+        });
+
       }).catch(err => {
         // get job error
 

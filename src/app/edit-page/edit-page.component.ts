@@ -28,21 +28,8 @@ export class EditPageComponent implements OnInit {
   ) { }
 
   ngOnInit():void{
-    this.sub = this.route.params.subscribe((params: Params) => {
-      let kind = params['kind'];
-      let id = params['id'];
-      //this.elementEditService.loadElement(kind, id).then((res)=>{
-      //  this.activeElement = res;
-
-      //  this.elementsSub = this.elementsSub || this.elementEditService.elements.subscribe(els=>{
-      //    this.elements = els;
-      //  });
-      //  this.activeSub = this.activeSub || this.elementEditService.activeElement.subscribe(el=>{
-      //    this.activeElement = el;
-      //    let arr = el == null ? ['edit'] : ['edit', el.type || 'component', el.id];
-      //    this.router.navigate(arr, {relativeTo: this.route.parent});
-      //  });
-      //});
+    this.sub = this.route.data.subscribe((data:any) => {
+      console.log('data', data);
     });
   }
 

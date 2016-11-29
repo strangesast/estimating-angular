@@ -4,7 +4,9 @@
   max-width: 500px;
   margin: 0 auto;
   margin-top: 10vh;
-  background: @blue1;
+  //background: @blue1;
+  background: lighten(@blue2, 10%);
+  border: 1px solid @blue2;
   color: @blue4;
 }
 
@@ -14,7 +16,7 @@
 
 .list {
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-  border-radius: 4px;
+  border-radius: 2px;
   .header-item, .last-item {
     padding: 0 10px;
   }
@@ -22,30 +24,28 @@
     height: 60px;
     font-size: 1.75em;
     line-height: 70px;
-    border-color: @blue3;
+    border-color: @blue2;
     border-style: solid;
     border-width: 1.25px 1.25px 0 1.25px;
-    border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid @blue3;
+    border-bottom: 1px solid @blue2;
   }
   .last-item {
     height: 80px;
     line-height: 80px;
     font-size: 1.25em;
-    border-color: @blue3;
+    border-color: @blue2;
     border-style: solid;
     border-width: 0 1.25px 1.25px 1.25px;
-    border-radius: 0 0 4px 4px;
   }
   .list-item {
     height: 60px;
     padding: 4px 10px;
     display: flex;
     flex-direction: row;
-    border-color: @blue3;
+    border-color: @blue2;
     border-style: solid;
     border-width: 0 1.25px 0 1.25px;
-    border-bottom: 1px solid @blue3;
+    border-bottom: 1px solid @blue2;
 
     & > div {
       margin: auto 0;
