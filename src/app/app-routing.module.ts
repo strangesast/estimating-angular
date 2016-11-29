@@ -13,6 +13,7 @@ import { SavePageComponent } from './save-page/save-page.component';
 import { ProjectPageComponent } from './project-page/project-page.component';
 import { BuildPageComponent }   from './build-page/build-page.component';
 import { EditPageComponent }    from './edit-page/edit-page.component';
+import { DetailsPageComponent } from './details-page/details-page.component';
 
 import { ElementService } from './element.service';
 import { JobService } from './job.service';
@@ -38,6 +39,10 @@ const routes: Routes = [
           users: UserService
         },
         children: [
+          {
+            path: 'details',
+            component: DetailsPageComponent
+          },
           {
             path: 'edit',
             component: EditPageComponent
