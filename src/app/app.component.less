@@ -149,6 +149,9 @@ nav {
     & > * {
       height: @navigation-height;
       min-width:100%;
+      @media(max-width:@lrg){
+        min-width:100px;
+      }
       text-align: right;
       background: inherit;
       & > * {
