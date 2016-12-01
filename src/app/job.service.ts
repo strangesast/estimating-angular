@@ -34,7 +34,8 @@ const initOptions = {
     'building' : true,
     'component' : true
   },
-  folderOrder: ['phase', 'building']
+  folderOrder: ['phase', 'building'],
+  sortBy: null
 };
 
 @Injectable()
@@ -65,6 +66,12 @@ export class JobService {
     }
     this.options.next(options);
     return options.enabled;
+  }
+
+  changeSort(sort: string) {
+    let options = this.options.getValue();
+    options.sortBy = sort;
+    this.options.next(options);
   }
 
   resolve(route: ActivatedRouteSnapshot): Promise<any> {
@@ -102,6 +109,12 @@ export class JobService {
       throw err;
 
     });
+  }
+
+  shuffleComponents() {
+    let folders = this.folders.getValue();
+    let components = this.components.getValue();
+    return this.buildTree(folders, D3.shuffle(components));
   }
 
   fn(enabled, folders, cnest, par?, prev?, prevOrder?) {
@@ -152,29 +165,51 @@ export class JobService {
     }
   }
 
-  buildTree():Promise<any[]> {
+  buildTree(folders?, components?):Promise<any[]> {
     let options = this.options.getValue();
     let enabledObj = options.enabled;
     let enabled = options.folderOrder.filter(f=>enabledObj[f]);
     if(enabledObj.component) enabled = enabled.concat('component');
     let job = this._job.getValue();
     if(job == null) throw new Error('job not yet defined');
-    return this.getJobElements(job).then((els)=>{
-      let folders = els[0];
-      let components = els[1];
+
+    let prom;
+    if(folders && components) {
+      prom = Promise.resolve([folders, components]);
+    } else {
+      prom = this.getJobElements(job);
+    }
+    return prom.then((els)=>{
+      folders = els[0];
+      components = els[1];
+      this.components.next(components);
+      this.folders.next(folders);
+
+      console.log('components', components);
 
       let i = enabled.indexOf('component');
       if(i != -1 && i != enabled.length - 1) throw new Error('if enabled, component must be last');
 
       let componentNest:any = nest();
 
+      if(options.sortBy == 'asc') {
+        componentNest.sortValues((a, b)=>{
+          return a.data.name < b.data.name ? -1 : 1;
+        });
+      } else if (options.sortBy == 'desc') {
+        componentNest.sortValues((a, b)=>{
+          return a.data.name > b.data.name ? -1 : 1;
+        });
+      }
+
       // for 'nest' component arrangement
       for(let j=0;j<enabled.length ;j++) {
         let name = enabled[j];
         if(name == 'component') continue;
-        componentNest = componentNest.key((d:any)=>d[name]);
+        componentNest = componentNest.key((d:any)=>d.folders[name]);
       }
       componentNest = componentNest.object(components);
+
 
       let elements = this.fn(enabled, folders, componentNest);
       this.elements.next(elements);
@@ -214,75 +249,19 @@ export class JobService {
 
       let components = [];
       els.locations.forEach(l=>{
+        let ob = {};
+        types.forEach((t,i)=>{
+          ob[t] = l.folders[i];
+        });
         l.children.forEach(c=>{
           let child = els.components.find(e=>e.id==c.id);
           c.data = child;
-          let ob:any = {};
-          types.forEach((t,i)=>{
-            ob[t] = l.folders[i];
-          });
-          components.push(Object.assign(ob, c));
+          c.folders = ob;
+          components.push(c);
         });
       });
 
       return [folders, components];
-      /*
-      let types = job.folders.types;
-
-      let resolved = {};
-      job.folders.types.forEach((t, i)=>{
-        let folders = els.folders.filter(f=>f['type']==t);
-        let root = folders.find(f=>f.id==job.folders.roots[i]);
-        if(root == null) throw new Error('root not found in folders');
-        if(folders.map((f)=>f.id).indexOf(root.id) == -1) throw new Error('missing root folder "'+root+'" in db');
-        root.children = root.children.map(id=>this.resolveChildren(id, folders))
-        resolved[t] = root;
-      });
-
-      let roots = {};
-      job.folders.types.forEach((el, i)=>{
-        roots[el] = job.folders.roots[i];
-      });
-
-
-      let enabled = ['phase', 'building'];
-      let componentEnabled = true;
-      let tree = D3.hierarchy(resolved['phase'], (el) => {
-        let i = enabled.indexOf(el['type']);
-        if(i<enabled.length-1) {
-          return [resolved[enabled[i+1]]].concat(el.children);
-        }
-        return el.children;
-      });
-
-      console.log('tree', tree);
-      console.log('components', els.components);
-      console.log('locations', els.locations);
-      let obs = [];
-      els.locations.forEach(loc=>{
-        loc.children.forEach(c=>{
-          let ob:any = {};
-          job.folders.types.forEach((t,i)=>{
-            ob[t]=loc.folders[i];
-          });
-          ob.data = c;
-          obs.push(ob);
-        });
-      });
-
-      console.log('tree', tree.descendants());
-      this.folders.next(tree.descendants());
-      let test = nest().key((d:any)=>d.phase).key((d:any)=>d.building).entries(obs)[0];
-      console.log('leaves', tree.leaves());
-      let leaves = tree.leaves();
-      leaves.forEach(l=>{
-        let ctx = this.getNodeContext(l, roots);
-        console.log('ctx', ctx);
-      });
-      console.log('test', test);
-
-      return [tree, obs]
-      */
     });
   }
 

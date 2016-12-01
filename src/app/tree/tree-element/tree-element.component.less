@@ -20,6 +20,22 @@
   .spacer {
     flex-grow: 1;
   }
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  span {
+    line-height: @tree-element-height;
+  }
+  .icon {
+    padding-right: 4px;
+  }
+
+  .qty {
+    background: @blue2;
+    color: @blue4;
+    padding: 0 10px;
+    margin-left: 8px
+  }
 }
 
 :host-context(.shadow) {

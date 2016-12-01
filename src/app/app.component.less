@@ -153,6 +153,9 @@ nav {
       }
       text-align: right;
       background: inherit;
+      &.active {
+        .active-mixin;
+      }
       & > * {
         padding: 8px;
         line-height: @navigation-height;

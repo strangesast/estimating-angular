@@ -1,1 +1,5 @@
-{{data.data.name||data.data.data.name}}
+<span [ngClass]="kind == 'folder' ? 'fa fa-folder-o' : 'fa fa-cubes'" class="icon"></span>
+<a class="hoverunderline name" routerLink="../edit">{{data.data.name||data.data.data.name}}</a>
+<span class="spacer"></span>
+<span class="description">{{data.data.data ? data.data.data.description : data.data.description}}</span>
+<span *ngIf="kind == 'component'" class="qty">{{data.data.qty}}</span>

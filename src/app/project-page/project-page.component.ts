@@ -73,9 +73,13 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
   newComponentActiveJob() {
     let job = this.job;
-    this.jobService.createComponent('new component', 'test component').then(component => {
+    this.jobService.createComponent(Math.round(Math.random()*10) + ' new component', 'test component').then(component => {
       console.log('new component', component);
     });
+  }
+
+  shuffle() {
+    this.jobService.shuffleComponents();
   }
 
   ngAfterViewInit() {

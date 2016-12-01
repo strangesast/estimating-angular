@@ -60,7 +60,8 @@ export class Child {
     public id: string,
     public qty: number,
     public _id?: string,
-    public data?: any
+    public data?: any,
+    public folders?: any
   ) { }
   toJSON() {
     let copy = Object.assign({}, this);
@@ -129,7 +130,8 @@ export class Location {
   }
 
   static create(obj) {
-    return new Location(obj.id, obj.job, obj.children, obj.folders);
+    let children = obj.children;
+    return new Location(obj.id, obj.job, children.map(Child.create), obj.folders);
   }
 
   toJSON(removeExcluded?: Boolean) {

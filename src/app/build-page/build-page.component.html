@@ -19,15 +19,15 @@
         <span>Options</span>
       </span>
       <div class="dropdown-body">
-        <a href='#'>
-          <span>Link 1</span>
-        </a>
-        <a href='#'>
-          <span>Link 2</span>
-        </a>
-        <a href='#'>
-          <span>Link 3</span>
-        </a>
+        <span [class.active]="sort == 'asc'" class="hoverlink" (click)="changeSort('asc')">
+          <span>Sort Asc</span>
+        </span>
+        <span [class.active]="sort == 'desc'" class="hoverlink" (click)="changeSort('desc')">
+          <span>Sort Desc</span>
+        </span>
+        <span [class.active]="sort != 'desc' && sort != 'asc'" class="hoverlink" (click)="changeSort('')">
+          <span>No Sort</span>
+        </span>
       </div>
     </div>
   </div>

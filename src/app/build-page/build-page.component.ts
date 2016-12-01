@@ -28,6 +28,7 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
 
   private config: any = {};
   private enabled: any;
+  private sort: string = '';
 
   private job: Job;
 
@@ -36,7 +37,6 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
     building: 'fa fa-building-o fa-lg',
     component: 'fa fa-cubes fa-lg'
   };
-
 
   constructor(
     private jobService: JobService,
@@ -55,6 +55,11 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
       this.elements = elements;
       this.jobService.elements.subscribe(elements => this.elements = elements);
     });
+  }
+
+  changeSort(sort: string) {
+    this.jobService.changeSort(sort);
+    this.sort = sort;
   }
 
   buildTree() {
