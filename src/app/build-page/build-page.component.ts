@@ -1,6 +1,12 @@
-import { Input, Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Input,
+  Component,
+  SimpleChanges,
+  OnInit,
+  OnDestroy,
+  OnChanges
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-
 
 import { Subscription } from 'rxjs';
 
@@ -15,12 +21,13 @@ import { Job } from '../classes';
   styleUrls: ['./build-page.component.less', '../app.component.less'],
   providers: [TreeComponent]
 })
-export class BuildPageComponent implements OnInit, OnDestroy {
+export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   private jobSub: Subscription;
   private elSub: Subscription;
   private elements: any[];
 
   private config: any = {};
+  private enabled: any;
 
   private job: Job;
 
@@ -41,6 +48,9 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       let job = data.jobService.job;
       let elements = data.jobService.elements;
 
+      let options = this.jobService.options.getValue();
+      this.enabled = options.enabled;
+
       this.job = job;
       this.elements = elements;
       this.jobService.elements.subscribe(elements => this.elements = elements);
@@ -49,6 +59,19 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
   buildTree() {
     return this.jobService.buildTree();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    console.log(changes);
+  }
+
+  toggleEnabled(name:string) {
+    let ne = !this.enabled[name];
+    if(!ne && Object.keys(this.enabled).filter(k=>this.enabled[k]).length < 2) return false;
+    let ob = {};
+    ob[name] = ne;
+    this.jobService.changeEnabled(ob);
+    this.enabled[name] = ne;
   }
 
   ngOnDestroy() {

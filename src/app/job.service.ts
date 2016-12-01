@@ -29,7 +29,12 @@ class TreeNode {
 }
 
 const initOptions = {
-  enabled: ['phase', 'building', 'component']
+  enabled: {
+    'phase' : true,
+    'building' : true,
+    'component' : true
+  },
+  folderOrder: ['phase', 'building']
 };
 
 @Injectable()
@@ -49,6 +54,18 @@ export class JobService {
   public options: BehaviorSubject<any> = new BehaviorSubject(initOptions);
 
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) { }
+
+  changeEnabled(ob) {
+    let job = this._job.getValue();
+    let names = job.folders.types
+    let options = this.options.getValue();
+    for(let prop in ob) {
+      if(prop != 'component' && names.indexOf(prop) == -1) throw new Error('invalid name - not in this job');
+      options.enabled[prop] = ob[prop];
+    }
+    this.options.next(options);
+    return options.enabled;
+  }
 
   resolve(route: ActivatedRouteSnapshot): Promise<any> {
     let username = route.params['username'];
@@ -120,7 +137,10 @@ export class JobService {
   }
 
   buildTree():Promise<any[]> {
-    let enabled = this.options.getValue().enabled;
+    let options = this.options.getValue();
+    let enabledObj = options.enabled;
+    let enabled = options.folderOrder.filter(f=>enabledObj[f]);
+    if(enabledObj.component) enabled = enabled.concat('component');
     let job = this._job.getValue();
     if(job == null) throw new Error('job not yet defined');
     return this.getJobElements(job).then((els)=>{

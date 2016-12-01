@@ -1,18 +1,16 @@
 <div class="navigation-controls">
   <div *ngIf="job" class="navigation-bar spacer">
     <div *ngFor="let type of job.folders.types">
-      <input [attr.id]="type + '-enabled'" type="checkbox">
-      <label class="tab min" [attr.for]="type + '-enabled'">
+      <span class="hoverlink tab min" [class.active]="enabled[type]" (click)="toggleEnabled(type)">
         <span [ngClass]="FOLDER_ICONS[type]"></span>
         <span>{{ type[0].toUpperCase() + type.slice(1) }}</span>
-      </label>
+      </span>
     </div>
     <div>
-      <input id="component-enabled" type="checkbox">
-      <label class="tab min" for="component-enabled">
+      <span class="hoverlink tab min" [class.active]="enabled['component']" (click)="toggleEnabled('component')">
         <span class="fa fa-cubes fa-lg"></span>
         <span>Component</span>
-      </label>
+      </span>
     </div>
     <span class="spacer"></span>
     <div class="dropdown">
