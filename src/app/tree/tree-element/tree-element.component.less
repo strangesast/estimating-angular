@@ -1,28 +1,34 @@
 @import '../../basic';
 
+@small-tree-element-height: 20px;
 @tree-element-height: 40px;
 
-div {
+:host {
+  position: absolute;
+  top: 0;
+  right: 0;
+  list-style-type: none;
   padding: 0 10px;
   height: @tree-element-height;
-  span, a {
-    line-height: @tree-element-height;
-    &:not(:first-child) {
-      margin-left: 8px;
-    }
-  }
+  line-height: @tree-element-height;
   display: flex;
   flex-direction: row;
+  z-index: 9;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  transition: width 0.250s ease;
+  .spacer {
+    flex-grow: 1;
+  }
 }
 
-.ghost {
-  background: green;
+:host-context(.shadow), :host.shadow {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  background: lighten(@blue2, 10%);
+  border: 1px solid @blue2;
 }
 
-.dragged {
-  background: red;
-}
-
-.dragging {
-  background: blue;
+:host.small {
+  height: @small-tree-element-height;
+  line-height: @tree-element-height;
 }

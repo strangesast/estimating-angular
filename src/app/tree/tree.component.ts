@@ -79,29 +79,31 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
     this.host.style('height', tree.length*40 + 'px');
 
-    if(anim) {
-      this.host.selectAll('li')
-        .data(tree, (d)=>d.id)
-        .enter().append('li')
-        .attr('tabindex', 1)
-        .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
-        .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
-        .style('z-index', (el, i)=>i)
-        .style('opacity', 1)
-        .html(template)
-      return;
-    }
+    //if(anim) {
+    //  this.host.selectAll('app-tree-element')
+    //    .data(tree, (d)=>d.id)
+    //    .enter().append('li')
+    //    .attr('tabindex', 1)
+    //    .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+    //    .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
+    //    .style('z-index', (el, i)=>i)
+    //    .style('opacity', 1)
+    //    .html(template)
+    //  return;
+    //}
     
     let t = D3.transition(null)
       .duration(250);
 
-    let text = this.host.selectAll('li')
+    let text = this.host.selectAll('app-tree-element')
       .data(tree, function(d){return d.data.id});
 
     text.exit()
       .transition(t)
       .style('opacity', 1e-6)
-      .remove();
+      .remove(el=> {
+        console.log('removing...', el);
+      });
 
     text.style('opacity', 1)
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
@@ -111,6 +113,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
     text.enter().append(this.createChildComponent.bind(this))
       .attr('tabindex', 1)
+      //.attr('class', 'shadow')
       .style('transform', (el, i)=>'translate(-10%, ' + (i*40) + 'px)')
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
       .style('opacity', 0)
