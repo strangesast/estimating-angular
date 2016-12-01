@@ -104,7 +104,7 @@ export class JobService {
     });
   }
 
-  fn(enabled, folders, cnest, prev?, prevOrder?) {
+  fn(enabled, folders, cnest, par?, prev?, prevOrder?) {
     prev = prev || {};
     prevOrder = prevOrder || []; // need to preserve order of above
     let name = enabled[0];
@@ -115,18 +115,34 @@ export class JobService {
         ob = ob[el];
       });
       // components may have children
-      return ob.map(comp=>D3.hierarchy(comp, (d=>d.data.children)));
+      return ob.map(comp=>{
+        let t = D3.hierarchy(comp, (d=>d.data.children));
+        if(par) {
+          t['parent'] = par;
+          t.each((e:any)=>{
+            e['depth']=e['depth']+par['depth']+1;
+          });
+        }
+        return t;
+      });
 
     } else if (name in folders) {
       let root = folders[name];
+      if(par) {
+        root['parent'] = par;
+        root['depth'] = par['depth']+1;
+        root.each(e=>{
+          e['depth']=e['depth']+par['depth'];
+        });
+      }
       let children = root.leaves();
-      if(!remaining.length) return [];
+      if(!remaining.length) return children;
 
       return children.map(child => {
         let ob = {};
         ob[name] = child.data.id;
         let p = Object.assign({}, prev, ob);
-        let descendants = this.fn(remaining, folders, cnest, p, prevOrder.concat(name));
+        let descendants = this.fn(remaining, folders, cnest, child, p, prevOrder.concat(name));
         descendants.unshift(child);
         return descendants;
       }).reduce((a,b)=>a.concat(b));
@@ -151,11 +167,11 @@ export class JobService {
       if(i != -1 && i != enabled.length - 1) throw new Error('if enabled, component must be last');
 
       let componentNest:any = nest();
-      let withoutComp = i == -1 ? enabled : enabled.slice(0, -1);
 
       // for 'nest' component arrangement
-      for(let j=0;j<withoutComp.length ;j++) {
-        let name = withoutComp[j];
+      for(let j=0;j<enabled.length ;j++) {
+        let name = enabled[j];
+        if(name == 'component') continue;
         componentNest = componentNest.key((d:any)=>d[name]);
       }
       componentNest = componentNest.object(components);
