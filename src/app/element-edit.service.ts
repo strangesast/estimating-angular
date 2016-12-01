@@ -4,7 +4,7 @@ import { Subject }                  from 'rxjs/Subject';
 import { BehaviorSubject }          from 'rxjs/BehaviorSubject';
 import { Router, ActivatedRoute, Params }   from '@angular/router';
 
-import { Component, Folder, Job } from './classes';
+import { ComponentElement, Folder, Job } from './classes';
 import { ElementService } from './element.service';
 import { JobService } from './job.service';
 
@@ -38,13 +38,13 @@ export class ElementEditService {
   }
 
   // kind, id || element
-  loadElement(elementOrKind: string|Folder|Component, id?:string): Promise<any> {
+  loadElement(elementOrKind: string|Folder|ComponentElement, id?:string): Promise<any> {
     if(elementOrKind == null) {
       this._activeElement.next(null)
       return Promise.resolve(null);
     }
     let prom;
-    if(elementOrKind instanceof Component || elementOrKind instanceof Folder) {
+    if(elementOrKind instanceof ComponentElement || elementOrKind instanceof Folder) {
       prom = Promise.resolve(elementOrKind);
     } else if (typeof elementOrKind == 'string') {
       if(id == null) throw new Error('id required for "'+elementOrKind+'"');

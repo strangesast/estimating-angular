@@ -25,7 +25,7 @@ export class TreeElement {
 
   static fromElement(obj, ctx, level:number):TreeElement {
     let t;
-    if(obj instanceof Component) {
+    if(obj instanceof ComponentElement) {
       t = 'component';
     } else if (obj instanceof Folder) {
       t = obj['type'] || 'folder'; // perhaps undesirable
@@ -82,7 +82,7 @@ export class BasedOn {
 }
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
-export class Component extends Element {
+export class ComponentElement extends Element {
   constructor(
     id,
     name,
@@ -96,7 +96,7 @@ export class Component extends Element {
   }
 
   static create(obj) {
-    return new Component(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn);
+    return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn);
   }
 
   static exclude: string[] = ['commit'];
@@ -105,7 +105,7 @@ export class Component extends Element {
     if(removeExcluded == null) removeExcluded = true;
     let copy = Object.assign({}, this);
     if(removeExcluded) {
-      Component.exclude.forEach((e)=>{
+      ComponentElement.exclude.forEach((e)=>{
         if(e in copy) {
           delete copy[e];
         }

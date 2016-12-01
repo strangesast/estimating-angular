@@ -41,6 +41,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       let config = data.jobService.treeConfig;
       this.job = job;
       this.config = config;
+      this.jobService.config.subscribe(config => this.config = config);
     });
     //this.jobService.folders.subscribe(folders => {
     //  console.log('folders...', folders);

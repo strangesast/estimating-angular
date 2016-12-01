@@ -16,7 +16,7 @@ export const AVAILABLE_FILTERS: Filter[] = [
     value: 'phase'
   },
   {
-    name: 'Component',
+    name: 'ComponentElement',
     description: 'filter by component',
     value: 'component'
   },

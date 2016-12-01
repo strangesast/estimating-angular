@@ -22,7 +22,7 @@ import {
   Element,
   Child,
   BasedOn,
-  Component,
+  ComponentElement,
   Location,
   FolderDef,
   Folder,
@@ -249,7 +249,7 @@ export class ElementService {
 
 
   // returns [componentRecordId, locationRecordId]
-  addComponent(component: Component, job: Job, folders) {
+  addComponent(component: ComponentElement, job: Job, folders) {
     folders = folders || {};
     let locId = Location.createId(folders, job);
     return this.retrieveRecord(this.db, 'locations', locId).then((obj) => {
@@ -397,7 +397,7 @@ export class ElementService {
         req.onerror = (e:any) => reject(e.target.error);
       });
     })).then((arr:any)=>{
-      arr[0] = arr[0].map(Component.create);
+      arr[0] = arr[0].map(ComponentElement.create);
       arr[1] = arr[1].map(Folder.create);
       arr[2] = arr[2].map(Location.create);
       let ob = {};
@@ -441,11 +441,11 @@ export class ElementService {
     });
   }
 
-  retrieveComponent(id: string): Promise<Component|null> {
+  retrieveComponent(id: string): Promise<ComponentElement|null> {
     console.log('here 2');
     return this.retrieveRecordFrom('components', id).then((res)=>{
       if(res != null) {
-        return Component.create(res);
+        return ComponentElement.create(res);
       }
       return null;
     });
@@ -610,6 +610,15 @@ export class ElementService {
     });
   }
 
+  createComponent(name, description, job): Promise<ComponentElement> {
+    let id = random(); // should be unique
+    let component = new ComponentElement(id, name, description, job.id, []);
+    return this.addComponent(component, job, {}).then(result => {
+      console.log('save result', result);
+      return component;
+    });
+  }
+
   createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Job> {
     // should verify that job id is unique
     let id = random();
@@ -621,7 +630,7 @@ export class ElementService {
 
     return this.saveNewJob(job).then((res)=>{
       let id = random();
-      let component = new Component(
+      let component = new ComponentElement(
         id,
         'blank component',
         'description',
@@ -698,7 +707,7 @@ export class ElementService {
       storeName = 'jobs';
     } else if (obj instanceof Folder) {
       storeName = 'folders';
-    } else if (obj instanceof Component) {
+    } else if (obj instanceof ComponentElement) {
       storeName = 'components';
     } else if (obj instanceof Location) {
       storeName = 'locations';

@@ -18,7 +18,7 @@ import { Observable } from 'rxjs';
 
 import { TreeElement } from '../classes';
 
-import { Job } from '../classes';
+import { Job, ComponentElement, Folder } from '../classes';
 
 import { ElementService }     from '../element.service';
 import { JobService }         from '../job.service';
@@ -31,6 +31,7 @@ import { UserService }        from '../user.service';
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private sub: any;
+  private sub2: any;
   job: Job;
   //private data: any[];
   private config: any = {};
@@ -53,6 +54,27 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     this.sub = this.route.data.subscribe((data:any) => {
       this.job = data.jobService.job;
       this.config = data.jobService.treeConfig;
+      if(this.sub2) this.sub2.unsubscribe();
+      this.sub2 = this.jobService.config.subscribe(config => {
+        console.log('config update');
+        this.config = config
+      });
+    });
+  }
+
+  //constructor(
+  //  id,
+  //  name,
+  //  description,
+  //  public job: string, 
+  //  public children?: Child[], 
+  //  public basedOn?: BasedOn|null
+  //) {
+
+  newComponentActiveJob() {
+    let job = this.job;
+    this.jobService.createComponent('new component', 'test component').then(component => {
+      console.log('new component', component);
     });
   }
 
@@ -63,6 +85,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   }
 
   ngOnDestroy() {
+    if(this.sub2) this.sub2.unsubscribe();
     this.sub.unsubscribe();
   }
 

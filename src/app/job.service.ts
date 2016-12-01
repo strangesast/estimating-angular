@@ -10,7 +10,7 @@ import {
 
 import { Subject, Observable, BehaviorSubject } from 'rxjs';
 
-import { Component, Folder, User, Job, Location, TreeElement } from './classes';
+import { ComponentElement, Folder, User, Job, Location, TreeElement } from './classes';
 
 import { ElementService } from './element.service';
 import { UserService } from './user.service';
@@ -32,6 +32,8 @@ class TreeNode {
 export class JobService {
   private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
   public job: Observable<Job> = this._job.asObservable();
+
+  public config: BehaviorSubject<any> = new BehaviorSubject({});
 
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public tree: BehaviorSubject<TreeElement[]> = new BehaviorSubject([]);
@@ -71,20 +73,9 @@ export class JobService {
         //  return false;
         //}
 
-        return this.getJobElements(job).then((els)=>{
-          let enabled = ['phase', 'building', 'component'];
-          // order
-          //      folder hierarchies
-          //              nested stuff
-          let config = {
-            enabled: enabled,
-            folders: els[0],
-            components: els[1]
-          };
-          //this.folders = both[0].descendants();
-
-          //this.components = both[1];
+        return this.update(job).then(config => {
           this._job.next(job);
+          this.config.next(config);
           return {
             job: job,
             treeConfig: config
@@ -98,6 +89,27 @@ export class JobService {
     }).catch(err => {
       // get user error
 
+    });
+  }
+
+  update(job):Promise<any> {
+    job = job||this._job.getValue();
+    return this.getJobElements(job).then((els)=>{
+      let enabled = ['phase', 'building', 'component'];
+      let config = {
+        enabled: enabled,
+        folders: els[0],
+        components: els[1]
+      };
+      this.config.next(config);
+      return config;
+    });
+  }
+
+  createComponent(name:string, description:string, job?:Job):Promise<ComponentElement> {
+    job = job||this._job.getValue();
+    return this.elementService.createComponent(name, description, job).then(component => {
+      return this.update(job).then(()=> component);
     });
   }
 
@@ -236,41 +248,6 @@ export class JobService {
       */
     });
   }
-
-  //  let getJobElements = this.elementService.init().then((both)=>{
-
-  //    console.log('element service init');
-  //    return this.elementService.getJob(user.username, shortname).catch((err)=>{
-  //      console.log('error', err);
-  //      return this.elementService.createJob(user, shortname);
-
-  //    }).then((job:Job)=>{
-  //      this.job = job;
-
-  //      let folders = {};
-  //      let visible = {};
-  //      for(let i=0; i < job.folders.types.length; i++) {
-  //        let t = job.folders.types[i];
-  //        folders[t] = job.folders.roots[i];
-  //        visible[t] = true;
-  //      }
-  //      visible['component'] = true;
-  //      this.rootFolders.next(folders);
-
-  //      return this.elementService.buildTree(job).then((res)=>{
-  //        return Promise.all(res.map(this.addRef.bind(this)));
-  //      });
-
-
-  //    }).then((res: TreeElement[])=>{
-  //      this.tree.next(res);
-  //    });
-
-
-  //  });
-
-  //  return Observable.fromPromise(getJobElements).flatMap(()=>this.tree.asObservable());
-  //}
 
   addRef(el:TreeElement):Promise<TreeElement> {
     return el.reftype == 'component' ? this.elementService.retrieveComponent(el.refid) : this.elementService.retrieveFolder(el.refid).then(ref=>{

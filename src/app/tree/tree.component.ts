@@ -85,7 +85,7 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
         data.push(b);
         let c = res[a.data.id][b.data.id].map((e,k)=>{
           let node:any = D3.hierarchy(e.data, x=>x.data.children);
-          node['depth'] = cd + j + k + 2;
+          node['depth'] = cd + j + 2;
           node['parent'] = b;
           return node;
         });
@@ -93,14 +93,12 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       }
     }
 
-    console.log(data);
-
     this.host.style('height', data.length*40 + 'px');
     let t = D3.transition(null)
       .duration(750);
 
     let text = this.host.selectAll('li')
-      .data(data, function(d){return d.id});
+      .data(data, function(d){return d.data.id});
 
     text.exit()
       .transition(t)
