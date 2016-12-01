@@ -145,7 +145,6 @@ nav {
     overflow: hidden;
     background: lighten(@blue2, 5%);
     border: 1px solid darken(@blue2, 10%);
-    transition: max-height 1s ease, max-width 1s ease;
     & > * {
       height: @navigation-height;
       min-width:100%;
@@ -169,8 +168,6 @@ nav {
   &:hover {
     .dropdown-body {
       display: flex;
-      max-height: 300px;
-      max-width: 300px;
       box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
     }
   }

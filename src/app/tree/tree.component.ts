@@ -17,6 +17,10 @@ import {
 import * as D3 from 'd3';
 import { nest } from 'd3-collection';
 
+let template = function(p, i) {
+  return '<span class="name">'+(p.data.name||p.data.data.name)+'</span><span class="spacer"></span><span class="depth">1</span>'
+};
+
 @Component({
   selector: 'app-tree',
   animations: [],
@@ -55,7 +59,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
         .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
         .style('z-index', (el, i)=>i)
         .style('opacity', 1)
-        .text((d:any)=>d.data.name)
+        .html(template)
       return;
     }
     
@@ -82,7 +86,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
       .style('opacity', 0)
       .style('z-index', (el, i)=>i)
-      .text((d:any)=>d.data.name||d.data.data.name)
+      .html(template)
       .transition(t)
       .style('opacity', 1)
       .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
