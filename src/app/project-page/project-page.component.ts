@@ -33,6 +33,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   private sub: any;
   private sub2: any;
   job: Job;
+  elements: any[];
   //private data: any[];
   private config: any = {};
 
@@ -53,23 +54,11 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     //});
     this.sub = this.route.data.subscribe((data:any) => {
       this.job = data.jobService.job;
-      this.config = data.jobService.treeConfig;
+      this.elements = data.jobService.elements;
       if(this.sub2) this.sub2.unsubscribe();
-      this.sub2 = this.jobService.config.subscribe(config => {
-        console.log('config update');
-        this.config = config
-      });
+      this.sub2 = this.jobService.elements.subscribe(elements => this.elements = elements);
     });
   }
-
-  //constructor(
-  //  id,
-  //  name,
-  //  description,
-  //  public job: string, 
-  //  public children?: Child[], 
-  //  public basedOn?: BasedOn|null
-  //) {
 
   newComponentActiveJob() {
     let job = this.job;
@@ -87,9 +76,5 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ngOnDestroy() {
     if(this.sub2) this.sub2.unsubscribe();
     this.sub.unsubscribe();
-  }
-
-  buildTreeSvg():void {
-
   }
 }

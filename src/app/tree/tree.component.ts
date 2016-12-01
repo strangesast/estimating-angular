@@ -23,11 +23,10 @@ import { nest } from 'd3-collection';
   templateUrl: './tree.component.html',
   styleUrls: ['./tree.component.less']
 })
-export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
+export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private host;
   private htmlElement: HTMLElement;
-  private treeArray: any[];
-  @Input() config: any = {};
+  @Input() tree: any[];
 
   constructor(
     private element: ElementRef
@@ -40,65 +39,32 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     this.htmlElement = this.element.nativeElement.querySelector('.tree');
     this.host = D3.select(this.htmlElement);
     this.host.html('');
-    console.log('config', this.config);
-    this.update(this.config);
-
-    /*
-
-    if(this.config == null || this.config.order == null) return;
-    this.host.selectAll('li')
-      .data(this.treeArray, (d)=>d.id)
-      .enter().append('li')
-      .attr('tabindex', 1)
-      .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
-      .style('margin-left', (el)=>el.depth * 20 + 'px')
-      .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
-      .style('z-index', (el, i)=>i)
-      .style('opacity', 1)
-      .text((d:any)=>d.data.name)
-    */
+    this.update(this.tree, false);
   }
+  update(tree: any[], anim?) {
+    anim = anim || false;
 
-  update(config: any) {
-    console.log('config', config);
+    this.host.style('height', tree.length*40 + 'px');
 
-    let n = nest();
-    if(config.enabled.indexOf('phase') != -1) {
-      n = n.key((d:any)=>d.phase);
+    if(anim) {
+      this.host.selectAll('li')
+        .data(tree, (d)=>d.id)
+        .enter().append('li')
+        .attr('tabindex', 1)
+        .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+        .style('margin-left', (el)=>el.depth * 20 + 'px')
+        .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
+        .style('z-index', (el, i)=>i)
+        .style('opacity', 1)
+        .text((d:any)=>d.data.name)
+      return;
     }
-    if(config.enabled.indexOf('building') != -1) {
-      n = n.key((d:any)=>d.building);
-    }
-    let res = n.object(config.components);
-    console.log('res', res);
-
-    let arr = config.folders['phase'].descendants();
-    let arr2 = config.folders['building'].descendants();
-
-    let data = [];
-    for(let i=0,a;a=arr[i],i<arr.length;i++) {
-      let cd = a.depth; // current depth
-      data.push(a);
-      for(let j=0,b;b=arr2[j],j<arr2.length;j++) {
-        b['depth'] = cd + j + 1;
-        b['parent'] = a;
-        data.push(b);
-        let c = res[a.data.id][b.data.id].map((e,k)=>{
-          let node:any = D3.hierarchy(e.data, x=>x.data.children);
-          node['depth'] = cd + j + 2;
-          node['parent'] = b;
-          return node;
-        });
-        data.push.apply(data, c);
-      }
-    }
-
-    this.host.style('height', data.length*40 + 'px');
+    
     let t = D3.transition(null)
       .duration(750);
 
     let text = this.host.selectAll('li')
-      .data(data, function(d){return d.data.id});
+      .data(tree, function(d){return d.data.id});
 
     text.exit()
       .transition(t)
@@ -123,12 +89,9 @@ export class TreeComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       .transition(t)
       .style('opacity', 1)
       .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
-  };
-
-  ngOnDestroy(): void {
-  };
+  }
 
   ngOnChanges() {
-    if(this.host) this.update(this.config);
+    if(this.host) this.update(this.tree);
   };
 }

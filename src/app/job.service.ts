@@ -28,15 +28,17 @@ class TreeNode {
   parent: TreeNode|null;
 }
 
+const initOptions = {
+  enabled: ['phase', 'building', 'component']
+};
+
 @Injectable()
 export class JobService {
   private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
   public job: Observable<Job> = this._job.asObservable();
 
   public config: BehaviorSubject<any> = new BehaviorSubject({});
-
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
-  public tree: BehaviorSubject<TreeElement[]> = new BehaviorSubject([]);
 
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
@@ -44,18 +46,9 @@ export class JobService {
   public folders: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public components: BehaviorSubject<any[]> = new BehaviorSubject([]);
 
-  constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
-    //setTimeout(()=>{
-    //  setInterval(()=>{
-    //    let data = this.data.getValue();
-    //    data.reverse();
-    //    let id =  Math.floor(Math.random()*100000);
-    //    data.push({depth: Math.floor(Math.random()*4), data: {'name': 'new toast '+ id}, id:id});
-    //    data = D3.shuffle(data).slice(0, 8);
-    //    this.data.next(data);
-    //  }, 5000);
-    //}, 1000);
-  }
+  public options: BehaviorSubject<any> = new BehaviorSubject(initOptions);
+
+  constructor(private elementService: ElementService, private userService: UserService, private router: Router) { }
 
   resolve(route: ActivatedRouteSnapshot): Promise<any> {
     let username = route.params['username'];
@@ -72,83 +65,92 @@ export class JobService {
         //  this.router.navigate(['/jobs']); // should be 404
         //  return false;
         //}
+        this._job.next(job);
 
-        return this.update(job).then(config => {
+        return this.buildTree().then((elements) => {
           this._job.next(job);
-          this.config.next(config);
           return {
             job: job,
-            treeConfig: config
+            elements: elements
           };
         });
 
       }).catch(err => {
+        throw err;
         // get job error
 
       });
     }).catch(err => {
       // get user error
+      throw err;
 
     });
   }
 
-  update(job):Promise<any> {
-    job = job||this._job.getValue();
+  fn(enabled, folders, cnest, prev?, prevOrder?) {
+    prev = prev || {};
+    prevOrder = prevOrder || []; // need to preserve order of above
+    let name = enabled[0];
+    let remaining = enabled.slice(1);
+    if(name == 'component') {
+      let ob = cnest;
+      prevOrder.map(n=>prev[n]).forEach(el=>{
+        ob = ob[el];
+      });
+      // components may have children
+      return ob.map(comp=>D3.hierarchy(comp, (d=>d.data.children)));
+
+    } else if (name in folders) {
+      let root = folders[name];
+      let children = root.leaves();
+      if(!remaining.length) return [];
+
+      return children.map(child => {
+        let ob = {};
+        ob[name] = child.data.id;
+        let p = Object.assign({}, prev, ob);
+        let descendants = this.fn(remaining, folders, cnest, p, prevOrder.concat(name));
+        descendants.unshift(child);
+        return descendants;
+      }).reduce((a,b)=>a.concat(b));
+
+    } else {
+      throw new Error('name "'+name+'" not in available folders');
+    }
+  }
+
+  buildTree():Promise<any[]> {
+    let enabled = this.options.getValue().enabled;
+    let job = this._job.getValue();
+    if(job == null) throw new Error('job not yet defined');
     return this.getJobElements(job).then((els)=>{
-      let enabled = ['phase', 'building', 'component'];
-      let config = {
-        enabled: enabled,
-        folders: els[0],
-        components: els[1]
-      };
-      this.config.next(config);
-      return config;
+      let folders = els[0];
+      let components = els[1];
+
+      let i = enabled.indexOf('component');
+      if(i != -1 && i != enabled.length - 1) throw new Error('if enabled, component must be last');
+
+      let componentNest:any = nest();
+      let withoutComp = i == -1 ? enabled : enabled.slice(0, -1);
+
+      // for 'nest' component arrangement
+      for(let j=0;j<withoutComp.length ;j++) {
+        let name = withoutComp[j];
+        componentNest = componentNest.key((d:any)=>d[name]);
+      }
+      componentNest = componentNest.object(components);
+
+      let elements = this.fn(enabled, folders, componentNest);
+      this.elements.next(elements);
+      return elements;
     });
   }
 
   createComponent(name:string, description:string, job?:Job):Promise<ComponentElement> {
     job = job||this._job.getValue();
     return this.elementService.createComponent(name, description, job).then(component => {
-      return this.update(job).then(()=> component);
+      return this.buildTree().then(()=> component);
     });
-  }
-
-  //resolveChildren(rootid, folders): any[] {
-  //  let root = folders.find(f=>f.id==rootid);
-  //  if(root == null) throw new Error('root not found');
-  //  if(root.children) {
-  //    root.children = root.children.map(id=>this.resolveChildren(id, folders));
-  //  }
-  //  return root;
-  //}
-
-  getNodeContext(node, roots) {
-    let t = node.data['type'];
-    let id = node.data['id'];
-
-    let vals = Object.keys(roots);
-    let ctx = {};
-
-    let ch = node;
-
-    let i = 0;
-    while(i < 100) {
-      let par = ch['parent'];
-      if(par == null) {
-        vals.forEach(el=>{
-          if(!(el in ctx)) ctx[el] = roots[el];
-        });
-        return ctx;
-      }
-      let t2 = par.data['type'];
-      // if type in valid types (vals), and not already in ctx
-      if(vals.indexOf(t2) != -1 && !(t2 in ctx)) {
-        ctx[t2] = par.data['id'];
-      }
-      if(Object.keys(ctx).length == vals.length) return ctx;
-      ch = par;
-      i++;
-    }
   }
 
   resolveChildren(node, folders) {
@@ -183,8 +185,7 @@ export class JobService {
           types.forEach((t,i)=>{
             ob[t] = l.folders[i];
           });
-          ob.data = c;
-          components.push(ob);
+          components.push(Object.assign(ob, c));
         });
       });
 
@@ -259,7 +260,7 @@ export class JobService {
   search(query:any, options:any):Promise<TreeElement[]> {
     let lower = !!options['ignorecase'];
     let which = !!options['any']; // any in query vs all in query
-    let tree = this.tree.getValue();
+    let tree = this.elements.getValue();
     let f = (t)=> {
       let el = t.ref;
       for(let prop in query) {

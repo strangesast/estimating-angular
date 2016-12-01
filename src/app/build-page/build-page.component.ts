@@ -18,6 +18,7 @@ import { Job } from '../classes';
 export class BuildPageComponent implements OnInit, OnDestroy {
   private jobSub: Subscription;
   private elSub: Subscription;
+  private elements: any[];
 
   private config: any = {};
 
@@ -38,18 +39,16 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.jobSub = this.route.parent.data.subscribe((data:any) => {
       let job = data.jobService.job;
-      let config = data.jobService.treeConfig;
+      let elements = data.jobService.elements;
+
       this.job = job;
-      this.config = config;
-      this.jobService.config.subscribe(config => this.config = config);
+      this.elements = elements;
+      this.jobService.elements.subscribe(elements => this.elements = elements);
     });
-    //this.jobService.folders.subscribe(folders => {
-    //  console.log('folders...', folders);
-    //  this.folders = folders;
-    //});
   }
 
   buildTree() {
+    return this.jobService.buildTree();
   }
 
   ngOnDestroy() {
