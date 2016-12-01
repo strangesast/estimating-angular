@@ -37,6 +37,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   //private data: any[];
   private config: any = {};
 
+  private activeSubTab: string = 'balance';
+  testDate = new Date();
+
   private htmlElement: HTMLElement;
   private host;
 
@@ -47,6 +50,10 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     private route: ActivatedRoute,
     private element: ElementRef
   ) { }
+
+  changeSubTab(tabName: string) {
+    this.activeSubTab = tabName;
+  }
 
   ngOnInit() {
     //this.jobService.data.subscribe(data => {
