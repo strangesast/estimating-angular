@@ -1,5 +1,6 @@
 @import '../basic';
 
+@small-tree-element-height: 20px;
 @tree-element-height: 40px;
 
 :host .tree {
@@ -11,7 +12,6 @@
     & /deep/ li {
       position: absolute;
       top: 0;
-      left: 0;
       right: 0;
       list-style-type: none;
       padding: 0 10px;
@@ -22,6 +22,7 @@
       z-index: 9;
       -webkit-box-sizing: border-box;
       box-sizing: border-box;
+      transition: width 0.250s ease;
     }
   }
 }
@@ -30,4 +31,9 @@
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   background: lighten(@blue2, 10%);
   border: 1px solid @blue2;
+}
+
+:host.small .tree /deep/ li {
+  height: @small-tree-element-height;
+  line-height: @tree-element-height;
 }

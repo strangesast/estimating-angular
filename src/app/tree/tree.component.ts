@@ -52,7 +52,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
         .enter().append('li')
         .attr('tabindex', 1)
         .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
-        .style('margin-left', (el)=>el.depth * 20 + 'px')
         .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
         .style('z-index', (el, i)=>i)
         .style('opacity', 1)
@@ -61,7 +60,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     }
     
     let t = D3.transition(null)
-      .duration(750);
+      .duration(250);
 
     let text = this.host.selectAll('li')
       .data(tree, function(d){return d.data.id});
@@ -72,7 +71,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       .remove();
 
     text.style('opacity', 1)
-      .style('margin-left', (el)=>el.depth * 20 + 'px')
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
       .style('z-index', (el, i)=>i)
       .transition(t)
@@ -81,7 +79,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     text.enter().append('li')
       .attr('tabindex', 1)
       .style('transform', (el, i)=>'translate(-10%, ' + (i*40) + 'px)')
-      .style('margin-left', (el)=>el.depth * 20 + 'px')
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
       .style('opacity', 0)
       .style('z-index', (el, i)=>i)
