@@ -42,7 +42,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   @Input() tree: any[];
 
-  @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef;
+  @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
@@ -53,18 +53,18 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
   };
 
+  // probably(?) a mem leak
   createChildComponent(data?, index?) {
     data = data || {};
-    console.log('data', data);
-    let inputProviders = [{ provide: 'data', useValue: data}];
+    // what's fed to the component (and what is it called)
+    let inputProviders = [{
+      provide: 'data',
+      useValue: data
+    }];
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
-
     let injector = ReflectiveInjector.fromResolvedProviders(resolvedInputs, this._parent.parentInjector);
-
     let component = this.childComponentFactory.create(injector);
-
     this._parent.insert(component.hostView);
-
     return component.instance.element.nativeElement;
   }
 
@@ -74,29 +74,26 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.host.html('');
     this.update(this.tree, false);
   }
+
   update(tree: any[], anim?) {
-    anim = anim || false;
+    anim = anim == null ? true : anim;
 
     this.host.style('height', tree.length*40 + 'px');
 
-    //if(anim) {
-    //  this.host.selectAll('app-tree-element')
-    //    .data(tree, (d)=>d.id)
-    //    .enter().append('li')
-    //    .attr('tabindex', 1)
-    //    .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
-    //    .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
-    //    .style('z-index', (el, i)=>i)
-    //    .style('opacity', 1)
-    //    .html(template)
-    //  return;
-    //}
-    
-    let t = D3.transition(null)
-      .duration(250);
-
     let text = this.host.selectAll('app-tree-element')
       .data(tree, function(d){return d.data.id});
+
+    if(!anim) {
+      text.enter().append(this.createChildComponent.bind(this))
+        .attr('tabindex', 1)
+        .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
+        .style('z-index', (el, i)=>i)
+        .style('opacity', 1)
+        .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+    }
+
+    let t = D3.transition(null)
+      .duration(250);
 
     text.exit()
       .transition(t)
