@@ -2,14 +2,21 @@ import { Injectable }               from '@angular/core';
 import { Observable }               from 'rxjs/Observable';
 import { Subject }                  from 'rxjs/Subject';
 import { BehaviorSubject }          from 'rxjs/BehaviorSubject';
-import { Router, ActivatedRoute, Params }   from '@angular/router';
+import {
+  Resolve,
+  Router,
+  ActivatedRoute,
+  Params,
+  ActivatedRouteSnapshot,
+  RouterStateSnapshot
+} from '@angular/router';
 
 import { ComponentElement, Folder, Job } from './classes';
 import { ElementService } from './element.service';
 import { JobService } from './job.service';
 
 @Injectable()
-export class ElementEditService {
+export class ElementEditService implements Resolve<Promise<any>> {
   _elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   elements: Observable<any[]> = this._elements.asObservable();
 
@@ -17,6 +24,22 @@ export class ElementEditService {
   activeElement: Observable<any> = this._activeElement.asObservable();
 
   constructor(private jobService: JobService, private elementService: ElementService) { }
+
+  resolve(route: ActivatedRouteSnapshot) {
+    let params: any = route.params;
+    let kind = params.kind;
+    let id = params.id;
+    if(kind == 'folder') {
+      let folder = this.jobService.folders.getValue().find(f=>f.id==id);
+      console.log('folder', folder);
+      return Promise.resolve(folder);
+    } else if (kind == 'child') {
+      let component = this.jobService.components.getValue().find(c=>c.id=id);
+      return Promise.resolve(component);
+    } else if (kind == 'component') {
+      return this.jobService.findComponent(id);
+    }
+  }
 
   getElements() {
     return this._elements.getValue();

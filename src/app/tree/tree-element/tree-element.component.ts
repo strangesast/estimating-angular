@@ -7,7 +7,7 @@ import {
   Injector
 } from '@angular/core';
 
-import { Child, Folder } from '../../classes';
+import { ComponentElement, Child, Folder } from '../../classes';
 
 @Component({
   selector: 'app-tree-element',
@@ -22,9 +22,14 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     this.data = this.injector.get('data');
     if(this.data.data instanceof Folder) {
       this.kind = 'folder';
+
     } else if (this.data.data instanceof Child) {
+      this.kind = 'child';
+
+    } else if (this.data.data instanceof ComponentElement) {
       this.kind = 'component';
     }
+
   }
 
   ngOnInit() {

@@ -39,7 +39,7 @@ const initOptions = {
 };
 
 @Injectable()
-export class JobService {
+export class JobService implements Resolve<Promise<any>> {
   private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
   public job: Observable<Job> = this._job.asObservable();
 
@@ -263,6 +263,10 @@ export class JobService {
 
       return [folders, components];
     });
+  }
+
+  findComponent(id: string) {
+    return this.elementService.retrieveComponent(id);
   }
 
   addRef(el:TreeElement):Promise<TreeElement> {

@@ -18,6 +18,7 @@ import { DetailsPageComponent } from './details-page/details-page.component';
 import { ElementService } from './element.service';
 import { JobService } from './job.service';
 import { UserService } from './user.service';
+import { ElementEditService } from './element-edit.service';
 
 const routes: Routes = [
   {
@@ -49,7 +50,10 @@ const routes: Routes = [
           },
           {
             path: 'edit/:kind/:id',
-            component: EditPageComponent
+            component: EditPageComponent,
+            resolve: {
+              editService: ElementEditService
+            }
           },
           {
             path: 'build',
@@ -90,7 +94,8 @@ const routes: Routes = [
   providers: [
     ElementService,
     JobService,
-    UserService
+    UserService,
+    ElementEditService
   ]
 })
 export class AppRoutingModule { }

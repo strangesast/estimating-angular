@@ -13,6 +13,7 @@ import { ElementRetrievalService } from './element-retrieval.service';
 import { TreeBuilderService }      from './tree-builder.service';
 import { SearchServiceService }    from './search-service.service';
 import { ElementService }          from './element.service';
+
 import { UserService }             from './user.service';
 import { AppRoutingModule }           from './app-routing.module';
 import { TreeElementDetailComponent } from './tree-element-detail/tree-element-detail.component';

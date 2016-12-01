@@ -14,7 +14,7 @@ import { SortablejsOptions } from 'angular-sortablejs';
 })
 
 export class EditPageComponent implements OnInit {
-  elements: any[];
+  elements: any[] = [];
   activeElement: any;
 
   elementsSub: any;
@@ -30,6 +30,9 @@ export class EditPageComponent implements OnInit {
   ngOnInit():void{
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('data', data);
+      let obj = data.editService;
+      if(this.elements.indexOf(obj) == -1) this.elements.push(obj);
+      this.activeElement = obj;
     });
   }
 
