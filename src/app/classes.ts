@@ -96,21 +96,21 @@ export class BasedOn {
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
 export class ComponentElement extends Element {
-  public hash: string;
   constructor(
     id,
     name,
     description,
     public job: string, 
     public children?: Child[], 
-    public basedOn?: BasedOn|null
+    public basedOn?: BasedOn|null,
+    public hash?: string
   ) {
     super(id, name, description);
     if(children == null) this.children = [];
   }
 
   static create(obj) {
-    return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn);
+    return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn, obj.hash);
   }
 
   static exclude: string[] = ['hash'];
@@ -130,12 +130,12 @@ export class ComponentElement extends Element {
 }
 
 export class Location {
-  public hash: string;
   constructor(
     public id: string,
     public job: string,
     public children: Child[],
-    public folders: string[]
+    public folders: string[],
+    public hash?: string
   ) { }
 
   static createId(obj, job) {
@@ -150,12 +150,13 @@ export class Location {
 
   static create(obj) {
     let children = obj.children;
-    return new Location(obj.id, obj.job, children.map(Child.create), obj.folders);
+    return new Location(obj.id, obj.job, children.map(Child.create), obj.folders, obj.hash);
   }
 
   toJSON(removeExcluded?: Boolean) {
     let copy = Object.assign({}, this);
     for(var prop in copy) {
+      if(copy[prop] == null) continue;
       if(typeof copy[prop].toJSON == 'function') {
         copy[prop] = copy[prop].toJSON();
       } else if (Array.isArray(copy[prop])) {
@@ -174,14 +175,14 @@ export class FolderDef {
 }
 
 export class Folder extends Element {
-  public hash: string;
   constructor(
     id,
     name,
     description,
     public type: string,
     public job: string,
-    public children: any[]
+    public children: any[],
+    public hash?: string
   ) {
     super(id, name, description);
   }
@@ -203,12 +204,11 @@ export class Folder extends Element {
 
   static create(obj) {
     let children = obj.children || [];
-    return new Folder(obj.id, obj.name, obj.description, obj.type, obj.job, children);
+    return new Folder(obj.id, obj.name, obj.description, obj.type, obj.job, children, obj.hash);
   }
 }
 
 export class Job extends Element {
-  public hash: string;
   constructor(
     id,
     name,
@@ -217,7 +217,8 @@ export class Job extends Element {
     public shortname: string,
     public folders: FolderDef,
     public basedOn?: BasedOn|null,    // potentially ambigious, null vs undefined
-    public commit?: string
+    public commit?: string,
+    public hash?: string
   ) {
     super(id, name, description);
   }
@@ -247,6 +248,6 @@ export class Job extends Element {
     ['id', 'name', 'description', 'owner', 'shortname', 'folders'].forEach((t)=>{
       if(obj[t] == null) throw new Error('key ' + t + ' required');
     });
-    return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit);
+    return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit, obj.hash);
   }
 }

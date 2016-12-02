@@ -53,6 +53,7 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
 
       this.job = job;
       this.elements = elements;
+      console.log('elements', elements);
       this.jobService.elements.subscribe(elements => this.elements = elements);
     });
   }

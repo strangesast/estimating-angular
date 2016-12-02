@@ -112,7 +112,6 @@ export class ElementService {
   }
 
   findLocation(locArr) {
-    console.log('arr', locArr);
     return Promise.resolve();
   }
 
@@ -360,7 +359,6 @@ export class ElementService {
   }
 
   retrieveFolder(id: string): Promise<Folder|null> {
-    console.log('here 1');
     return this.retrieveRecordFrom('folders', id).then((res)=>{
       if(res != null) {
         return Folder.create(res);
@@ -382,7 +380,6 @@ export class ElementService {
   }
 
   retrieveComponent(id: string): Promise<ComponentElement|null> {
-    console.log('here 2');
     return this.retrieveRecordFrom('components', id).then((res)=>{
       if(res != null) {
         return ComponentElement.create(res);
@@ -392,7 +389,6 @@ export class ElementService {
   }
 
   retrieveUser(username: string): Promise<User|null> {
-    console.log('here 3');
     return this.retrieveRecordFrom('users', username).then(res => {
       if(res != null) {
         return User.create(res);
@@ -432,7 +428,6 @@ export class ElementService {
   }
 
   retrieveRecordFrom(storeName: string, id: string) {
-    console.log('here 5');
     return this.retrieveRecord(this.db, storeName, id);
   }
 
@@ -561,7 +556,6 @@ export class ElementService {
     let id = random(); // should be unique
     let component = new ComponentElement(id, name, description, job.id, []);
     return this.addComponent(component, job, {}).then(result => {
-      console.log('save result', result);
       return component;
     });
   }
@@ -597,7 +591,6 @@ export class ElementService {
     );
 
     return this.saveNewJob(job, [child], [component], []).then((res)=>{
-      console.log('res', res);
       return res.jobs[0];
     });
   }
@@ -682,10 +675,9 @@ export class ElementService {
       };
     });
 
-    let jobText = JSON.stringify(job.toJSON());
     tree['job.json'] = {
       mode: gitModes.file,
-      content: jobText
+      content: JSON.stringify(job.toJSON())
     };
 
     let jobs = [job];

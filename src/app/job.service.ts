@@ -35,6 +35,7 @@ const initOptions = {
     'component' : true
   },
   folderOrder: ['phase', 'building'],
+  roots: {},
   sortBy: null
 };
 
@@ -236,18 +237,19 @@ export class JobService implements Resolve<Promise<any>> {
 
   getJobElements(job: Job): Promise<[HierarchyNode<any>,any|null]> {
     return this.elementService.getAllOfJob(job.id).then((els:any) => {
-      let enabled = ['phase', 'building'];
+      let options = this._options.getValue();
+      let enabled = options.enabled;
 
-      let types = job.folders.types;
-      let roots = {};
+      let roots = options.roots;
       // if root not included, use job root for type
-      types.forEach((t,i)=>{
+      job.folders.types.forEach((t,i)=>{
         if(!(t in roots)) roots[t] = job.folders.roots[i];
       });
 
       let folders = {};
-      types.filter(t=>enabled.indexOf(t)!=-1).map(t=>{
+      job.folders.types.filter(t=>enabled[t]).map(t=>{
         let root = els.folders.find(f=>f['type']==t&&f['id']==roots[t]);
+        if(root == null) throw new Error('folder root not found with that type ("'+t+'") and id ("'+roots[t]+'")')
         root = D3.hierarchy(this.resolveChildren(root, els.folders));
         folders[t] = root;
       });
@@ -255,7 +257,7 @@ export class JobService implements Resolve<Promise<any>> {
       let components = [];
       els.locations.forEach(l=>{
         let ob = {};
-        types.forEach((t,i)=>{
+        job.folders.types.forEach((t,i)=>{
           ob[t] = l.folders[i];
         });
         l.children.forEach(c=>{
