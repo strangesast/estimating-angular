@@ -280,7 +280,7 @@ export class ElementService {
         let owners = jobs.map(job => job.owner);
         return Promise.all(owners.map(owner => {
           let i = savedUsernames.indexOf(owner.username);
-          return i == -1 ? this.saveRecord(this.db, USER_COLLECTION, owner).then(this.retrieveUser) : Promise.resolve(User.create(savedUsers[i]));
+          return i == -1 ? this.saveRecord(this.db, USER_COLLECTION, owner).then(this.retrieveUser.bind(this)) : Promise.resolve(User.create(savedUsers[i]));
         }));
       });
     });
@@ -303,8 +303,8 @@ export class ElementService {
 
   getAllOfJob(jobid):Promise<any> {
     let db = this.db;
-    let stores = ['components', 'folders', 'locations'];
-    return Promise.all(stores.map((store)=>{
+    let storeNames = ['components', 'folders', 'locations'];
+    return Promise.all(storeNames.map((store)=>{
       return new Promise((resolve, reject)=> {
         let r = IDBKeyRange.only(jobid);
         let req = db.transaction([store], 'readonly')
@@ -328,7 +328,7 @@ export class ElementService {
       arr[1] = arr[1].map(Folder.create);
       arr[2] = arr[2].map(Location.create);
       let ob = {};
-      stores.forEach((s, i)=>ob[s] = arr[i]);
+      storeNames.forEach((s, i)=>ob[s] = arr[i]);
       return ob;
     });
   }
@@ -492,26 +492,28 @@ export class ElementService {
 
       request.onupgradeneeded = (e:any) => {
         let db = e.target.result;
+
         let createStore = (name, keypath, indexes) => {
-          return new Promise((resolve, reject) => {
-            let store = db.createObjectStore(name, { keyPath: keypath });
-            indexes.forEach((index)=> {
-              store.createIndex(index.name, index.on, { unique: index.unique, multiEntry: !!index.multiEntry });
-            });
-            resolve(store);
+          let store = db.createObjectStore(name, { keyPath: keypath });
+          indexes.forEach((index)=> {
+            store.createIndex(index.name, index.on, { unique: index.unique, multiEntry: !!index.multiEntry });
           });
         }
 
-        Promise.all(stores.map((store)=> {
+        let trans = e.target.transaction;
+
+        stores.forEach((store)=> {
           if(db.objectStoreNames.contains(store.name)) {
             db.deleteObjectStore(store.name);
           }
-          return createStore(store.name, store.keypath, store.indexes);
-
-        })).then(()=>{
-          this.db = db;
-          resolve(db);
+          createStore(store.name, store.keypath, store.indexes);
         });
+
+        this.db = db;
+
+        trans.onsuccess = (e) => {
+          resolve(db);
+        }
       };
 
       request.onsuccess = (e:any) => {

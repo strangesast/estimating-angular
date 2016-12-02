@@ -53,7 +53,6 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
 
       this.job = job;
       this.elements = elements;
-      console.log('elements', elements);
       this.jobService.elements.subscribe(elements => this.elements = elements);
     });
   }
@@ -68,7 +67,6 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log(changes);
   }
 
   toggleEnabled(name:string) {

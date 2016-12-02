@@ -85,8 +85,10 @@ export class JobService implements Resolve<Promise<any>> {
       //  this.router.navigate(['/jobs']); // should be 404
       //  return false;
       //}
+      
+      // TODO: should resolve list of users before all this....
 
-      return this.elementService.getJob(user.username, shortname).then((job:Job) => {
+      return this.elementService.getJob(username, shortname).then((job:Job) => {
         //if(!job) {
         //  this.router.navigate(['/jobs']); // should be 404
         //  return false;
@@ -190,8 +192,6 @@ export class JobService implements Resolve<Promise<any>> {
       components = els[1];
       this.components.next(components);
       this.folders.next(folders);
-
-      console.log('components', components);
 
       let i = enabled.indexOf('component');
       if(i != -1 && i != enabled.length - 1) throw new Error('if enabled, component must be last');
