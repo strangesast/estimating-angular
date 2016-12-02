@@ -34,8 +34,8 @@ export class ElementEditService implements Resolve<Promise<any>> {
 
   loadFirstElement(kind:string, id:string):Promise<any> {
     return (
-      kind == 'folder' ? Promise.resolve(this.jobService.folders.getValue().find(f=>f.id==id))
-    : kind == 'child' ? Promise.resolve(this.jobService.components.getValue().find(c=>c.id==id))
+      kind == 'folder' ? Promise.resolve(this.jobService.searchFolders(id))
+    : kind == 'child' ? Promise.resolve(this.jobService.searchComponents(id))
     : kind == 'component' ? this.jobService.findComponent(id)
     : Promise.resolve(null)
     ).then((el) => {

@@ -56,7 +56,9 @@ export class JobService implements Resolve<Promise<any>> {
   public _options: BehaviorSubject<any> = new BehaviorSubject(initOptions);
   public options: Observable<any> = this._options.asObservable();
 
-  constructor(private elementService: ElementService, private userService: UserService, private router: Router) { }
+  constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
+    console.log('job service initialzed');
+  }
 
   changeEnabled(ob) {
     let job = this._job.getValue();
@@ -75,6 +77,18 @@ export class JobService implements Resolve<Promise<any>> {
     options.sortBy = sort;
     this._options.next(options);
   }
+
+  searchFolders(id:string) {
+    let folders = this.folders.getValue();
+    console.log('folders', folders);
+    return folders.find(f=>f.id == id);
+  }
+
+  searchComponents(id:string) {
+    let components = this.components.getValue();
+    return components.find(f=>f.id == id);
+  }
+
 
   resolve(route: ActivatedRouteSnapshot): Promise<any> {
     let username = route.params['username'];
@@ -173,7 +187,7 @@ export class JobService implements Resolve<Promise<any>> {
     return this._options.getValue();
   }
 
-  buildTree(folders?, components?):Promise<any[]> {
+  buildTree(rootFolders?, components?):Promise<any[]> {
     let options = this._options.getValue();
     let enabledObj = options.enabled;
     let enabled = options.folderOrder.filter(f=>enabledObj[f]);
@@ -182,15 +196,19 @@ export class JobService implements Resolve<Promise<any>> {
     if(job == null) throw new Error('job not yet defined');
 
     let prom;
-    if(folders && components) {
-      prom = Promise.resolve([folders, components]);
+    if(rootFolders && components) {
+      prom = Promise.resolve([rootFolders, components]);
     } else {
       prom = this.getJobElements(job);
     }
     return prom.then((els)=>{
-      folders = els[0];
+      let rootFolders = els[0];
       components = els[1];
+
       this.components.next(components);
+      // janky
+      let folders = Object.keys(rootFolders).map(t=>rootFolders[t].descendants().map(d=>d.data));
+      if(folders.length) folders = folders.reduce((a,b)=>a.concat(b));
       this.folders.next(folders);
 
       let i = enabled.indexOf('component');
@@ -217,7 +235,7 @@ export class JobService implements Resolve<Promise<any>> {
       componentNest = componentNest.object(components);
 
 
-      let elements = this.fn(enabled, folders, componentNest);
+      let elements = this.fn(enabled, rootFolders, componentNest);
       this.elements.next(elements);
       return elements;
     });

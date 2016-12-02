@@ -47,16 +47,15 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     private jobService: JobService,
     private route: ActivatedRoute,
     private element: ElementRef
-  ) { }
+  ) {
+    console.log('new project page created');
+  }
 
   changeSubTab(tabName: string) {
     this.activeSubTab = tabName;
   }
 
   ngOnInit() {
-    //this.jobService.data.subscribe(data => {
-    //  this.data = data;
-    //});
     this.sub = this.route.data.subscribe((data:any) => {
       this.job = data.jobService.job;
       this.elements = data.jobService.elements;

@@ -1,17 +1,15 @@
 <div class="navigation-controls">
   <div class="navigation-bar">
     <label class="tab nostyle" *ngFor="let element of elements" [class.active]="activeElement && activeElement.id == element.id" (click)="loadElement(element)">
-      <span (click)="removeElement(element); $event.preventDefault()" class="hoverlink fa fa-remove"></span>
+      <span (click)="removeElement(element); $event.preventDefault()" class="hoverlink icon fa fa-remove"></span>
       <span [class]="element.type == 'building' ? 'fa fa-building-o' : element.type == 'phase' ? 'fa fa-bookmark-o' : 'fa fa-cubes'"></span>
-      <span>{{element.name}}</span>
+      <span>{{element.name||element.data.name}}</span>
     </label>
   </div>
   <div class="navigation-bar">
-    <div>
-      <label class="remove nostyle" (click)="loadElement(null)" [class.active]="!activeElement">
-        <span class="fa fa-plus"></span>
-      </label>
-    </div>
+    <span class="tab remove nostyle" (click)="loadElement(null)" [class.active]="!activeElement">
+      <span class="fa fa-plus"></span>
+    </span>
   </div>
 </div>
 <div class="main">

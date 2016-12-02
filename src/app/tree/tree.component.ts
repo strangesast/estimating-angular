@@ -90,6 +90,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
         .style('z-index', (el, i)=>i)
         .style('opacity', 1)
         .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+      return;
     }
 
     let t = D3.transition(null)
