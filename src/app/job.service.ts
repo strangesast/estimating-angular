@@ -72,6 +72,10 @@ export class JobService implements Resolve<Promise<any>> {
     return options.enabled;
   }
 
+  findChanges() {
+    return this.elementService.findChanges(this._job.getValue());
+  }
+
   changeSort(sort: string) {
     let options = this._options.getValue();
     options.sortBy = sort;

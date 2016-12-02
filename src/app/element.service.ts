@@ -12,7 +12,14 @@ import * as gitWalkers      from 'js-git/mixins/walkers';
 import * as gitReadCombiner from 'js-git/mixins/read-combiner';
 import * as gitFormats      from 'js-git/mixins/formats';
 
+let gitModesInv = {
+  33188: 'text',
+  57344: 'commit',
+  16384: 'tree'
+};
+
 import * as DeepDiff from 'deep-diff';
+console.log('deepdiff', DeepDiff);
 
 import { Router, Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
@@ -238,14 +245,6 @@ export class ElementService {
     });
   }
 
-  compareTrees(trees: string[]): Promise<any[]> {
-    return Promise.all(trees.map((t)=>{
-      return this.loadAs('tree', t).then((tree) => this.treeToObject(tree));
-    })).then((arr)=>{
-      return DeepDiff.diff.apply(null, arr);
-    });
-  }
-
   getJob(username: string, shortname: string): Promise<Job> {
     return this.retrieveJob(username, shortname).then(job => {
       if(job == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
@@ -364,6 +363,55 @@ export class ElementService {
         return Folder.create(res);
       }
       return null;
+    });
+  }
+
+  resolveTree(hash:string) {
+    return this.loadAs('tree', hash).then(tree=>{
+      return this.fn2(tree);
+    });
+  }
+
+  fn2(tree) {
+    let ob = {};
+    let proms = [];
+    for(let name in tree) {
+      let mode = gitModesInv[tree[name].mode];
+      proms.push(this.loadAs(mode, tree[name].hash).then(res => {
+        if(mode == 'text') {
+          ob[name] = JSON.parse(res);
+        } else if (mode == 'tree') {
+          this.fn2(res).then(res2 => {
+            ob[name] = res2;
+          });
+        }
+      }));
+    }
+    return Promise.all(proms).then(() => {
+      return ob;
+    });
+  }
+
+  compareTrees(newTree, oldTree) {
+    let p1 = this.resolveTree(newTree);
+    let p2 = this.resolveTree(oldTree);
+    return Promise.all([p1, p2]).then(both=> {
+      let diff = DeepDiff.diff;
+      return diff(both[0], both[1]);
+    });
+  }
+
+  findChanges(job:Job) {
+    return this.getAllOfJob(job.id).then(res => {
+      return Promise.all([
+        this.buildTree(job, res.components, res.folders, res.locations),
+        this.loadAs('commit', job.commit)
+      ]).then(both => {
+        let newTree = both[0];
+        let commit = both[1];
+
+        return this.compareTrees(newTree, commit.tree);
+      });
     });
   }
 
@@ -618,6 +666,54 @@ export class ElementService {
         sub.next(res.jobs[0]);
         sub.complete();
       });
+    });
+  }
+
+  buildTree(job, components, folders, locations) {
+    let tree = {};
+    folders = folders || [];
+    components = components || [];
+    let locObj = {};
+    job.folders.roots = job.folders.roots || [];
+
+    folders.forEach(folder => {
+      let obj = folder.toJSON();
+      // like 'phase/ba8dad.json':'{ ... }'
+      let path = [folder['type'], folder.id + '.json'].join('/');
+      tree[path] = {
+        mode: gitModes.file,
+        content: JSON.stringify(obj)
+      };
+    });
+
+    locations.forEach(loc => {
+      let obj = loc.toJSON();
+      let path = ['location', loc.id + '.json'].join('/');
+      tree[path] = {
+        mode: gitModes.file,
+        content: JSON.stringify(obj)
+      };
+    });
+
+    components.forEach(comp => {
+      let obj = comp.toJSON();
+      let path = ['component', comp.id + '.json'].join('/');
+      tree[path] = {
+        mode: gitModes.file,
+        content: JSON.stringify(obj)
+      };
+    });
+
+    tree['job.json'] = {
+      mode: gitModes.file,
+      content: JSON.stringify(job.toJSON())
+    };
+
+    let jobs = [job];
+
+    return promisify(this.repo.createTree.bind(this.repo), tree).then((both)=>{
+      let hash = both[0], tree = both[1];
+      return hash;
     });
   }
 

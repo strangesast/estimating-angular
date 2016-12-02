@@ -20,6 +20,9 @@ import { Job } from '../classes';
   ngOnInit() {
     this.sub = this.jobService.job.subscribe(job => {
       this.job = job;
+      this.jobService.findChanges().then(hist => {
+        console.log('history', hist);
+      });
     });
   }
   ngOnDestroy() {

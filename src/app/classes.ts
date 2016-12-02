@@ -75,10 +75,15 @@ export class Child {
     public data?: any,
     public folders?: any
   ) { }
+  static exclude: string[] = ['data', 'folders'];
   toJSON(removeExcluded?) {
     if(removeExcluded == null) removeExcluded = true;
     let copy = Object.assign({}, this);
     for(let prop in copy) {
+      if(Child.exclude.indexOf(prop) != -1) {
+        delete copy[prop];
+        continue;
+      }
       if(copy[prop]!=null&&copy[prop].toJSON) {
         copy[prop] = copy[prop].toJSON(removeExcluded);
       }
