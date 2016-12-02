@@ -42,6 +42,7 @@
     padding: 4px 10px;
     display: flex;
     flex-direction: row;
+    position: relative;
     border-color: @blue2;
     border-style: solid;
     border-width: 0 1.25px 0 1.25px;
@@ -50,7 +51,7 @@
     & > div {
       margin: auto 0;
       min-width: 0;
-      &:first-child {
+      &.details {
         flex-grow: 1;
         flex-shrink: 1;
       }
@@ -79,6 +80,41 @@
     .cnt + .cnt.fa + .cnt {
       margin-left: 10px;
     }
+  }
+}
+
+.job {
+  .statusBox {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(100, 100, 100, 0.1);
+    z-index: 2;
+    span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      width: 30px;
+      height: 30px;
+      font-size: 30px;
+    }
+  }
+  &.loading {
+    & > *:not(.statusBox) {
+      filter: blur(2px);
+    }
+    & > .statusBox {
+      display: block;
+    }
+  }
+  &.ready > .statusBox {
+    display: none;
   }
 }
 

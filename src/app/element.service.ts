@@ -582,7 +582,7 @@ export class ElementService {
     });
   }
 
-  createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Job> {
+  createJob(owner: User, shortname: string, name?: string, description?: string):Observable<Job> {
     // should verify that job id is unique
     if(name == null) name = 'New Job';
     if(description == null) description = '(no description)';
@@ -612,8 +612,12 @@ export class ElementService {
       component // data
     );
 
-    return this.saveNewJob(job, [child], [component], []).then((res)=>{
-      return res.jobs[0];
+    return Observable.create(sub => {
+      sub.next(job);
+      this.saveNewJob(job, [child], [component], []).then((res)=>{
+        sub.next(res.jobs[0]);
+        sub.complete();
+      });
     });
   }
 
