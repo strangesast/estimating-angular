@@ -33,6 +33,7 @@ export class EditPageComponent implements OnInit {
       let obj = data.editService;
       if(obj == null) return; // go to new page
       if(this.elements.indexOf(obj) == -1) this.elements.push(obj);
+      console.log('activeElement', obj);
       this.activeElement = obj;
     });
   }

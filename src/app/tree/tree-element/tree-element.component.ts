@@ -17,6 +17,7 @@ import { ComponentElement, Child, Folder } from '../../classes';
 export class TreeElementComponent implements OnInit, OnDestroy {
   data: any = {};
   kind: string = 'unknown';
+  url: string;
 
   constructor(private injector: Injector, public element: ElementRef) {
     this.data = this.injector.get('data');

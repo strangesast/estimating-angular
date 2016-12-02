@@ -367,15 +367,35 @@ export class ElementService {
     });
   }
 
-  retrieveComponentCommit(inpt: ComponentElement|string): Promise<string> {
+  retrieveComponentCommitHistory(inpt: ComponentElement|string): Promise<any[]> {
     let id = inpt instanceof ComponentElement ? inpt.id : inpt
     return this.retrieveComponent(id).then(comp => {
       if(comp == null) throw new Error('that component with id "" does not exist');
       let hash = comp.hash;
-      if(hash == null) return null;
-      // if hash is null it hasn't been saved locally
-      // if _id is null it hasn't been saved remotely
-      return 'fuck';
+      if(hash == null) return [];
+      return this.retrieveJobById(comp.job).then(job => {
+        let recurse = (commit, arr?) => {
+          arr = arr || [];
+          return this.loadAs('commit', commit).then(c=>{
+            return this.loadAs('tree', c.tree).then(t=>{
+              return this.loadAs('tree', t['component'].hash).then(t2=>{
+                let name = comp.id + '.json';
+                let obj = {
+                  commit: c,
+                  present: name in t2,
+                  same: (name in t2) ? t2[name].hash == comp.hash : false
+                };
+                if(c.parents && c.parents.length) {
+                  return recurse(commit.parents[0], arr.concat(obj));
+                } else {
+                  return arr.concat(obj);
+                }
+              });
+            });
+          });
+        }
+        return recurse(job.commit)
+      });
     });
   }
 
@@ -802,6 +822,15 @@ export class ElementService {
         resolve(stream);
       });
     });
+  }
+
+  logWalkGen(startHash:string) {
+    let g = function*(hash) {
+      while(true) {
+        yield this.loadAs('commit', hash)
+      }
+    }
+    return g(startHash);
   }
 
   treeWalk(hash: string): Promise<any> {

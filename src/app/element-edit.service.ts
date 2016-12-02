@@ -41,11 +41,12 @@ export class ElementEditService implements Resolve<Promise<any>> {
     ).then((el) => {
       if(el == null) return null;
       if(el instanceof ComponentElement) {
-        this.elementService.retrieveComponentCommit(el);
+        this.elementService.retrieveComponentCommitHistory(el).then(arr=>{
+          console.log(arr);
+        });
       } else if (el instanceof Child) {
-        this.elementService.retrieveComponentCommit(el.data).then(commit => {
-          el.data.commit = commit;
-          console.log('commit', commit);
+        this.elementService.retrieveComponentCommitHistory(el.data).then(arr=>{
+          console.log(arr);
         });
       }
       return el;

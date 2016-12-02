@@ -75,8 +75,14 @@ export class Child {
     public data?: any,
     public folders?: any
   ) { }
-  toJSON() {
+  toJSON(removeExcluded?) {
+    if(removeExcluded == null) removeExcluded = true;
     let copy = Object.assign({}, this);
+    for(let prop in copy) {
+      if(copy[prop]!=null&&copy[prop].toJSON) {
+        copy[prop] = copy[prop].toJSON(removeExcluded);
+      }
+    }
     return copy;
   }
   static create(obj) {
@@ -223,7 +229,7 @@ export class Job extends Element {
     super(id, name, description);
   }
 
-  static exclude: string[] = ['commit'];
+  static exclude: string[] = ['commit', 'hash'];
 
   toJSON(removeExcluded?:Boolean) {
     if(removeExcluded == null) removeExcluded = true;
@@ -242,12 +248,12 @@ export class Job extends Element {
     return [this.owner.username, this.shortname, 'build'].join('/');
   }
 
-  static create(obj, commit?: string) {
+  static create(obj, commit?) {
     if(!obj.owner) throw new Error('object owner required');
     let owner = User.create(obj.owner);
     ['id', 'name', 'description', 'owner', 'shortname', 'folders'].forEach((t)=>{
       if(obj[t] == null) throw new Error('key ' + t + ' required');
     });
-    return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit, obj.hash);
+    return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit||obj.commit, obj.hash);
   }
 }
