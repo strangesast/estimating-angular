@@ -16,8 +16,6 @@ import {
 
 import { Observable } from 'rxjs';
 
-import { TreeElement } from '../classes';
-
 import { Job, ComponentElement, Folder } from '../classes';
 
 import { ElementService }     from '../element.service';
@@ -62,7 +60,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     this.sub = this.route.data.subscribe((data:any) => {
       this.job = data.jobService.job;
       this.elements = data.jobService.elements;
+
       if(this.sub2) this.sub2.unsubscribe();
+
       this.sub2 = this.jobService.elements.subscribe(elements => this.elements = elements);
 
       this.jobService.options.subscribe(o => {

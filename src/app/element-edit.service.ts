@@ -11,7 +11,14 @@ import {
   RouterStateSnapshot
 } from '@angular/router';
 
-import { ComponentElement, Folder, Job } from './classes';
+import {
+  ComponentElement,
+  EditElement,
+  Folder,
+  Child,
+  Job
+} from './classes';
+
 import { ElementService } from './element.service';
 import { JobService } from './job.service';
 
@@ -25,20 +32,31 @@ export class ElementEditService implements Resolve<Promise<any>> {
 
   constructor(private jobService: JobService, private elementService: ElementService) { }
 
+  loadFirstElement(kind:string, id:string):Promise<any> {
+    return (
+      kind == 'folder' ? Promise.resolve(this.jobService.folders.getValue().find(f=>f.id==id))
+    : kind == 'child' ? Promise.resolve(this.jobService.components.getValue().find(c=>c.id==id))
+    : kind == 'component' ? this.jobService.findComponent(id)
+    : Promise.resolve(null)
+    ).then((el) => {
+      if(el == null) return null;
+      if(el instanceof ComponentElement) {
+        this.elementService.retrieveComponentCommit(el);
+      } else if (el instanceof Child) {
+        this.elementService.retrieveComponentCommit(el.data).then(commit => {
+          el.data.commit = commit;
+          console.log('commit', commit);
+        });
+      }
+      return el;
+    });
+  }
+
   resolve(route: ActivatedRouteSnapshot) {
     let params: any = route.params;
     let kind = params.kind;
     let id = params.id;
-    if(kind == 'folder') {
-      let folder = this.jobService.folders.getValue().find(f=>f.id==id);
-      console.log('folder', folder);
-      return Promise.resolve(folder);
-    } else if (kind == 'child') {
-      let component = this.jobService.components.getValue().find(c=>c.id=id);
-      return Promise.resolve(component);
-    } else if (kind == 'component') {
-      return this.jobService.findComponent(id);
-    }
+    return this.loadFirstElement(kind, id);
   }
 
   getElements() {

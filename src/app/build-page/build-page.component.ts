@@ -48,7 +48,7 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
       let job = data.jobService.job;
       let elements = data.jobService.elements;
 
-      let options = this.jobService.options.getValue();
+      let options = this.jobService.getOptions();
       this.enabled = options.enabled;
 
       this.job = job;

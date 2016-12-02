@@ -10,7 +10,7 @@ import {
 
 import { Subject, Observable, BehaviorSubject } from 'rxjs';
 
-import { ComponentElement, Folder, User, Job, Location, TreeElement } from './classes';
+import { ComponentElement, Folder, User, Job, Location } from './classes';
 
 import { ElementService } from './element.service';
 import { UserService } from './user.service';
@@ -52,26 +52,27 @@ export class JobService implements Resolve<Promise<any>> {
   public folders: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public components: BehaviorSubject<any[]> = new BehaviorSubject([]);
 
-  public options: BehaviorSubject<any> = new BehaviorSubject(initOptions);
+  public _options: BehaviorSubject<any> = new BehaviorSubject(initOptions);
+  public options: Observable<any> = this._options.asObservable();
 
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) { }
 
   changeEnabled(ob) {
     let job = this._job.getValue();
     let names = job.folders.types
-    let options = this.options.getValue();
+    let options = this._options.getValue();
     for(let prop in ob) {
       if(prop != 'component' && names.indexOf(prop) == -1) throw new Error('invalid name - not in this job');
       options.enabled[prop] = ob[prop];
     }
-    this.options.next(options);
+    this._options.next(options);
     return options.enabled;
   }
 
   changeSort(sort: string) {
-    let options = this.options.getValue();
+    let options = this._options.getValue();
     options.sortBy = sort;
-    this.options.next(options);
+    this._options.next(options);
   }
 
   resolve(route: ActivatedRouteSnapshot): Promise<any> {
@@ -165,8 +166,12 @@ export class JobService implements Resolve<Promise<any>> {
     }
   }
 
+  getOptions():any {
+    return this._options.getValue();
+  }
+
   buildTree(folders?, components?):Promise<any[]> {
-    let options = this.options.getValue();
+    let options = this._options.getValue();
     let enabledObj = options.enabled;
     let enabled = options.folderOrder.filter(f=>enabledObj[f]);
     if(enabledObj.component) enabled = enabled.concat('component');
@@ -265,18 +270,11 @@ export class JobService implements Resolve<Promise<any>> {
     });
   }
 
-  findComponent(id: string) {
+  findComponent(id: string):Promise<ComponentElement>{
     return this.elementService.retrieveComponent(id);
   }
 
-  addRef(el:TreeElement):Promise<TreeElement> {
-    return el.reftype == 'component' ? this.elementService.retrieveComponent(el.refid) : this.elementService.retrieveFolder(el.refid).then(ref=>{
-      el.ref = ref;
-      return el;
-    });
-  }
-
-  search(query:any, options:any):Promise<TreeElement[]> {
+  search(query:any, options:any):Promise<any[]> {
     let lower = !!options['ignorecase'];
     let which = !!options['any']; // any in query vs all in query
     let tree = this.elements.getValue();
@@ -290,6 +288,7 @@ export class JobService implements Resolve<Promise<any>> {
       }
       return !which;
     };
-    return Promise.all(tree.map(this.addRef.bind(this))).then(arr=>arr.filter(f));
-  }
+    //return Promise.all(tree.map(this.addRef.bind(this))).then(arr=>arr.filter(f));
+    return Promise.all([]);
+  };
 }

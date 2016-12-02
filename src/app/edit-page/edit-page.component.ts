@@ -31,6 +31,7 @@ export class EditPageComponent implements OnInit {
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('data', data);
       let obj = data.editService;
+      if(obj == null) return; // go to new page
       if(this.elements.indexOf(obj) == -1) this.elements.push(obj);
       this.activeElement = obj;
     });

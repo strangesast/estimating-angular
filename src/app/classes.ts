@@ -41,6 +41,18 @@ export class TreeElement {
   }
 }
 
+export class EditElement {
+  public init: any;
+  constructor(
+    public el: any,
+    public lastCommit: string
+  ) {
+    if(el.toJSON != undefined) {
+      this.init = el.toJSON();
+    }
+  }
+}
+
 // root 'element' of phase, building, component, job, etc
 export class Element {
   _id?: string|null;   // server id.  may be null if unsaved
@@ -84,6 +96,7 @@ export class BasedOn {
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
 export class ComponentElement extends Element {
+  public hash: string;
   constructor(
     id,
     name,
@@ -100,7 +113,7 @@ export class ComponentElement extends Element {
     return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn);
   }
 
-  static exclude: string[] = ['commit'];
+  static exclude: string[] = ['hash'];
 
   toJSON(removeExcluded?:Boolean) {
     if(removeExcluded == null) removeExcluded = true;
@@ -117,7 +130,13 @@ export class ComponentElement extends Element {
 }
 
 export class Location {
-  constructor(public id: string, public job: string, public children: Child[], public folders: string[]) { }
+  public hash: string;
+  constructor(
+    public id: string,
+    public job: string,
+    public children: Child[],
+    public folders: string[]
+  ) { }
 
   static createId(obj, job) {
     return job.folders.types.map((name, i)=>obj[name] || job.folders.roots[i]).join('-');
@@ -155,6 +174,7 @@ export class FolderDef {
 }
 
 export class Folder extends Element {
+  public hash: string;
   constructor(
     id,
     name,
@@ -188,6 +208,7 @@ export class Folder extends Element {
 }
 
 export class Job extends Element {
+  public hash: string;
   constructor(
     id,
     name,

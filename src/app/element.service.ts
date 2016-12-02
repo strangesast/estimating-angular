@@ -18,7 +18,6 @@ import { Router, Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
 import {
   User,
-  TreeElement,
   Element,
   Child,
   BasedOn,
@@ -33,6 +32,7 @@ import {
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
 
 const USER_COLLECTION = 'users';
+const INVALID_FOLDER_TYPES = ['component', 'location'];
 
 const stores = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
@@ -183,7 +183,6 @@ export class ElementService {
     let locId = Location.createId(folders, job);
     return this.retrieveRecord(this.db, 'locations', locId).then((obj) => {
       // get record, create if not exists
-      let prom;
       if(obj == null) {
         let loc = Location.fromJob(job, folders, []);
         if(locId != loc.id) throw new Error('wtf');
@@ -370,6 +369,18 @@ export class ElementService {
     });
   }
 
+  retrieveComponentCommit(inpt: ComponentElement|string): Promise<string> {
+    let id = inpt instanceof ComponentElement ? inpt.id : inpt
+    return this.retrieveComponent(id).then(comp => {
+      if(comp == null) throw new Error('that component with id "" does not exist');
+      let hash = comp.hash;
+      if(hash == null) return null;
+      // if hash is null it hasn't been saved locally
+      // if _id is null it hasn't been saved remotely
+      return 'fuck';
+    });
+  }
+
   retrieveComponent(id: string): Promise<ComponentElement|null> {
     console.log('here 2');
     return this.retrieveRecordFrom('components', id).then((res)=>{
@@ -388,6 +399,13 @@ export class ElementService {
       } else {
         return null;
       }
+    });
+  }
+
+  retrieveJobById(id: string): Promise<Job|null> {
+    return this.retrieveRecordFrom('jobs', id).then(obj => {
+      if(obj == null) throw new Error('job with that id ("'+id+'") does not exist');
+      return Job.create(obj);
     });
   }
 
@@ -550,82 +568,181 @@ export class ElementService {
 
   createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Job> {
     // should verify that job id is unique
-    let id = random();
     if(name == null) name = 'New Job';
     if(description == null) description = '(no description)';
     let folders = new FolderDef(['phase', 'building']);
 
-    let job = new Job(id, name, description, owner, shortname, folders);
+    let job = new Job(
+      random(),
+      name,
+      description,
+      owner,
+      shortname,
+      folders
+    );
 
-    return this.saveNewJob(job).then((res)=>{
-      let id = random();
-      let component = new ComponentElement(
-        id,
-        'blank component',
-        'description',
-        res.job.id,
-        []
-      )
-      return this.addComponent(component, res.job, {}).then((res2)=>{
-        console.log(res2);
-        return res.job;
-      });
+    let component = new ComponentElement(
+      random(),
+      'blank component',
+      'description',
+      job.id,
+      []
+    )
+
+    let child = new Child(
+      component.id, // comp id
+      1, // qty
+      null, // _id
+      component // data
+    );
+
+    return this.saveNewJob(job, [child], [component], []).then((res)=>{
+      console.log('res', res);
+      return res.jobs[0];
     });
   }
 
-  saveNewJob(job: Job): Promise<any> {
+  saveNewJob(job: Job, children?:Child[], components?:ComponentElement[], folders?:Folder[]): Promise<any> {
     let tree = {};
-    let folders = [];
-    let folderTypes = job.folders.types;
+    folders = folders || [];
+    children = children || [];
+    components = components || [];
+    let locObj = {};
+    job.folders.roots = job.folders.roots || [];
 
-    for(let i=0,folderType; folderType=folderTypes[i],i<folderTypes.length; i++) {
-      // should check that id is unique
-      let folder: Folder = new Folder(
+    // create root folder for each type. add children from 'folders' of similar type
+    job.folders.types.forEach(folderType => {
+      if(INVALID_FOLDER_TYPES.indexOf(folderType) != -1)
+        throw new Error('invalid folder type');
+      let folder = new Folder(
         random(), // id
-        'root', // name
-        '', // description
+        'root',   // name
+        'root "'+folderType+'" folder', // description
         folderType, // type
-        job.id, // job
-        [] // children
+        job.id, // job id
+        folders.filter(f=>f['type']==folderType) // child folders
       );
       folders.push(folder);
-      let folderText = JSON.stringify(folder.toJSON());
-      let folderPath = [folderType, folder.id + '.json'].join('/');
-      tree[folderPath] = {
+      job.folders.roots.push(folder.id);
+    });
+
+    folders.forEach(folder => {
+      let obj = folder.toJSON();
+      // like 'phase/ba8dad.json':'{ ... }'
+      let path = [folder['type'], folder.id + '.json'].join('/');
+      tree[path] = {
         mode: gitModes.file,
-        content: folderText
+        content: JSON.stringify(obj)
       };
-    }
+    });
 
-    if(folders.length != folderTypes.length) throw new Error('wtf');
+    // extract components from children that arent in 'components'
+    let componentIds = components.map(c=>c.id);
+    children.forEach(child => {
+      let folders = child.folders;
+      let comp = child.data;
+      if(comp == null || !(comp instanceof ComponentElement))
+        throw new Error('unexpected child data format (or null)');
 
-    job.folders.roots = folders.map((f)=>f.id);
+      if(componentIds.indexOf(comp.id) == -1) {
+        components.push(child.data);
+      }
+
+      // use child-specified folder or job-root-specified
+      child.folders = child.folders || [];
+      let locId = Location.createId(child.folders, job);
+      locObj[locId] = locObj[locId] || [];
+      locObj[locId].push(child);
+    });
+
+    let locations:Location[] = Object.keys(locObj).map(locId => {
+      return new Location(
+        locId,
+        job.id,
+        locObj[locId],
+        locId.split('-')
+      );
+    });
+
+    locations.forEach(loc => {
+      let obj = loc.toJSON();
+      let path = ['location', loc.id + '.json'].join('/');
+      tree[path] = {
+        mode: gitModes.file,
+        content: JSON.stringify(obj)
+      };
+    });
+
+    components.forEach(comp => {
+      let obj = comp.toJSON();
+      let path = ['component', comp.id + '.json'].join('/');
+      tree[path] = {
+        mode: gitModes.file,
+        content: JSON.stringify(obj)
+      };
+    });
+
     let jobText = JSON.stringify(job.toJSON());
     tree['job.json'] = {
       mode: gitModes.file,
       content: jobText
     };
 
+    let jobs = [job];
+
     return promisify(this.repo.createTree.bind(this.repo), tree).then((both)=>{
       let hash = both[0], tree = both[1];
 
-      return this.saveToHash('commit', {
+      let updateHashesPromise = this.loadAs('tree', hash).then(tree => {
+        job.hash = tree['job.json'].hash
+        let p1 = Promise.all(job.folders.types.map(t=>{
+          return this.loadAs('tree', tree[t].hash).then(t2 => {
+            folders.filter(f=>f['type']==t).forEach(f=>{
+              let obj = t2[f.id + '.json'];
+              if(obj == null) throw new Error('folder save error, id "'+f.id+'" type "'+f['type']+'" not found');
+              f.hash = obj.hash;
+            });
+          });
+        }));
+        let p2 = this.loadAs('tree', tree['component'].hash).then(t2 => {
+          components.forEach(c=>{
+            let obj = t2[c.id + '.json'];
+            if(obj == null) throw new Error('component save error, id "'+c.id+'" not found');
+            c.hash = obj.hash;
+          });
+        });
+        let p3 = this.loadAs('tree', tree['location'].hash).then(t2 => {
+          locations.forEach(l=>{
+            let obj = t2[l.id + '.json'];
+            if(obj == null) throw new Error('location save error, id "'+l.id+'" not found');
+            l.hash = obj.hash;
+          });
+        });
+        return Promise.all([p1, p2, p3]);
+      });
+
+      let saveCommitRefPromise = this.saveToHash('commit', {
         author: {
           name: job.owner.username,
           email: job.owner.email
         },
         tree: hash,
         message: 'first'
-      });
-    }).then((commit)=>{
-      let ref = [job.owner.username, job.shortname].join('/');
-
-      return this.updateRef(ref, commit).then(()=>{
+      }).then(commit => {
+        let ref = [job.owner.username, job.shortname].join('/');
         job.commit = commit;
-        return Promise.all([this.updateRecord(job), Promise.all(folders.map((folder)=>this.updateRecord(folder)))]).then((ids)=>{
-          let newids = ids.slice(0, 1).concat(ids[1]);
-          return {job: job, folders: folders};
-        });
+        return this.updateRef(ref, commit);
+      });
+
+      return Promise.all([updateHashesPromise, saveCommitRefPromise]).then(()=>{
+        return Promise.all([].concat(jobs, folders, locations, components).map(this.updateRecord.bind(this)));
+      }).then(()=>{
+        return {
+          jobs: jobs,
+          folders: folders,
+          components: components,
+          locations: locations
+        };
       });
     });
   };
