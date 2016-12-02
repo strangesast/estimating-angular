@@ -31,6 +31,7 @@ import { JobCreateComponent } from './start-page/job-create/job-create.component
 import { JobListPageComponent } from './job-list-page/job-list-page.component';
 import { SavePageComponent } from './save-page/save-page.component';
 import { DetailsPageComponent } from './details-page/details-page.component';
+import { EstimatingPageComponent } from './estimating-page/estimating-page.component';
 
 @NgModule({
   declarations: [
@@ -51,7 +52,8 @@ import { DetailsPageComponent } from './details-page/details-page.component';
     JobCreateComponent,
     JobListPageComponent,
     SavePageComponent,
-    DetailsPageComponent
+    DetailsPageComponent,
+    EstimatingPageComponent
   ],
   imports: [
     BrowserModule,
