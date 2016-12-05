@@ -395,10 +395,7 @@ export class ElementService {
   compareTrees(newTree, oldTree) {
     let p1 = this.resolveTree(newTree);
     let p2 = this.resolveTree(oldTree);
-    return Promise.all([p1, p2]).then(both=> {
-      let diff = DeepDiff.diff;
-      return diff(both[0], both[1]);
-    });
+    return Promise.all([p1, p2]);
   }
 
   findChanges(job:Job) {

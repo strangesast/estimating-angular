@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router }   from '@angular/router';
 import { Location }                 from '@angular/common';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Element } from '../element';
 import { TreeBuilderService } from '../tree-builder.service';
@@ -21,13 +22,20 @@ export class EditPageComponent implements OnInit {
   activeSub: any;
   sub: any;
 
+  newElementForm: FormGroup;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private location: Location
+    private location: Location,
+    private formBuilder: FormBuilder
   ) { }
 
   ngOnInit():void{
+    this.newElementForm = this.formBuilder.group({
+      name:  ['', Validators.required],
+      description: ['', Validators.required]
+    });
     this.sub = this.route.data.subscribe((data:any) => {
       console.log('data', data);
       let obj = data.editService;
