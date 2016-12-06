@@ -1,0 +1,14 @@
+<div class="small-container">
+  <div class="user-list list shadow">
+    <div class="header-item">Users</div>
+    <div *ngFor="let user of users" class="list-item user">
+      <div class="details">
+        <span class="name hoverunderline">{{ user.name }} <small>({{user.username}})</small></span>
+        <span class="description">{{ user.email }}</span>
+      </div>
+    </div>
+    <div class="last-item">
+      <span (click)="createNewUser()" class="hoverunderline">Create New User</span>
+    </div>
+  </div>
+</div>

@@ -32,6 +32,7 @@ import { JobListPageComponent } from './job-list-page/job-list-page.component';
 import { SavePageComponent } from './save-page/save-page.component';
 import { DetailsPageComponent } from './details-page/details-page.component';
 import { EstimatingPageComponent } from './estimating-page/estimating-page.component';
+import { UserListPageComponent } from './user-list-page/user-list-page.component';
 
 @NgModule({
   declarations: [
@@ -53,7 +54,8 @@ import { EstimatingPageComponent } from './estimating-page/estimating-page.compo
     JobListPageComponent,
     SavePageComponent,
     DetailsPageComponent,
-    EstimatingPageComponent
+    EstimatingPageComponent,
+    UserListPageComponent
   ],
   imports: [
     BrowserModule,

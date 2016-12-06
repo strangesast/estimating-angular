@@ -8,6 +8,7 @@ import { StartPageComponent } from './start-page/start-page.component';
 import { UserSelectComponent } from './start-page/user-select/user-select.component';
 import { UserCreateComponent } from './start-page/user-create/user-create.component';
 import { JobListPageComponent } from './job-list-page/job-list-page.component';
+import { UserListPageComponent } from './user-list-page/user-list-page.component';
 import { SavePageComponent } from './save-page/save-page.component';
 
 import { ProjectPageComponent } from './project-page/project-page.component';
@@ -80,12 +81,17 @@ const routes: Routes = [
     }
   },
   {
-    path: 'edit',
-    component: EditPageComponent
-  },
-  {
-    path: 'edit/:id',
-    component: EditPageComponent
+    path: 'users',
+    resolve: {
+      elements: ElementService,
+    },
+    children: [{
+      path: '',
+      resolve: {
+        userService: UserService
+      },
+      component: UserListPageComponent
+    }]
   }
 ];
 

@@ -1,5 +1,5 @@
 <div class="small-container">
-  <div class="list">
+  <div class="job-list list shadow">
     <div class="header-item">Jobs</div>
     <div *ngFor="let job of jobs" class="list-item job" [ngClass]="jobStatus[job.id]" [attr.tabindex]="jobStatus[job.id]=='ready' ? 1 : null">
       <div>

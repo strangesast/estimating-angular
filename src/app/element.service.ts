@@ -271,6 +271,7 @@ export class ElementService {
     });
   };
 
+  // should not auto-create user if in job but not in users col.
   getUsers(): Promise<User[]> {
     let db = this.db;
     return this.getAll(db, USER_COLLECTION).then(savedUsers => {

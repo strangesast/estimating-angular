@@ -8,7 +8,7 @@ import { User, Job } from '../classes';
 @Component({
   selector: 'app-job-list-page',
   templateUrl: './job-list-page.component.html',
-  styleUrls: ['./job-list-page.component.less']
+  styleUrls: ['../app.component.less', './job-list-page.component.less']
 })
 export class JobListPageComponent implements OnInit {
   jobs: Job[] = [];
