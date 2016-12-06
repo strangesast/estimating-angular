@@ -1,0 +1,41 @@
+<div [@myAnimation]="active ? 'in' : 'out'">
+  <pre *ngIf="element">{{ element | json }}</pre>
+  <div *ngIf="isNew">
+    <label>Kind</label>
+    <select [ngModel]="kind" (ngModelChange)="newKindChanged($event)">
+      <option value="component">Component</option>
+      <option value="folder">Folder</option>
+      <option value="child">Child</option>
+    </select>
+  </div>
+  <form *ngIf="form!=null" (ngSubmit)="onSubmit()" [formGroup]="form">
+    <div *ngIf="['component', 'folder'].indexOf(kind) != -1">
+      <label>Name</label>
+      <input type="text" formControlName="name">
+      <small>A descriptive name for this element.</small>
+      <div></div>
+    </div>
+    <div *ngIf="['component', 'folder'].indexOf(kind) != -1">
+      <label>Description</label>
+      <input type="text" formControlName="description">
+      <small>Describe this element.</small>
+      <div></div>
+    </div>
+    <div *ngIf="kind == 'child'">
+      <label>Ref</label>
+      <input type="text" formControlName="ref">
+      <small></small>
+      <div></div>
+    </div>
+    <div *ngIf="kind == 'child'">
+      <label>Qty</label>
+      <input type="number" formControlName="qty">
+      <small>How many of this element.</small>
+      <div></div>
+    </div>
+
+
+    <button type="submit">Update</button>
+    <button (click)="reset()" type="button">Reset</button>
+  </form>
+</div>

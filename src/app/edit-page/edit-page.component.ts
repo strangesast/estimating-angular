@@ -1,7 +1,17 @@
-import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router }   from '@angular/router';
 import { Location }                 from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { 
+  Input,
+  Component,
+  OnInit,
+  trigger,
+  state,
+  style,
+  transition,
+  animate
+} from '@angular/core';
+
 
 import { JobService } from '../job.service';
 import { Element } from '../element';
@@ -35,8 +45,11 @@ export class EditPageComponent implements OnInit {
 
   ngOnInit():void{
     this.newElementForm = this.formBuilder.group({
-      name:  ['', Validators.required],
-      description: ['', Validators.required]
+      name: ['', [
+        Validators.minLength(5),
+        Validators.required]
+      ],
+      description: ''
     });
 
     this.jobService.getEditElements().subscribe(elements => {

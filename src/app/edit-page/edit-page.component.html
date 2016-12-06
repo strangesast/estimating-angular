@@ -13,15 +13,6 @@
   </div>
 </div>
 <div class="main">
-  <div *ngIf="activeElementId == null">
-  </div>
-  <div>
-    <button (click)="backToBuild()">Back</button>
-  </div>
+  <app-edit-window [active]="element.id==activeElementId" [element]="element" *ngFor="let element of editElements" class="page"></app-edit-window>
+  <app-edit-window [active]="activeElementId==null" [element]="null" class="page"></app-edit-window>
 </div>
-<form [formGroup]="newElementForm">
-  <label>Name:</label>
-  <input type="text" formControlName="name">
-  <label>Description:</label>
-  <input type="text" formControlName="description">
-</form>

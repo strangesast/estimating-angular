@@ -33,6 +33,7 @@ import { SavePageComponent } from './save-page/save-page.component';
 import { DetailsPageComponent } from './details-page/details-page.component';
 import { EstimatingPageComponent } from './estimating-page/estimating-page.component';
 import { UserListPageComponent } from './user-list-page/user-list-page.component';
+import { EditWindowComponent } from './edit-window/edit-window.component';
 
 @NgModule({
   declarations: [
@@ -55,7 +56,8 @@ import { UserListPageComponent } from './user-list-page/user-list-page.component
     SavePageComponent,
     DetailsPageComponent,
     EstimatingPageComponent,
-    UserListPageComponent
+    UserListPageComponent,
+    EditWindowComponent
   ],
   imports: [
     BrowserModule,

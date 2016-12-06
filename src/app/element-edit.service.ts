@@ -40,6 +40,10 @@ export class ElementEditService implements Resolve<Promise<any>> {
     : Promise.resolve(null)
     ).then((el) => {
       if(el == null) return null;
+      if(el instanceof Child) {
+        let comp = this.jobService.searchComponents(el.ref);
+        if(comp) el.data = comp;
+      }
       this.jobService.addEditElement(el);
       if(el instanceof ComponentElement) {
         this.elementService.retrieveComponentCommitHistory(el).then(arr=>{
