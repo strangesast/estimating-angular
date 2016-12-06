@@ -1,32 +1,19 @@
 <div class="navigation-controls">
   <div class="navigation-bar">
-    <label class="tab nostyle" *ngFor="let element of editElements" [class.active]="activeElement == element" (click)="loadElement(element)" [attr.title]="element.name||element.data.name">
+    <label class="tab nostyle" *ngFor="let element of editElements" [class.active]="activeElementId == element.id" (click)="loadElement(element)" [attr.title]="element.name||element.data.name">
       <span (click)="remove(element); $event.preventDefault()" class="hoverlink icon fa fa-remove"></span>
       <span [class]="element.type == 'building' ? 'fa fa-building-o' : element.type == 'phase' ? 'fa fa-bookmark-o' : 'fa fa-cubes'"></span>
       <span>{{element.name||element.data.name}}</span>
     </label>
   </div>
   <div class="navigation-bar">
-    <span class="tab remove nostyle" (click)="loadElement(null)" [class.active]="activeElement==null">
+    <span class="tab remove nostyle" (click)="loadElement(null)" [class.active]="activeElementId==null">
       <span class="fa fa-plus"></span>
     </span>
   </div>
 </div>
 <div class="main">
-  <pre>{{ ((activeElement != null && activeElement.toJSON) ? activeElement.toJSON(false) : activeElement) | json }}</pre>
-  <div *ngIf="activeElement != null">
-    <div>
-      <label>Name:</label>
-      <input [ngModel]="activeElement.name" (ngModelChange)="onChange('name', $event)">
-    </div>
-    <div>
-      <label>Description:</label>
-      <input [ngModel]="activeElement.description" (ngModelChange)="onChange('description', $event)">
-    </div>
-    <button (click)="saveChanges()">Save</button>
-
-  </div>
-  <div *ngIf="activeElement == null">
+  <div *ngIf="activeElementId == null">
   </div>
   <div>
     <button (click)="backToBuild()">Back</button>

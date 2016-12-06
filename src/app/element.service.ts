@@ -204,7 +204,7 @@ export class ElementService {
       if(i != -1) {
         loc.children[i].qty = loc.children[i].qty + 1;
       } else {
-        let child = new Child(component.id, 1);
+        let child = new Child(random(), component.id, 1);
         loc.children.push(child);
       }
       return Promise.all([
@@ -652,6 +652,7 @@ export class ElementService {
     )
 
     let child = new Child(
+      random(),
       component.id, // comp id
       1, // qty
       null, // _id

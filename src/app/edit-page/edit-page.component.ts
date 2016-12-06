@@ -17,7 +17,7 @@ import { Child, ComponentElement, Folder } from '../classes';
 
 export class EditPageComponent implements OnInit {
   editElements: any[] = [];
-  activeElement: any;
+  activeElementId: string|null;
 
   elementsSub: any;
   activeSub: any;
@@ -41,15 +41,15 @@ export class EditPageComponent implements OnInit {
 
     this.jobService.getEditElements().subscribe(elements => {
       this.editElements = elements;
-      if(elements.indexOf(this.activeElement) == -1) this.activeElement = elements[0] || null;
+      if(elements.map(el=>el.id).indexOf(this.activeElementId) == -1) this.activeElementId = elements[0] ? elements[0].id : null;
     });
 
     this.route.data.subscribe((data:any) => {
       if(data.editService != null) {
         this.jobService.addEditElement(data.editService);
-        this.activeElement = data.editService;
+        this.activeElementId = data.editService.id;
       } else {
-        this.activeElement = null;
+        this.activeElementId = null;
       }
     });
   }

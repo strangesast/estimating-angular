@@ -58,9 +58,7 @@ export class ElementEditService implements Resolve<Promise<any>> {
     let params: any = route.params;
     let kind = params.kind;
     let id = params.id;
-    console.log('kind', kind, 'id', id);
     return this.loadFirstElement(kind, id).then(el => {
-      console.log('eelllll', el);
       if(el == null) {
         return this.router.navigate(['./edit']);
       } else {

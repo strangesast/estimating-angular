@@ -69,8 +69,8 @@ export class JobService implements Resolve<Promise<any>> {
 
   addEditElement(el): void {
     let list = this.editElementList.getValue();
-    let i = list.indexOf(el);
-    if(i == -1) this.editElementList.next(list.concat(el).filter((e, i, a)=>a.indexOf(e)==i));
+    let i = list.map(el=>el.id).indexOf(el.id);
+    if(i == -1) this.editElementList.next(list.concat(el));
   }
 
   removeEditElement(el) {
@@ -196,6 +196,7 @@ export class JobService implements Resolve<Promise<any>> {
       if(!remaining.length) return children;
 
       return children.map(child => {
+        console.log('child', child);
         let ob = {};
         ob[name] = child.data.id;
         let p = Object.assign({}, prev, ob);
@@ -304,8 +305,9 @@ export class JobService implements Resolve<Promise<any>> {
         job.folders.types.forEach((t,i)=>{
           ob[t] = l.folders[i];
         });
+        // fill in child 'data' attribute
         l.children.forEach(c=>{
-          let child = els.components.find(e=>e.id==c.id);
+          let child = els.components.find(e=>e.id==c.ref);
           c.data = child;
           c.folders = ob;
           components.push(c);

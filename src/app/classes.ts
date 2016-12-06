@@ -70,8 +70,9 @@ export class Element {
 export class Child {
   constructor(
     public id: string,
+    public ref: string,
     public qty: number,
-    public _id?: string,
+    public _ref?: string,
     public data?: any,
     public folders?: any
   ) { }
@@ -91,7 +92,7 @@ export class Child {
     return copy;
   }
   static create(obj) {
-    return new Child(obj.id, obj.qty, obj._id, obj.data);
+    return new Child(obj.id, obj.ref, obj.qty, obj._ref, obj.data);
   }
 }
 
