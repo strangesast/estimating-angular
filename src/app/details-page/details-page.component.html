@@ -1,5 +1,48 @@
-<div>
-  <h1 class="header">Details for {{ job.name }}</h1>
-  <pre>{{ job | json }}</pre>
-</div>
+<form *ngIf="jobForm" novalidate (ngSubmit)="onSubmit(job)" [formGroup]="jobForm">
+  <span class="header">{{ jobForm.get('name').value }}</span>
+  <div>
+    <label>Name:</label>
+    <input formControlName="name" type="text">
+    <small>Speaks for itself.</small>
+    <div *ngIf="jobForm.get('name').hasError('required') && jobForm.get('name').touched">
+      Name is required.
+    </div>
+    <div *ngIf="jobForm.get('name').hasError('minLength') && jobForm.get('name').touched">
+      Name must be at least 5 characters in length..
+    </div>
+  </div>
+
+  <div>
+    <label>Description</label>
+    <textarea formControlName="description" type="text"></textarea>
+  </div>
+
+  <div>
+    <label>Short Name</label>
+    <input formControlName="shortname" type="text">
+    <small>Used for url and easy identification.</small>
+    <div class="error" *ngIf="jobForm.get('shortname').hasError('required') && jobForm.get('shortname').touched">This is required.</div>
+    <div class="error" *ngIf="jobForm.get('shortname').hasError('minLength') && jobForm.get('shortname').touched">Must be at least 5 characters long.</div>
+    <div class="error" *ngIf="jobForm.get('shortname').hasError('pattern') && jobForm.get('shortname').touched">Invalid character used.  Only alphanumeric and "-"/"_" allowed.</div>
+  </div>
+
+  <div formGroupName="owner">
+    <label>Owner</label>
+    <div>
+      <label>Name</label>
+      <input type="text" formControlName="name">
+    </div>
+    <div>
+      <label>Username</label>
+      <input type="text" formControlName="username">
+    </div>
+    <div>
+      <label>Email</label>
+      <input type="email" formControlName="email">
+    </div>
+    <small>Only one owner may modify this job.</small>
+  </div>
+  <button type="submit" [disabled]="jobForm.invalid">Update</button>
+  <button type="button" (click)="reset()" [disabled]="!jobForm.dirty">Reset</button>
+</form>
 
