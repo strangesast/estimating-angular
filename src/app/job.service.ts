@@ -56,10 +56,32 @@ export class JobService implements Resolve<Promise<any>> {
   public _options: BehaviorSubject<any> = new BehaviorSubject(initOptions);
   public options: Observable<any> = this._options.asObservable();
 
+  public editElementList: BehaviorSubject<Element[]> = new BehaviorSubject([]);
+
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
     console.log('job service initialzed');
   }
 
+  // edit page
+  getEditElements() {
+    return this.editElementList.asObservable();
+  }
+
+  addEditElement(el): void {
+    let list = this.editElementList.getValue();
+    let i = list.indexOf(el);
+    if(i == -1) this.editElementList.next(list.concat(el).filter((e, i, a)=>a.indexOf(e)==i));
+  }
+
+  removeEditElement(el) {
+    let list = this.editElementList.getValue();
+    let i = list.indexOf(el);
+    if(i == -1) return null; // probably should throw err
+    list.splice(i, 1);
+    this.editElementList.next(list);
+  }
+
+  // build page
   changeEnabled(ob) {
     let job = this._job.getValue();
     let names = job.folders.types

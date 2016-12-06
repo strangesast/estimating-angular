@@ -30,7 +30,7 @@ export class ElementEditService implements Resolve<Promise<any>> {
   _activeElement: BehaviorSubject<any> = new BehaviorSubject(null);
   activeElement: Observable<any> = this._activeElement.asObservable();
 
-  constructor(private jobService: JobService, private elementService: ElementService) { }
+  constructor(private jobService: JobService, private elementService: ElementService, private router: Router) { }
 
   loadFirstElement(kind:string, id:string):Promise<any> {
     return (
@@ -40,6 +40,7 @@ export class ElementEditService implements Resolve<Promise<any>> {
     : Promise.resolve(null)
     ).then((el) => {
       if(el == null) return null;
+      this.jobService.addEditElement(el);
       if(el instanceof ComponentElement) {
         this.elementService.retrieveComponentCommitHistory(el).then(arr=>{
           console.log(arr);
@@ -53,11 +54,19 @@ export class ElementEditService implements Resolve<Promise<any>> {
     });
   }
 
-  resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot): Promise<ComponentElement|Folder|Child|null> {
     let params: any = route.params;
     let kind = params.kind;
     let id = params.id;
-    return this.loadFirstElement(kind, id);
+    console.log('kind', kind, 'id', id);
+    return this.loadFirstElement(kind, id).then(el => {
+      console.log('eelllll', el);
+      if(el == null) {
+        return this.router.navigate(['./edit']);
+      } else {
+        return el;
+      }
+    });
   }
 
   getElements() {

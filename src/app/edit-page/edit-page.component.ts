@@ -3,10 +3,11 @@ import { ActivatedRoute, Params, Router }   from '@angular/router';
 import { Location }                 from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
+import { JobService } from '../job.service';
 import { Element } from '../element';
 import { TreeBuilderService } from '../tree-builder.service';
 
-import { SortablejsOptions } from 'angular-sortablejs';
+import { Child, ComponentElement, Folder } from '../classes';
 
 @Component({
   selector: 'app-edit-page',
@@ -15,7 +16,7 @@ import { SortablejsOptions } from 'angular-sortablejs';
 })
 
 export class EditPageComponent implements OnInit {
-  elements: any[] = [];
+  editElements: any[] = [];
   activeElement: any;
 
   elementsSub: any;
@@ -25,6 +26,7 @@ export class EditPageComponent implements OnInit {
   newElementForm: FormGroup;
 
   constructor(
+    private jobService: JobService,
     private route: ActivatedRoute,
     private router: Router,
     private location: Location,
@@ -36,14 +38,24 @@ export class EditPageComponent implements OnInit {
       name:  ['', Validators.required],
       description: ['', Validators.required]
     });
-    this.sub = this.route.data.subscribe((data:any) => {
-      console.log('data', data);
-      let obj = data.editService;
-      if(obj == null) return; // go to new page
-      if(this.elements.indexOf(obj) == -1) this.elements.push(obj);
-      console.log('activeElement', obj);
-      this.activeElement = obj;
+
+    this.jobService.getEditElements().subscribe(elements => {
+      this.editElements = elements;
+      if(elements.indexOf(this.activeElement) == -1) this.activeElement = elements[0] || null;
     });
+
+    this.route.data.subscribe((data:any) => {
+      if(data.editService != null) {
+        this.jobService.addEditElement(data.editService);
+        this.activeElement = data.editService;
+      } else {
+        this.activeElement = null;
+      }
+    });
+  }
+
+  remove(el) {
+    this.jobService.removeEditElement(el);
   }
 
   onChange(prop, evt) {
@@ -55,20 +67,15 @@ export class EditPageComponent implements OnInit {
   }
 
   loadElement(el): void {
-    //this.elementEditService.loadElement(el);
-  }
-
-  childListOptions: SortablejsOptions = {
-    group: {
-      name: 'elements', pull: false, put: true
+    console.log('el', el);
+    if(el == null) {
+      this.router.navigate(['edit'], {relativeTo: this.route.parent});
+    } else {
+      let t = el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof Folder ? 'folder' : 'unknown';
+      let id = el.id;
+      this.router.navigate(['edit', t, id], {relativeTo: this.route.parent});
     }
-  }
-  tabListOptions: SortablejsOptions = {
-    group: {
-      name: 'tabs', pull: false, put: false
-    },
-    filter: '.remove',
-    draggable: '.tab'
+    //this.elementEditService.loadElement(el);
   }
 
   backToBuild() {
