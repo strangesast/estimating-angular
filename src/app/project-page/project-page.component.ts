@@ -64,6 +64,8 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
       this.sub2 = this.jobService.elements.subscribe(elements => this.elements = elements);
 
+      this.jobService.job.subscribe(job => this.job = job);
+
       this.jobService.options.subscribe(o => {
         this.jobService.buildTree();
       });

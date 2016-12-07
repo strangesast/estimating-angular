@@ -262,8 +262,16 @@ export class ElementService {
           return this.loadAs('tree', commit.tree);
         }).then((tree)=>{
           return this.loadAs('text', tree['job.json'].hash).then((text)=>{
-            let job = Job.create(JSON.parse(text), commitHash);
-            return job;
+            let data = JSON.parse(text);
+            data.commit = commitHash;
+            console.log('data', data);
+
+            // load the most recent (perhaps unsaved) version of the job
+            return this.retrieveJobById(data.id).then(job => {
+              console.log('job', job);
+              if(job != null) return job;
+              return Job.create(data); 
+            });
           });
         });
       }));

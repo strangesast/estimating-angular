@@ -228,7 +228,7 @@ export class Job extends Element {
     public owner: User,
     public shortname: string,
     public folders: FolderDef,
-    public basedOn?: BasedOn|null,    // potentially ambigious, null vs undefined
+    public basedOn?: BasedOn|null, // potentially ambigious, null vs undefined
     public commit?: string,
     public hash?: string
   ) {

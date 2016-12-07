@@ -8,37 +8,37 @@
 }
 
 .job-list > .list-item {
-  & > div {
-    margin: auto 0;
+  & > .details {
     min-width: 0;
-    &.details {
-      flex-grow: 1;
-      flex-shrink: 1;
+    flex-grow: 1;
+    flex-shrink: 1;
+    .name, .description {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .name {
+      font-size: 1.5em;
     }
   }
-  .name, .description {
-    display: block;
+  & > div {
+    margin: auto 0;
   }
-  .name {
-    font-size: 1.5em;
-  }
-  .description {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  .cnts, .cnt {
-    white-space: nowrap;
-    flex-basis: auto;
-  }
-  .cnt {
-    font-size: 1.5em;
-  }
-  .cnt + .cnt.fa {
-    padding-left: 3px;
-  }
-  .cnt + .cnt.fa + .cnt {
-    margin-left: 10px;
+  .cnts {
+    .cnt {
+      font-size: 1.5em;
+    }
+    &, .cnt {
+      white-space: nowrap;
+      flex-basis: auto;
+    }
+    .cnt + .cnt.fa {
+      padding-left: 3px;
+    }
+    .cnt + .cnt.fa + .cnt {
+      margin-left: 10px;
+    }
   }
 }
 

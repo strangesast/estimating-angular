@@ -6,8 +6,8 @@
         <span (click)="deleteJob(job)" class="hoverlink icon fa fa-close fa-lg"></span>
       </div>
       <div class="details">
-        <span class="name hoverunderline" routerLink="{{job.getURL()}}">{{ job.name }}</span>
-        <span class="description">{{ job.description }}</span>
+        <span [attr.title]="job.name" class="name hoverunderline" routerLink="{{job.getURL()}}">{{ job.name }}</span>
+        <span [attr.title]="job.description" class="description">{{ job.description }}</span>
       </div>
       <div class="cnts">
         <span class="cnt">10</span><span class="cnt fa fa-building-o"></span>
