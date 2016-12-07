@@ -15,6 +15,7 @@ import { Job } from '../classes';
   private sub: Subscription;
   private job: Job;
   private jobForm: FormGroup;
+  private status: any[] = [];
 
   private availableUsers = [
     {name: 'Sam Zagrobelny', username: 'sazagrobelny', id: '1231231231231'}
@@ -50,6 +51,10 @@ import { Job } from '../classes';
         console.log('history', hist);
       });
     });
+    this.jobService.status.subscribe(s=>{
+      console.log('status', s);
+      this.status = s;
+    });
   }
   ngOnDestroy() {
     this.sub.unsubscribe();
@@ -70,9 +75,15 @@ import { Job } from '../classes';
   }
 
   onSubmit({ dirty, value, valid }: { dirty: boolean, value: Job, valid: boolean}) {
-    if(!dirty) {
-      console.log('dirty', dirty);
-      console.log(value, valid);
+    if(dirty && valid) {
+      let j = Job.create(Object.assign({}, this.job.toJSON(false), value))
+      console.log('val!', value, j);
+      this.jobService.updateJob(j).then((r)=>{
+        console.log('result', r);
+
+      });
+    } else if (!valid) {
+      alert('invalid');
     }
   }
 }

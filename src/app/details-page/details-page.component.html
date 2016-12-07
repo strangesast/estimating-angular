@@ -46,3 +46,11 @@
   <button type="button" (click)="reset()" [disabled]="!jobForm.dirty">Reset</button>
 </form>
 
+
+<h2>Changes <small>(since last save)</small></h2>
+<div *ngFor="let s of status">
+  <span>{{s.path[0]}}</span>
+  <span *ngFor="let p of s.path.slice(1)">> {{p}}</span>
+  <span>Changed "{{s.lhs}}" to "{{s.rhs}}"</span>
+</div>
+<button>Save</button>

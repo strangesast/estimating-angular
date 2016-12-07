@@ -19,6 +19,8 @@ import { hierarchy, tree, treemap, HierarchyNode } from 'd3-hierarchy';
 import { nest } from 'd3-collection';
 
 import * as D3 from 'd3';
+import { diff } from 'deep-diff';
+
 
 class TreeNode {
   data: any;
@@ -43,6 +45,12 @@ const initOptions = {
 export class JobService implements Resolve<Promise<any>> {
   private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
   public job: Observable<Job> = this._job.asObservable();
+
+  private _saved: BehaviorSubject<Job> = new BehaviorSubject(null);
+
+  private _status: BehaviorSubject<any[]> = new BehaviorSubject([]);
+  public status: Observable<any[]> = this._status.asObservable();
+
 
   public config: BehaviorSubject<any> = new BehaviorSubject({});
   public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
@@ -128,17 +136,20 @@ export class JobService implements Resolve<Promise<any>> {
       
       // TODO: should resolve list of users before all this....
 
-      return this.elementService.getJob(username, shortname).then((job:Job) => {
+      return this.elementService.getJob(username, shortname).then(({saved, current}:{saved: Job, current: Job}) => {
         //if(!job) {
         //  this.router.navigate(['/jobs']); // should be 404
         //  return false;
         //}
-        this._job.next(job);
+        this._job.next(current);
+        this._saved.next(saved);
+
+        this.calcStatus(current);
 
         return this.buildTree().then((elements) => {
-          this._job.next(job);
+          //this._job.next(current);
           return {
-            job: job,
+            job: saved,
             elements: elements
           };
         });
@@ -315,6 +326,23 @@ export class JobService implements Resolve<Promise<any>> {
       });
 
       return [folders, components];
+    });
+  }
+
+  calcStatus(current: Job) {
+    let saved = this._saved.getValue();
+
+    let a = saved.toJSON();
+    let b = current.toJSON();
+    let d = diff.diff(saved.toJSON(), current.toJSON())
+    if(d) this._status.next(d);
+    return d;
+  }
+
+  updateJob(job: Job) {
+    return this.elementService.updateJob(job).then(j=>{
+      this._job.next(job);
+      this.calcStatus(job);
     });
   }
 

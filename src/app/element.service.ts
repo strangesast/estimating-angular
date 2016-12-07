@@ -19,7 +19,6 @@ let gitModesInv = {
 };
 
 import * as DeepDiff from 'deep-diff';
-console.log('deepdiff', DeepDiff);
 
 import { Router, Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
@@ -245,10 +244,10 @@ export class ElementService {
     });
   }
 
-  getJob(username: string, shortname: string): Promise<Job> {
-    return this.retrieveJob(username, shortname).then(job => {
-      if(job == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
-      return job;
+  getJob(username: string, shortname: string): Promise<any> {
+    return this.retrieveJob(username, shortname).then(({saved, current}:{saved: Job, current: Job}) => {
+      if(saved == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
+      return {saved: saved, current: current};
     });
   }
 
@@ -471,7 +470,7 @@ export class ElementService {
     });
   }
 
-  retrieveJob(username:string, shortname:string): Promise<Job|null> {
+  retrieveJob(username:string, shortname:string): Promise<any> {
     let ref = [username, shortname].join('/');
     return this.readRef(ref).then(commitHash => {
       if(commitHash == null) return null;
@@ -485,6 +484,10 @@ export class ElementService {
       }).then(text => {
         let job = Job.create(JSON.parse(text), commitHash);
         return job;
+      });
+    }).then(saved => {
+      return this.retrieveJobById(saved.id).then(current => {
+        return {saved: saved, current: current};
       });
     });
   }
@@ -876,6 +879,10 @@ export class ElementService {
     return this.saveRecord(this.db, storeName, obj.toJSON(false)).then((key)=>{
       return key;
     });
+  }
+
+  updateJob(job: Job): Promise<string> {
+    return this.updateRecord(job);
   }
 
   saveJob(job: Job, message: string): Promise<Job> {
