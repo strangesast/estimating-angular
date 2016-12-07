@@ -1,4 +1,4 @@
-<form *ngIf="jobForm" novalidate (ngSubmit)="onSubmit(job)" [formGroup]="jobForm">
+<form *ngIf="jobForm" novalidate (ngSubmit)="onSubmit(jobForm)" [formGroup]="jobForm">
   <span class="header">{{ jobForm.get('name').value }}</span>
   <div>
     <label>Name:</label>
@@ -42,7 +42,7 @@
     </div>
     <small>Only one owner may modify this job.</small>
   </div>
-  <button type="submit" [disabled]="jobForm.invalid">Update</button>
+  <button type="submit" [disabled]="jobForm.invalid || !jobForm.dirty">Update</button>
   <button type="button" (click)="reset()" [disabled]="!jobForm.dirty">Reset</button>
 </form>
 

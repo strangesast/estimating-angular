@@ -69,8 +69,10 @@ import { Job } from '../classes';
     })
   }
 
-  onSubmit(job: Job) {
-    console.log(this.jobForm);
-    console.log(job);
+  onSubmit({ dirty, value, valid }: { dirty: boolean, value: Job, valid: boolean}) {
+    if(!dirty) {
+      console.log('dirty', dirty);
+      console.log(value, valid);
+    }
   }
 }
