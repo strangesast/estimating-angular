@@ -49,7 +49,7 @@ export class SearchServiceService {
         r.push.apply(r, n); this._results.next(r);
       }, (err)=>{
         // error
-        console.log('error', err)
+        console.log('search error', err)
       }, (p)=>{
         // done
       });
@@ -100,7 +100,6 @@ export class SearchServiceService {
     let search = query ? this.http.get(path).map((r: Response)=>{
       let obj = r.json();
       let hits = obj.hits;
-      console.log(hits);
       return (hits.hits || []).map(el => new Result('catalog-element', el._source));
     }) : Observable.fromPromise(Promise.resolve([]));
 
@@ -170,7 +169,6 @@ export class SearchServiceService {
   addToJob(result: Result) {
     switch(result.kind) {
       case 'catalog-element':
-        console.log('result', result.value);
         break;
       default:
         throw new Error('unknown result type "'+result.kind+'"');

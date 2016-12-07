@@ -55,11 +55,15 @@ export class EditWindowComponent implements OnInit, OnChanges {
     let el = this.element;
     if(el != null) {
       this.isNew = false;
-      this.kind = el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof Folder ? 'folder' : el == null ? 'new' : null;
+      this.kind = this.whichKind(el);
       this.initializeForm(this.kind, el);
     } else {
       this.isNew = true;
     }
+  }
+
+  whichKind(el) {
+    return el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof Folder ? 'folder' : el == null ? 'new' : null;
   }
 
   initializeForm(kind: string, el?) {
@@ -67,7 +71,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
     if(kind == 'component') {
       this.form = this.formBuilder.group({
         name: [el ? el.name : '', [
-          Validators.minLength(5),
+          Validators.minLength(4),
           Validators.required]
         ],
         description: el ? el.description : ''
@@ -86,7 +90,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
     } else if (kind == 'folder') {
       this.form = this.formBuilder.group({
         name: [el ? el.name : '', [
-          Validators.minLength(5),
+          Validators.minLength(4),
           Validators.required]
         ],
         description: el ? el.description : ''
@@ -104,10 +108,15 @@ export class EditWindowComponent implements OnInit, OnChanges {
   }
 
   reset() {
-    console.log('reset', this.element);
+    this.initializeForm(this.whichKind(this.element), this.element);
   }
 
-  onSubmit() {
-    console.log(this.form)
+  onSubmit({ dirty, value, valid }: { dirty: boolean, value: any, valid: boolean}) {
+    if(dirty && valid) { // is it valid and has something changed
+      console.log(dirty, value, valid);
+
+    } else if (!valid) {
+      alert('invalid!');
+    }
   }
 }

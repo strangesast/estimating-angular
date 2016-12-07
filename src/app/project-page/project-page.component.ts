@@ -47,9 +47,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     private jobService: JobService,
     private route: ActivatedRoute,
     private element: ElementRef
-  ) {
-    console.log('new project page created');
-  }
+  ) { }
 
   changeSubTab(tabName: string) {
     this.activeSubTab = tabName;
@@ -74,9 +72,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
   newComponentActiveJob() {
     let job = this.job;
-    this.jobService.createComponent(Math.round(Math.random()*10) + ' new component', 'test component').then(component => {
-      console.log('new component', component);
-    });
+    this.jobService.createComponent(Math.round(Math.random()*10) + ' new component', 'test component');
   }
 
   shuffle() {

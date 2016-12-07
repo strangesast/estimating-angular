@@ -1,6 +1,6 @@
-<div class="search-container" [sortablejs]="searchService.results | async" [sortablejsOptions]="options">
+<div class="search-container">
   <div [ngSwitch]="result.kind" *ngFor="let result of searchService.results | async" tabindex=1 class="search-result">
-    <div *ngSwitchCase="'tree-element'">
+    <div *ngSwitchCase="'treeelement'">
       <span class="icon">
         <span class="fa fa-thumb-tack"></span>
         <span class="fa" [ngClass]="result.value.reftype == 'phase' ? 'fa-bookmark-o' : 'fa-building-o'"></span>

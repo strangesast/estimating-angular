@@ -45,15 +45,15 @@ export class ElementEditService implements Resolve<Promise<any>> {
         if(comp) el.data = comp;
       }
       this.jobService.addEditElement(el);
-      if(el instanceof ComponentElement) {
-        this.elementService.retrieveComponentCommitHistory(el).then(arr=>{
-          console.log(arr);
-        });
-      } else if (el instanceof Child) {
-        this.elementService.retrieveComponentCommitHistory(el.data).then(arr=>{
-          console.log(arr);
-        });
-      }
+      //if(el instanceof ComponentElement) {
+      //  this.elementService.retrieveComponentCommitHistory(el).then(arr=>{
+      //    console.log(arr);
+      //  });
+      //} else if (el instanceof Child) {
+      //  this.elementService.retrieveComponentCommitHistory(el.data).then(arr=>{
+      //    console.log(arr);
+      //  });
+      //}
       return el;
     });
   }

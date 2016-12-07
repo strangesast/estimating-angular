@@ -71,16 +71,11 @@ export class EditPageComponent implements OnInit {
     this.jobService.removeEditElement(el);
   }
 
-  onChange(prop, evt) {
-    console.log(evt);
-  }
-
   removeElement(el): void {
     //this.elementEditService.removeElement(el);
   }
 
   loadElement(el): void {
-    console.log('el', el);
     if(el == null) {
       this.router.navigate(['edit'], {relativeTo: this.route.parent});
     } else {

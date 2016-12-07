@@ -47,9 +47,7 @@ import { Job } from '../classes';
       });
 
       this.job = job;
-      this.jobService.findChanges().then(hist => {
-        console.log('history', hist);
-      });
+      this.jobService.findChanges();
     });
     this.jobService.status.subscribe(s=>{
       console.log('status', s);

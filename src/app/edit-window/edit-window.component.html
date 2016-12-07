@@ -9,7 +9,7 @@
     </select>
     <div class="error"></div>
   </div>
-  <form *ngIf="form!=null" (ngSubmit)="onSubmit()" [formGroup]="form">
+  <form *ngIf="form!=null" (ngSubmit)="onSubmit(form)" [formGroup]="form">
     <div *ngIf="['component', 'folder'].indexOf(kind) != -1" class="form-group">
       <label>Name</label>
       <input type="text" formControlName="name">
@@ -36,8 +36,7 @@
       <div class="error"></div>
     </div>
 
-
-    <button type="submit">{{ isNew? 'Create' : 'Update'}}</button>
-    <button (click)="reset()" type="button">Reset</button>
+    <button type="submit" [disabled]="form.invalid || !form.dirty">{{ isNew? 'Create' : 'Update'}}</button>
+    <button type="button" [disabled]="!form.dirty" (click)="reset()">Reset</button>
   </form>
 </div>

@@ -67,7 +67,6 @@ export class JobService implements Resolve<Promise<any>> {
   public editElementList: BehaviorSubject<Element[]> = new BehaviorSubject([]);
 
   constructor(private elementService: ElementService, private userService: UserService, private router: Router) {
-    console.log('job service initialzed');
   }
 
   // edit page
@@ -102,8 +101,12 @@ export class JobService implements Resolve<Promise<any>> {
     return options.enabled;
   }
 
-  findChanges() {
-    return this.elementService.findChanges(this._job.getValue());
+  findChanges(job?:Job) {
+    job = job || this._job.getValue();
+    return this.elementService.findChanges(job).then(res=>{
+      if(res != null) this._status.next(res);
+      return res;
+    });
   }
 
   changeSort(sort: string) {
@@ -114,7 +117,6 @@ export class JobService implements Resolve<Promise<any>> {
 
   searchFolders(id:string) {
     let folders = this.folders.getValue();
-    console.log('folders', folders);
     return folders.find(f=>f.id == id);
   }
 
@@ -144,7 +146,7 @@ export class JobService implements Resolve<Promise<any>> {
         this._job.next(current);
         this._saved.next(saved);
 
-        this.calcStatus(current);
+        this.findChanges();
 
         return this.buildTree().then((elements) => {
           //this._job.next(current);
@@ -207,7 +209,6 @@ export class JobService implements Resolve<Promise<any>> {
       if(!remaining.length) return children;
 
       return children.map(child => {
-        console.log('child', child);
         let ob = {};
         ob[name] = child.data.id;
         let p = Object.assign({}, prev, ob);
@@ -329,20 +330,21 @@ export class JobService implements Resolve<Promise<any>> {
     });
   }
 
-  calcStatus(current: Job) {
-    let saved = this._saved.getValue();
+  //calcStatus(current: Job) {
+  //  let saved = this._saved.getValue();
 
-    let a = saved.toJSON();
-    let b = current.toJSON();
-    let d = diff.diff(saved.toJSON(), current.toJSON())
-    if(d) this._status.next(d);
-    return d;
-  }
+  //  let a = saved.toJSON();
+  //  let b = current.toJSON();
+  //  let d = diff.diff(saved.toJSON(), current.toJSON())
+  //  if(d) this._status.next(d);
+  //  return d;
+  //}
 
   updateJob(job: Job) {
     return this.elementService.updateJob(job).then(j=>{
       this._job.next(job);
-      this.calcStatus(job);
+      this.findChanges();
+      return job;
     });
   }
 

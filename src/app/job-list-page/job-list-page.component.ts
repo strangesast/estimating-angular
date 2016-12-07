@@ -49,10 +49,7 @@ export class JobListPageComponent implements OnInit {
           this.jobs.push(res);
         }
         job = res;
-      }, err => {
-        console.log('error!', err);
-      }, () => {
-        console.log('complete!');
+      }, null, () => {
         this.jobStatus[job.id] = 'ready';
       }
     );
@@ -60,6 +57,6 @@ export class JobListPageComponent implements OnInit {
   }
 
   deleteJob(job:Job) {
-    console.log(job);
+    this.elementService.removeJob(job);
   }
 }

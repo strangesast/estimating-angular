@@ -18,7 +18,7 @@ let gitModesInv = {
   16384: 'tree'
 };
 
-import * as DeepDiff from 'deep-diff';
+import { diff } from 'deep-diff';
 
 import { Router, Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
@@ -244,6 +244,13 @@ export class ElementService {
     });
   }
 
+  removeJob(job: Job): Promise<any> {
+    return this.removeRecordFrom('jobs', job.id).then(res=> {
+      console.log('remove res', res);
+      return res;
+    });
+  }
+
   getJob(username: string, shortname: string): Promise<any> {
     return this.retrieveJob(username, shortname).then(({saved, current}:{saved: Job, current: Job}) => {
       if(saved == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
@@ -261,14 +268,12 @@ export class ElementService {
         return this.loadAs('commit', commitHash).then((commit) => {
           return this.loadAs('tree', commit.tree);
         }).then((tree)=>{
+          if(tree['job.json'] == null) throw new Error('malformed job tree');
           return this.loadAs('text', tree['job.json'].hash).then((text)=>{
             let data = JSON.parse(text);
             data.commit = commitHash;
-            console.log('data', data);
-
             // load the most recent (perhaps unsaved) version of the job
             return this.retrieveJobById(data.id).then(job => {
-              console.log('job', job);
               if(job != null) return job;
               return Job.create(data); 
             });
@@ -282,14 +287,15 @@ export class ElementService {
   getUsers(): Promise<User[]> {
     let db = this.db;
     return this.getAll(db, USER_COLLECTION).then(savedUsers => {
-      let savedUsernames = savedUsers.map(user => user.username);
-      return this.getJobs().then(jobs => {
-        let owners = jobs.map(job => job.owner);
-        return Promise.all(owners.map(owner => {
-          let i = savedUsernames.indexOf(owner.username);
-          return i == -1 ? this.saveRecord(this.db, USER_COLLECTION, owner).then(this.retrieveUser.bind(this)) : Promise.resolve(User.create(savedUsers[i]));
-        }));
-      });
+      return savedUsers.map(User.create);
+      //let savedUsernames = savedUsers.map(user => user.username);
+      //return this.getJobs().then(jobs => {
+      //  let owners = jobs.map(job => job.owner);
+      //  return Promise.all(owners.map(owner => {
+      //    let i = savedUsernames.indexOf(owner.username);
+      //    return i == -1 ? this.saveRecord(this.db, USER_COLLECTION, owner).then(this.retrieveUser.bind(this)) : Promise.resolve(User.create(savedUsers[i]));
+      //  }));
+      //});
     });
   }
 
@@ -403,7 +409,10 @@ export class ElementService {
   compareTrees(newTree, oldTree) {
     let p1 = this.resolveTree(newTree);
     let p2 = this.resolveTree(oldTree);
-    return Promise.all([p1, p2]);
+    return Promise.all([p1, p2]).then(trees => {
+      console.log(trees);
+      return diff.diff(trees[1], trees[0]);
+    });
   }
 
   findChanges(job:Job) {
@@ -504,6 +513,10 @@ export class ElementService {
     return this.retrieveRecordFrom('locations', id);
   }
 
+  removeRecordFrom(storeName: string, id: string, index?:string) {
+    return this.removeRecord(this.db, storeName, id, index);
+  };
+
   retrieveRecordFrom(storeName: string, id: string) {
     return this.retrieveRecord(this.db, storeName, id);
   }
@@ -521,6 +534,20 @@ export class ElementService {
       }
     });
   }
+
+  removeRecord(db: any, storeName: string, id: string, index?:string) {
+    return new Promise((resolve, reject) => {
+      let trans = db.transaction(storeName, 'readwrite');
+      let store = trans.objectStore(storeName);
+      let req = store.delete(id);
+      req.onsucces = (e) => {
+        resolve(e.target.result);
+      }
+      req.onerror = (e) => {
+        reject(e.target.error);
+      }
+    });
+  } 
 
   saveRecord(db: any, storeName: string, obj: any): Promise<string> {
     return new Promise((resolve, reject) => {
