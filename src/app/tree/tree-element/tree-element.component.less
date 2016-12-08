@@ -3,12 +3,16 @@
 @small-tree-element-height: 20px;
 @tree-element-height: 40px;
 
+:host[draggable='true']:hover {
+  cursor: pointer;
+}
+
 :host {
   position: absolute;
   top: 0;
   right: 0;
   list-style-type: none;
-  padding: 0 10px;
+  padding: 0 4px;
   height: @tree-element-height;
   line-height: @tree-element-height;
   display: flex;
@@ -27,7 +31,7 @@
     line-height: @tree-element-height;
   }
   .icon {
-    padding-right: 4px;
+    padding: 0 4px;
   }
 
   .qty {
@@ -38,13 +42,25 @@
   }
 }
 
+// when host context (tree) has shadow
 :host-context(.shadow) {
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   background: lighten(@blue2, 10%);
   border: 1px solid @blue2;
+  &.dragged {
+    z-index: 0 !important;
+    background: @blue2;
+    box-shadow: unset;
+  }
 }
-
+:host.dragged > .grip {
+  visibility: hidden;
+}
 :host.small {
   height: @small-tree-element-height;
   line-height: @tree-element-height;
+}
+.grip {
+  font-size: 0.75em;
+  padding: 0 4px;
 }

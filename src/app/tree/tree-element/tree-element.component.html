@@ -3,3 +3,4 @@
 <span class="spacer"></span>
 <span class="description">{{data.data.data ? data.data.data.description : data.data.description}}</span>
 <span *ngIf="kind == 'component'" class="qty">{{data.data.qty}}</span>
+<span (mouseenter)="gripHoverEnter()" (mouseleave)="gripHoverLeave()" class="grip fa fa-grip"></span>
