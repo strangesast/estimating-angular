@@ -77,6 +77,8 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     //  return el;
     //});
     let both = source.partition((x:any)=> x.value['type']=='on');
+    //                       if last is start, its dragging
+    let hasDragged = both[0].do(x=>this.dragging = x.value.value == 'start');
     let lastEnter = both[1].filter(x=>x.component != null && x.value.value=='enter');
     let lastLeave = both[1].filter(x=>x.component != null && x.value.value=='leave');
     let hasMoved = Observable.combineLatest(lastEnter, lastLeave)
@@ -84,11 +86,11 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       .map((b:[any,any])=>b[0].component!=b[1].component ? b[0]: false)
       // remove duplicate false
       .filter(x=>!!x).distinct()
+      // .pausable
     Observable.combineLatest(
-      // if last is start, its dragging
-      both[0].do(x=>this.dragging = x.value.value == 'start'),
+      hasDragged,
       hasMoved
-    ).filter((b:[any,any])=>b[0].component!=b[1].component).debounceTime(100).subscribe((parts:[any, any]) => {
+    ).filter((b:[any,any])=>b[0].component!=b[1].component).debounceTime(100).subscribe((parts:[any, any]) => { // debounceWithSelector
       let d1 = parts[0].component.data.data
       let d2 = parts[1].component.data.data;
       //console.log(parts[0].value.value, d1.data ? d1.data.name : d1.name, 'below', d2.data ? d2.data.name : d2.name);
