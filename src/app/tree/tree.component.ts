@@ -28,7 +28,6 @@ import { Subject, Observable } from 'rxjs';
 //import 'rxjs/add/operator/map';
 //import 'rxjs/add/operator/switchMap';
 //import 'rxjs/add/operator/toPromise'
-//import 'rxjs/add/operator/just';
 
 import * as D3 from 'd3';
 import { nest } from 'd3-collection';
@@ -52,6 +51,8 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private sink: Subject<any> = new Subject();
   private sinkReady: Subject<any> = new Subject();
 
+  private dragging: boolean = false;
+
   @Input() tree: any[];
 
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
@@ -64,23 +65,46 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit(): void {
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
     let source = this.sink.bufferWhen(()=>this.sinkReady.asObservable()).flatMap(arrayOfObservables=>{
-      let observables = arrayOfObservables.map(el=>el.emitter.map((v)=>{
+      return Observable.merge(arrayOfObservables.map(el=>el.emitter.map((v)=>{
         return {
           component: el.component,
           index: el.index,
           value: v
         }
-      }));
-      return Observable.merge(observables);
-    }).flatMap(el=>{ // double nested
-      return el;
-    });
-    let drags = source.filter((f:any)=>f.value['type']=='on');
-    let dragOvers = source.filter((f:any)=>f.value['type']=='over').distinctUntilChanged((a:any, b:any)=>a.component===b.component);
-    Observable.combineLatest(drags, dragOvers).subscribe(both => {
-      let d1 = both[0].component.data.data
-      let d2 = both[1].component.data.data
-      console.log((d1.data ? d1.data.name : d1.name) + ':', 'over', d2.data ? d2.data.name : d2.name);
+      })));
+    }).mergeAll();
+    //.flatMap(el=>{ // double nested
+    //  return el;
+    //});
+    let both = source.partition((x:any)=> x.value['type']=='on');
+    let lastEnter = both[1].filter(x=>x.component != null && x.value.value=='enter');
+    let lastLeave = both[1].filter(x=>x.component != null && x.value.value=='leave');
+    let hasMoved = Observable.combineLatest(lastEnter, lastLeave)
+      // compare enter / leave events - get most recent of two
+      .map((b:[any,any])=>b[0].component!=b[1].component ? b[0]: false)
+      // remove duplicate false
+      .filter(x=>!!x).distinct()
+    Observable.combineLatest(
+      // if last is start, its dragging
+      both[0].do(x=>this.dragging = x.value.value == 'start'),
+      hasMoved
+    ).filter((b:[any,any])=>b[0].component!=b[1].component).debounceTime(100).subscribe((parts:[any, any]) => {
+      let d1 = parts[0].component.data.data
+      let d2 = parts[1].component.data.data;
+      //console.log(parts[0].value.value, d1.data ? d1.data.name : d1.name, 'below', d2.data ? d2.data.name : d2.name);
+      let d = parts[0].component.data;
+      let ci = this.tree.indexOf(d); // current index
+      let ti = parts[1].index; // target index
+
+      if(ci > -1 && ci != ti) {
+        let r = this.tree.splice(ci, 1);
+        this.tree = [].concat(this.tree.slice(0, ti), r, this.tree.slice(ti))
+        this.update(this.tree);
+      } else if (ci == -1) {
+        //this.tree.push(d);
+        //this.update(this.tree);
+      }
+      console.log(ci, ti);
     });
   };
 

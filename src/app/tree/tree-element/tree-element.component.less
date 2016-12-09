@@ -42,15 +42,21 @@
   }
 }
 
+:host-context(.dragging) * {
+  pointer-events: none;
+}
+
 // when host context (tree) has shadow
 :host-context(.shadow) {
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   background: lighten(@blue2, 10%);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
   border: 1px solid @blue2;
   &.dragged {
     z-index: 0 !important;
     background: @blue2;
     box-shadow: unset;
+    opacity: 0.75 !important;
   }
 }
 :host.dragged > .grip {
@@ -61,6 +67,7 @@
   line-height: @tree-element-height;
 }
 .grip {
+  color: @blue3;
   font-size: 0.75em;
   padding: 0 4px;
 }

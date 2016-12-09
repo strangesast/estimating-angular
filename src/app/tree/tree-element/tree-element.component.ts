@@ -13,7 +13,9 @@ import { ComponentElement, Child, Folder } from '../../classes';
 
 const ONEND = {'type':'on', value:'end'};
 const ONSTART = {'type':'on', value:'start'};
-const OVER = {'type':'over', value: 'over'};
+const ENTER = {'type':'over', value: 'enter'};
+const LEAVE = {'type':'over', value: 'leave'};
+const DROP = {'type':'over', value: 'drop'};
 
 @Component({
   selector: 'app-tree-element',
@@ -63,24 +65,22 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     this.dragEmitter.emit(ONSTART);
   }
   onDragOver() {
-    this.dragEmitter.emit(OVER);
+    //this.dragEmitter.emit(OVER);
   }
   onDragLeave() {
+    this.dragEmitter.emit(LEAVE);
   }
   onDragEnter() {
+    this.dragEmitter.emit(ENTER);
   }
   onDragEnd() {
     this.dragged = false;
     this.dragEmitter.emit(ONEND);
   }
   onDragDrop() {
-    console.log('drop');
+    this.dragEmitter.emit(DROP);
   }
-  gripHoverEnter() {
-    // if grip hover
-    this.draggable = true;
-  }
-  gripHoverLeave() {
-    this.draggable = false;
+  enableHover(rev) {
+    this.draggable = rev == null ? true : rev;
   }
 }
