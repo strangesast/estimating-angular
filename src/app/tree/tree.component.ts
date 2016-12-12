@@ -94,11 +94,11 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       if(ci > -1 && ci != ti && ti > -1) {
         let r = this.tree.splice(ci, 1);
         this.tree = [].concat(this.tree.slice(0, ti), r, this.tree.slice(ti));
+        this.update(this.tree);
       } else if (ci == -1) {
         //this.tree.push(d);
         //this.update(this.tree);
       }
-      this.update(this.tree);
     });
   };
 
@@ -127,8 +127,11 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('.tree');
     this.host = D3.select(this.htmlElement);
-    this.host.html('');
-    //this.update(this.tree, false);
+    if(this.pendingUpdate) clearTimeout(this.pendingUpdate);
+    // hacked
+    this.pendingUpdate = window.setTimeout(()=>{
+      if(this.host) this.update(this.tree)
+    }, 100);
   }
 
   update(tree: any[], anim?) {
@@ -169,7 +172,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     text.enter().append(this.createChildComponent.bind(this))
       .order()
       .attr('tabindex', 1)
-      //.attr('class', 'shadow')
       .style('transform', (el, i)=>'translateX(-10%)')
       .style('top', (el, i)=>(i*40) + 'px')
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
@@ -183,7 +185,12 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.sinkReady.next(true);
   }
 
+  pendingUpdate: number;
+
   ngOnChanges(changes: SimpleChanges) {
-    if(this.host) this.update(this.tree);
+    if(this.pendingUpdate) clearTimeout(this.pendingUpdate);
+    this.pendingUpdate = window.setTimeout(()=>{
+      if(this.host) this.update(this.tree)
+    }, 1000);
   };
 }

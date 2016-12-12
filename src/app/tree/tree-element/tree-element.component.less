@@ -50,8 +50,8 @@
   }
 
   .qty {
-    background: @blue2;
-    color: @blue4;
+    //background: @blue2;
+    //color: @blue4;
     padding: 0 10px;
   }
 }
@@ -61,6 +61,9 @@
 }
 
 // when host context (tree) has shadow
+:host.dragged {
+  background: lighten(@blue2, 5%);
+}
 :host-context(.shadow) {
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   background: lighten(@blue2, 10%);
