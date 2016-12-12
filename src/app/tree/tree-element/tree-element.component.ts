@@ -29,7 +29,10 @@ const DROP = {'type':'over', value: 'drop'};
     '(dragend)':'onDragEnd($event)',
     '(drop)':'onDragDrop($event)',
     '[draggable]':'draggable',
-    '[class.dragged]':'dragged'
+    '[class.dragged]':'dragged',
+    '(focus)':'focus($event)',
+    '(focusout)':'blur($event)',
+    '[class.active]':'focused'
   }
 })
 export class TreeElementComponent implements OnInit, OnDestroy {
@@ -38,6 +41,7 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   url: string;
   dragged: boolean = false;
   draggable: boolean = false;
+  focused: boolean = false;
   @Output() dragEmitter: EventEmitter<any> = new EventEmitter();
 
   constructor(private injector: Injector, public element: ElementRef) {
@@ -57,6 +61,12 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   ngOnInit() {
   }
   ngOnDestroy() {
+  }
+  focus() {
+    this.focused = true;
+  }
+  blur() {
+    this.focused = false;
   }
 
   onDragStart() {
@@ -81,6 +91,7 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     this.dragEmitter.emit(DROP);
   }
   enableHover(rev) {
+    this.focused = false;
     this.draggable = rev == null ? true : rev;
   }
 }

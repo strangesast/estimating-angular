@@ -20,7 +20,7 @@
   z-index: 9;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
-  transition: width 0.250s ease;
+  transition: transform 0.25s ease, height 0.25s ease, width 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
   .spacer {
     flex-grow: 1;
   }
@@ -50,7 +50,6 @@
 :host-context(.shadow) {
   box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   background: lighten(@blue2, 10%);
-  transition: background 0.25s ease, box-shadow 0.25s ease;
   border: 1px solid @blue2;
   &.dragged {
     z-index: 0 !important;
@@ -70,4 +69,7 @@
   color: @blue3;
   font-size: 0.75em;
   padding: 0 4px;
+}
+:host.active:not(.dragged) {
+  height: 2*@tree-element-height;
 }

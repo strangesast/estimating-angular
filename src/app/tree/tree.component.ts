@@ -145,11 +145,12 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
     if(!anim) {
       text.enter().append(this.createChildComponent.bind(this))
+        .order()
         .attr('tabindex', 1)
         .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
         .style('z-index', (el, i)=>i+1)
         .style('opacity', 1)
-        .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+        .style('top', (el, i)=>(i*40) + 'px')
       this.sinkReady.next(true);
       return;
     }
@@ -165,21 +166,25 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       });
 
     text.style('opacity', 1)
+      .order()
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
       .style('z-index', (el, i)=>i+1)
       .transition(t)
-      .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+      .style('top', (el, i)=>(i*40) + 'px')
 
     text.enter().append(this.createChildComponent.bind(this))
+      .order()
       .attr('tabindex', 1)
       //.attr('class', 'shadow')
-      .style('transform', (el, i)=>'translate(-10%, ' + (i*40) + 'px)')
+      .style('transform', (el, i)=>'translateX(-10%)')
+      .style('top', (el, i)=>(i*40) + 'px')
       .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
       .style('opacity', 0)
       .style('z-index', (el, i)=>i+1)
       .transition(t)
       .style('opacity', 1)
-      .style('transform', (el, i)=>'translate(0, ' + (i*40) + 'px)')
+      .style('transform', (el, i)=>'translateX(0)')
+      .style('top', (el, i)=>(i*40) + 'px')
 
     this.sinkReady.next(true);
   }

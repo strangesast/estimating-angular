@@ -40,3 +40,9 @@
   height: @small-tree-element-height;
   line-height: @tree-element-height;
 }
+
+:host /deep/ app-tree-element.active:not(.dragged) {
+  & ~ app-tree-element {
+    transform: translate(0, 40px) !important;
+  }
+}
