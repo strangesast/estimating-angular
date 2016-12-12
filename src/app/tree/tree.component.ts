@@ -19,22 +19,14 @@ import {
   transition
 } from '@angular/core';
 
-import { TreeElementComponent } from  './tree-element/tree-element.component';
-
 import { Subject, Observable } from 'rxjs';
-//import 'rxjs/add/operator/catch';
-//import 'rxjs/add/operator/debounceTime';
-//import 'rxjs/add/operator/distinctUntilChanged';
-//import 'rxjs/add/operator/map';
-//import 'rxjs/add/operator/switchMap';
-//import 'rxjs/add/operator/toPromise'
 
 import * as D3 from 'd3';
 import { nest } from 'd3-collection';
 
-let template = function(p, i) {
-  return '<span class="name hoverunderline">'+(p.data.name||p.data.data.name)+'</span><span class="spacer"></span><span class="depth">1</span>'
-};
+import { TreeElementComponent } from  './tree-element/tree-element.component';
+import { TreeOptions } from '../tree-options';
+import { defaultOptions } from '../defaults'; // annoying
 
 @Component({
   selector: 'app-tree',
@@ -47,6 +39,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private host;
   private htmlElement: HTMLElement;
 
+
   private childComponentFactory;
   private sink: Subject<any> = new Subject();
   private sinkReady: Subject<any> = new Subject();
@@ -54,6 +47,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private dragging: boolean = false;
 
   @Input() tree: any[];
+  @Input() options: TreeOptions;
 
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
 
@@ -73,12 +67,9 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
         }
       })));
     }).mergeAll();
-    source.do(console.log);
 
     let lastDragged, lastMoved;
     [lastDragged, lastMoved] = source.partition((x:any)=> x.value['type']=='on');
-    //                       if last is start, its dragging
-    lastMoved.do(x=>console.log(x));
 
     let isDragging = lastDragged.map(x=>x.value.value == 'start').do(dragging=>{ // change dragging state if drag start
       this.dragging = dragging;
@@ -91,11 +82,12 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       // compare enter / leave events - get most recent of two
       .map((b:[any,any])=>b[0].component!=b[1].component ? b[0]: false)
       // remove duplicate false
-      .filter(x=>!!x).distinct()
+      .filter(x=>!!x)
+      .distinct()
+      .debounceTime(50)
 
     Observable.combineLatest(lastDragged, hasMoved)
-      .filter(([b1,b2]:[any,any])=>b1.component!=b2.component)
-      .debounceTime(100) // debounceWithSelector better
+      //.filter(([b1,b2]:[any,any])=>b1.component!=b2.component)
       .subscribe(([d, t]:[any, any]) => { // dragged, target
       let ci = this.tree.indexOf(d.component.data); // current index
       let ti = this.tree.indexOf(t.component.data);
@@ -117,6 +109,10 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     let inputProviders = [{
       provide: 'data',
       useValue: data
+    },
+    {
+      provide: 'options',
+      useValue: this.options
     }];
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
     let injector = ReflectiveInjector.fromResolvedProviders(resolvedInputs, this._parent.parentInjector);
@@ -161,9 +157,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     text.exit()
       .transition(t)
       .style('opacity', 1e-6)
-      .remove(el=> {
-        console.log('removing...', el);
-      });
+      .remove()
 
     text.style('opacity', 1)
       .order()

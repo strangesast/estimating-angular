@@ -1,6 +1,7 @@
+<span (click)="toggleOpen()" *ngIf="kind == 'folder'" class="hoverlink icon fa" [ngClass]="isOpen ? 'fa-minus' : 'fa-plus'"></span>
 <span [ngClass]="kind == 'folder' ? 'fa fa-folder-o' : 'fa fa-cubes'" class="icon"></span>
-<a class="hoverunderline name" [routerLink]="['../edit', kind, data.data.id]">{{data.data.name||data.data.data.name}}</a>
+<span class="hoverunderline name" (click)="toggleFocus()">{{data.data.name||data.data.data.name}}</span>
 <span class="spacer"></span>
 <span class="description">{{data.data.data ? data.data.data.description : data.data.description}}</span>
-<span *ngIf="kind == 'component'" class="qty">{{data.data.qty}}</span>
-<span (mouseenter)="enableHover()" (mouseleave)="enableHover(false)" class="grip fa fa-grip"></span>
+<span *ngIf="kind == 'child'" class="qty">{{data.data.qty}}</span>
+<span *ngIf="options.reorder || (kind != 'folder' && options.source)" (mouseenter)="enableHover()" (mouseleave)="enableHover(false)" class="grip fa fa-grip"></span>

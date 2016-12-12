@@ -27,6 +27,21 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 
+  .name, .description, .qty {
+    margin-right: 8px;
+  }
+  .description {
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .name {
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right:8px;
+  }
+
   span {
     line-height: @tree-element-height;
   }
@@ -38,7 +53,6 @@
     background: @blue2;
     color: @blue4;
     padding: 0 10px;
-    margin-left: 8px
   }
 }
 

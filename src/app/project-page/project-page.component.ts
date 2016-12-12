@@ -16,11 +16,15 @@ import {
 
 import { Observable } from 'rxjs';
 
-import { Job, ComponentElement, Folder } from '../classes';
-
-import { ElementService }     from '../element.service';
-import { JobService }         from '../job.service';
-import { UserService }        from '../user.service';
+import {
+  ComponentElement,
+  Folder,
+  Job
+} from '../classes';
+import { ElementService } from '../element.service';
+import { TreeOptions }    from '../tree-options';
+import { JobService }     from '../job.service';
+import { defaultOptions } from '../defaults';
 
 @Component({
   selector: 'app-project-page',
@@ -38,12 +42,19 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   private activeSubTab: string = 'balance';
   testDate = new Date();
 
+  private searchTreeOptions: TreeOptions = {
+    expand: false,
+    source: true,
+    sink: false,
+    reorder: false,
+    sort: false
+  };
+
   private htmlElement: HTMLElement;
   private host;
 
   constructor(
     private elementService: ElementService,
-    private userService: UserService,
     private jobService: JobService,
     private route: ActivatedRoute,
     private element: ElementRef

@@ -10,10 +10,11 @@ import { ActivatedRoute } from '@angular/router';
 
 import { Subscription } from 'rxjs';
 
-import { TreeComponent } from '../tree/tree.component';
-
-import { JobService } from '../job.service';
-import { Job } from '../classes';
+import { TreeComponent }  from '../tree/tree.component';
+import { TreeOptions }    from '../tree-options';
+import { JobService }     from '../job.service';
+import { defaultOptions } from '../defaults';
+import { Job }            from '../classes';
 
 @Component({
   selector: 'app-build-page',
@@ -29,6 +30,14 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   private config: any = {};
   private enabled: any;
   private sort: string = '';
+
+  private treeOptions: TreeOptions = {
+    expand: true,
+    source: true,
+    sink: true,
+    reorder: true,
+    sort: true
+  };
 
   private job: Job;
 

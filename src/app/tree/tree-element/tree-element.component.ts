@@ -8,8 +8,16 @@ import {
   ElementRef,
   Injector
 } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 
-import { ComponentElement, Child, Folder } from '../../classes';
+import {
+  ComponentElement,
+  Child,
+  Folder
+} from '../../classes';
+
+import { TreeOptions } from '../../tree-options';
+import { defaultOptions } from '../../defaults';
 
 const ONEND = {'type':'on', value:'end'};
 const ONSTART = {'type':'on', value:'start'};
@@ -30,22 +38,25 @@ const DROP = {'type':'over', value: 'drop'};
     '(drop)':'onDragDrop($event)',
     '[draggable]':'draggable',
     '[class.dragged]':'dragged',
-    '(focus)':'focus($event)',
+    //'(focus)':'focus($event)',
     '(focusout)':'blur($event)',
-    '[class.active]':'focused'
+    '[class.active]':'options.expand && focused'
   }
 })
 export class TreeElementComponent implements OnInit, OnDestroy {
-  data: any = {};
   kind: string = 'unknown';
   url: string;
+  @Input() data: any = {};
+  @Input() options: TreeOptions;
   dragged: boolean = false;
   draggable: boolean = false;
   focused: boolean = false;
+  isOpen: boolean = true; // folder only
   @Output() dragEmitter: EventEmitter<any> = new EventEmitter();
 
-  constructor(private injector: Injector, public element: ElementRef) {
+  constructor(private injector: Injector, public element: ElementRef, private router: Router, private route: ActivatedRoute) {
     this.data = this.injector.get('data');
+    this.options = this.injector.get('options');
     if(this.data.data instanceof Folder) {
       this.kind = 'folder';
 
@@ -78,20 +89,30 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     //this.dragEmitter.emit(OVER);
   }
   onDragLeave() {
-    this.dragEmitter.emit(LEAVE);
+    if(this.options.sink) this.dragEmitter.emit(LEAVE);
   }
   onDragEnter() {
-    this.dragEmitter.emit(ENTER);
+    if(this.options.sink) this.dragEmitter.emit(ENTER);
   }
   onDragEnd() {
     this.dragged = false;
     this.dragEmitter.emit(ONEND);
   }
   onDragDrop() {
-    this.dragEmitter.emit(DROP);
+    if(this.options.sink) this.dragEmitter.emit(DROP);
   }
   enableHover(rev) {
     this.focused = false;
     this.draggable = rev == null ? true : rev;
+  }
+  toggleOpen() {
+    this.isOpen = !this.isOpen;
+  }
+  toggleFocus() {
+    if(!this.focused) {
+      this.focused = true;
+      return;
+    }
+    this.router.navigate(['../edit', this.kind, this.data.data.id], {relativeTo: this.route});
   }
 }
