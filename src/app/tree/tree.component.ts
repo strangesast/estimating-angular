@@ -68,38 +68,72 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       })));
     }).mergeAll();
 
+
     let lastDragged, lastMoved;
     [lastDragged, lastMoved] = source.partition((x:any)=> x.value['type']=='on');
 
-    let isDragging = lastDragged.map(x=>x.value.value == 'start').do(dragging=>{ // change dragging state if drag start
-      this.dragging = dragging;
-    });
+    let isDragging = lastDragged.map(x=>x.value.value=='start').do(dragging=>this.dragging = dragging);
 
-    let lastEnter = lastMoved.filter(x=>x.component != null && x.value.value=='enter');
-    let lastLeave = lastMoved.filter(x=>x.component != null && x.value.value=='leave');
+    let lastEnter, lastLeave;
+    [lastEnter, lastLeave] = lastMoved.partition((x:any)=>x.value.value=='enter');
 
+    // return enter immediately, leave after delay if no new enter supercedes it
+    
     let hasMoved = Observable.combineLatest(lastEnter, lastLeave)
-      // compare enter / leave events - get most recent of two
-      .map((b:[any,any])=>b[0].component!=b[1].component ? b[0]: false)
-      // remove duplicate false
-      .filter(x=>!!x)
-      .distinct()
-      .debounceTime(50)
+      .switchMap(([a,b]:[any,any])=>a.component==b.component?Observable.of(b).delay(100):Observable.of(a))
+      .distinct();
 
-    Observable.combineLatest(lastDragged, hasMoved)
-      //.filter(([b1,b2]:[any,any])=>b1.component!=b2.component)
-      .subscribe(([d, t]:[any, any]) => { // dragged, target
-      let ci = this.tree.indexOf(d.component.data); // current index
-      let ti = this.tree.indexOf(t.component.data);
-      if(ci > -1 && ci != ti && ti > -1) {
-        let r = this.tree.splice(ci, 1);
-        this.tree = [].concat(this.tree.slice(0, ti), r, this.tree.slice(ti));
-        this.update(this.tree);
-      } else if (ci == -1) {
-        //this.tree.push(d);
-        //this.update(this.tree);
-      }
+    Observable.combineLatest(isDragging, hasMoved).switchMap(([a,b]:[any,any])=>{
+      let data = b.component.data.data;
+      if(!a && b.value.value == 'enter') return Observable.of('dropped in ' + (data.data ? data.data.name : data.name) );
+      if(a && b.value['type'] == 'over') return Observable.of((b.value.value == 'enter' ? 'hovered over ' : 'left ') + (data.data ? data.data.name : data.name) );
+      return Observable.never();
+    }).subscribe(res => {
+      console.log('res', res);
     });
+
+    //let hasMoved = Observable.combineLatest(lastEnter, lastLeave).switchMap(([a,b]:[any,any])=>a.component==b.component?Observable.of(false).delay(1000):Observable.of(a)).debounceTime(50);
+
+
+    //let combined = Observable.combineLatest(lastDragged, hasMoved)
+    //.subscribe(([dragged, hovered]:[any, any])=>{
+    //  if(hovered) {
+    //    let data = hovered.component.data.data;
+    //    console.log('entered', data.data ? data.data : data);
+    //  } else {
+    //    console.log('left');
+    //  }
+    //});
+
+    //let isDragging = lastDragged.map(x=>x.value.value == 'start').do(dragging=>{ // change dragging state if drag start
+    //  this.dragging = dragging;
+    //});
+
+    //let lastEnter = lastMoved.filter(x=>x.component != null && x.value.value=='enter');
+    //let lastLeave = lastMoved.filter(x=>x.component != null && x.value.value=='leave');
+
+    //let hasMoved = Observable.combineLatest(lastEnter, lastLeave)
+    //  // compare enter / leave events - get most recent of two
+    //  .map((b:[any,any])=>b[0].component!=b[1].component ? b[0]: false)
+    //  // remove duplicate false
+    //  .filter(x=>!!x)
+    //  .distinct()
+    //  .debounceTime(50)
+
+    //Observable.combineLatest(lastDragged, hasMoved)
+    //  //.filter(([b1,b2]:[any,any])=>b1.component!=b2.component)
+    //  .subscribe(([d, t]:[any, any]) => { // dragged, target
+    //  let ci = this.tree.indexOf(d.component.data); // current index
+    //  let ti = this.tree.indexOf(t.component.data);
+    //  if(ci > -1 && ci != ti && ti > -1) {
+    //    let r = this.tree.splice(ci, 1);
+    //    this.tree = [].concat(this.tree.slice(0, ti), r, this.tree.slice(ti));
+    //    this.update(this.tree);
+    //  } else if (ci == -1) {
+    //    //this.tree.push(d);
+    //    //this.update(this.tree);
+    //  }
+    //});
   };
 
   // probably(?) a mem leak
@@ -127,11 +161,11 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('.tree');
     this.host = D3.select(this.htmlElement);
-    if(this.pendingUpdate) clearTimeout(this.pendingUpdate);
+    //if(this.pendingUpdate) clearTimeout(this.pendingUpdate);
     // hacked
-    this.pendingUpdate = window.setTimeout(()=>{
-      if(this.host) this.update(this.tree)
-    }, 100);
+    //this.pendingUpdate = window.setTimeout(()=>{
+    //  if(this.host) this.update(this.tree)
+    //}, 100);
   }
 
   update(tree: any[], anim?) {
