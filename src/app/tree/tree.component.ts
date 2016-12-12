@@ -73,40 +73,40 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
         }
       })));
     }).mergeAll();
-    //.flatMap(el=>{ // double nested
-    //  return el;
-    //});
-    let both = source.partition((x:any)=> x.value['type']=='on');
+    source.do(console.log);
+
+    let lastDragged, lastMoved;
+    [lastDragged, lastMoved] = source.partition((x:any)=> x.value['type']=='on');
     //                       if last is start, its dragging
-    let hasDragged = both[0].do(x=>this.dragging = x.value.value == 'start');
-    let lastEnter = both[1].filter(x=>x.component != null && x.value.value=='enter');
-    let lastLeave = both[1].filter(x=>x.component != null && x.value.value=='leave');
+    lastMoved.do(x=>console.log(x));
+
+    let isDragging = lastDragged.map(x=>x.value.value == 'start').do(dragging=>{ // change dragging state if drag start
+      this.dragging = dragging;
+    });
+
+    let lastEnter = lastMoved.filter(x=>x.component != null && x.value.value=='enter');
+    let lastLeave = lastMoved.filter(x=>x.component != null && x.value.value=='leave');
+
     let hasMoved = Observable.combineLatest(lastEnter, lastLeave)
       // compare enter / leave events - get most recent of two
       .map((b:[any,any])=>b[0].component!=b[1].component ? b[0]: false)
       // remove duplicate false
       .filter(x=>!!x).distinct()
-      // .pausable
-    Observable.combineLatest(
-      hasDragged,
-      hasMoved
-    ).filter((b:[any,any])=>b[0].component!=b[1].component).debounceTime(100).subscribe((parts:[any, any]) => { // debounceWithSelector
-      let d1 = parts[0].component.data.data
-      let d2 = parts[1].component.data.data;
-      //console.log(parts[0].value.value, d1.data ? d1.data.name : d1.name, 'below', d2.data ? d2.data.name : d2.name);
-      let d = parts[0].component.data;
-      let ci = this.tree.indexOf(d); // current index
-      let ti = parts[1].index; // target index
 
-      if(ci > -1 && ci != ti) {
+    Observable.combineLatest(lastDragged, hasMoved)
+      .filter(([b1,b2]:[any,any])=>b1.component!=b2.component)
+      .debounceTime(100) // debounceWithSelector better
+      .subscribe(([d, t]:[any, any]) => { // dragged, target
+      let ci = this.tree.indexOf(d.component.data); // current index
+      let ti = this.tree.indexOf(t.component.data);
+      if(ci > -1 && ci != ti && ti > -1) {
         let r = this.tree.splice(ci, 1);
-        this.tree = [].concat(this.tree.slice(0, ti), r, this.tree.slice(ti))
-        this.update(this.tree);
+        this.tree = [].concat(this.tree.slice(0, ti), r, this.tree.slice(ti));
       } else if (ci == -1) {
         //this.tree.push(d);
         //this.update(this.tree);
       }
-      console.log(ci, ti);
+      this.update(this.tree);
     });
   };
 
