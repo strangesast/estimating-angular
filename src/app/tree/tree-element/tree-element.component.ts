@@ -70,8 +70,10 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    console.log('created');
   }
   ngOnDestroy() {
+    console.log('removed');
   }
   focus() {
     this.focused = true;
