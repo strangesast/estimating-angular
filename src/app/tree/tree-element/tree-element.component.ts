@@ -23,7 +23,7 @@ const ONEND = {'type':'on', value:'end'};
 const ONSTART = {'type':'on', value:'start'};
 const ENTER = {'type':'over', value: 'enter'};
 const LEAVE = {'type':'over', value: 'leave'};
-const DROP = {'type':'over', value: 'drop'};
+const DROP = {'type':'on', value: 'drop'};
 
 @Component({
   selector: 'app-tree-element',
@@ -70,10 +70,8 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    console.log('created');
   }
   ngOnDestroy() {
-    console.log('removed');
   }
   focus() {
     this.focused = true;
@@ -87,21 +85,24 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     this.dragged = true;
     this.dragEmitter.emit(ONSTART);
   }
-  onDragOver() {
+  onDragOver(event) {
     //this.dragEmitter.emit(OVER);
+    event.preventDefault();
   }
   onDragLeave() {
     if(this.options.sink) this.dragEmitter.emit(LEAVE);
   }
-  onDragEnter() {
+  onDragEnter(event) {
     if(this.options.sink) this.dragEmitter.emit(ENTER);
   }
   onDragEnd() {
     this.dragged = false;
     this.dragEmitter.emit(ONEND);
   }
-  onDragDrop() {
+  onDragDrop(event) {
+    event.preventDefault();
     if(this.options.sink) this.dragEmitter.emit(DROP);
+    console.log('drop');
   }
   enableHover(rev) {
     this.focused = false;

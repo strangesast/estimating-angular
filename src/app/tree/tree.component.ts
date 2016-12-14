@@ -19,7 +19,8 @@ import {
   transition
 } from '@angular/core';
 
-import { BehaviorSubject, Subject, Observable } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
+import {Observable} from 'rxjs/Rx';
 
 import * as D3 from 'd3';
 import { nest } from 'd3-collection';
@@ -27,6 +28,18 @@ import { nest } from 'd3-collection';
 import { TreeElementComponent } from  './tree-element/tree-element.component';
 import { TreeOptions } from '../tree-options';
 import { defaultOptions } from '../defaults'; // annoying
+
+let waitForTransition = function(_transition) {
+  return Observable.create(subscriber => {
+    let size = _transition.size();
+    if(size === 0) subscriber.complete();
+    let n = 0;
+    _transition.each(()=>++n).on('end', function(d, i) {
+      subscriber.next({element: this, data: d, index: i}); // this == html element
+      if(!--n) subscriber.complete();
+    });
+  }).toArray();
+}
 
 @Component({
   selector: 'app-tree',
@@ -41,9 +54,17 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   private childComponentFactory;
   private elementComponentRefMap = new Map();
+
   private childComponents = new Subject();
 
+  private childEventSourceContainer = new Subject();
+  private childEventSource = new Subject();
+
   private dragging: boolean = false;
+  private isDragging = new Subject();
+
+  private treeSubject: BehaviorSubject<any[]> = new BehaviorSubject([]);
+  private hostSubject = new Subject();
 
   @Input() tree: any[];
   @Input() options: TreeOptions;
@@ -56,98 +77,96 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ) { }
 
   ngOnInit(): void {
+    this.treeSubject.debounceTime(200).skipUntil(this.hostSubject).concatMap(tree=>{
+      // store component in output of emitter
+      return this.subjectUpdate(tree).map(components=>{
+        let emitters = components.map(c=>{
+          return (function(component) {
+            return component.instance.dragEmitter.map(value=>{
+              return {
+                component: component,
+                value: value
+              }
+            });
+          })(c);
+        });
+        return Observable.merge(...emitters);
+      });
+    }).subscribe(this.childEventSourceContainer);
+
+    this.childEventSourceContainer.switchMap((el:any) =>{
+      return el;
+    }).subscribe(this.childEventSource);
+        
+    let source = this.childEventSource;
+    let [lastDragged, lastMoved] = source.partition((x:any)=> x.value['type']=='on');
+
+    let [lastStart, lastEnd] = lastDragged.partition((x:any)=>x.value.value == 'start');
+
+    let lastDraggedComponent = null;
+
+    let revertTree = null;
+    let currentTree = null;
+    let wasDropped = false;
+
+    lastMoved.windowToggle(lastStart.do((evt:any)=>{
+      lastDraggedComponent=evt.component;
+      revertTree = this.treeSubject.getValue();
+      wasDropped = false;
+      currentTree = revertTree.slice(0);
+    }), ()=>lastEnd.do((x)=>{
+      wasDropped = x.value.value == 'drop';
+      this.dragging = false;
+    })).do(()=>{
+      this.dragging = true;
+    }).map(seq=>{
+      //let lastEnter, lastLeave;
+      //[lastEnter, lastLeave] = seq.partition((x:any)=>x.value.value=='enter');
+
+      // TODO: this breaks when leaving + re-entering same component
+      // return enter immediately, leave after delay if no new enter supercedes it
+      let [lastEnter, lastLeave] = Observable.combineLatest(...seq.partition((x:any)=>x.value.value=='enter'))
+        .switchMap(([a,b]:[any,any])=>a.component==b.component?Observable.of(b).delay(500):Observable.of(a))
+        .distinct()
+        .partition(x=>x.value.value=='enter')
+        .map(ob=>ob.pluck('component'));
+
+      return Observable.merge(
+        lastEnter.do((x:any)=>{
+          //currentTree = this.treeSubject.getValue();
+          
+          let currentPosition = currentTree.indexOf(lastDraggedComponent.instance.data)
+          let desiredPosition = currentTree.indexOf(x.instance.data);
+          if(currentPosition == desiredPosition) return;
+          let r = currentTree.splice(currentPosition, 1);
+          currentTree = [].concat(currentTree.slice(0, desiredPosition), r, currentTree.slice(desiredPosition));
+          this.treeSubject.next(currentTree);
+          //console.log('entered', data.data ? data.data.name : data.name);
+        }),
+        lastLeave.do(()=>{
+          console.log('left');
+          currentTree = revertTree.slice();
+          this.treeSubject.next(currentTree);
+        })
+      ).finally(()=>{
+        this.dragging=false;
+        console.log('finished dragging');
+      });
+    }).mergeAll().subscribe((evt:any)=>{
+      console.log(evt);
+    });
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
-    let source = this.childComponents.switchMap((arr: any[])=>{
-      let emitters = arr.map((component, index)=>component.dragEmitter.asObservable().map(data=>{
-        return {
-          index: index,
-          component: component,
-          value: data
-        };
-      }));
-      return Observable.from(emitters).mergeAll();
-    });
-
-    //let source = this.childComponents.bufferWhen(()=>this.sinkReady.asObservable()).debounceTime(100).flatMap(arrayOfObservables=>{
-    //  return Observable.merge(arrayOfObservables.map(el=>el.emitter.map((v)=>{
-    //    return {
-    //      component: el.component,
-    //      index: el.index,
-    //      value: v
-    //    }
-    //  })));
-    //}).mergeAll();
-
-
-    let lastDragged, lastMoved;
-    [lastDragged, lastMoved] = source.partition((x:any)=> x.value['type']=='on');
-
-    let lastEnter, lastLeave;
-    [lastEnter, lastLeave] = lastMoved.partition((x:any)=>x.value.value=='enter');
-
-    // TODO: this breaks when leaving + re-entering same component
-    // return enter immediately, leave after delay if no new enter supercedes it
-    let hasMoved = Observable.combineLatest(lastEnter, lastLeave)
-      .switchMap(([a,b]:[any,any])=>a.component==b.component?Observable.of(b).delay(100):Observable.of(a))
-      .distinct();
-
-    Observable.combineLatest(
-      lastDragged.do(x=>this.dragging=x.value.value=='start'),
-      hasMoved
-    ).subscribe(([dragState,hoverState]:[any,any])=>{
-      let isDragging = dragState.value.value == 'start';
-
-      let d1 = dragState.component.data;
-      let i1 = this.tree.indexOf(d1);
-      let d2 = hoverState.component.data;
-      let i2 = this.tree.indexOf(d2);
-      //if(i2 == -1) throw new Error('fucked up');
-      console.log(i1, i2);
-
-      let { 'type' : t, 'value': v } = hoverState.value;
-      // drag not still in progress, last was an enter
-      if(!isDragging && v == 'enter') {
-        // move to
-        //console.log(this.tree.indexOf(d1), this.tree.indexOf(d2));
-
-      // drag not finished and entered / left
-      } else if(isDragging && v == 'enter' && i1!=i2) {
-        // move to
-        let r;
-        if(i1 > -1) {
-          r = this.tree.splice(i1, 1);
-        } else {
-          console.log('not present');
-          //r = [d1];
-          r = [];
-        }
-        this.tree = [].concat(this.tree.slice(0, i2), r, this.tree.slice(i2));
-        this.update(this.tree);
-
-      } else if(isDragging && v == 'leave' && dragState.index != i1) {
-        let r;
-        if(i1 > -1) {
-          r = this.tree.splice(i1, 1);
-        } else {
-          console.log('not present'); // bad
-          r = [];
-        }
-        this.tree = [].concat(this.tree.slice(0, dragState.index), r, this.tree.slice(dragState.index));
-        this.update(this.tree);
-      }
-    });
+    this.treeSubject.next(this.tree);
   };
 
   removeChildComponent(element: HTMLElement) {
     let component = this.elementComponentRefMap.get(element);
+    let res = this.elementComponentRefMap.delete(element);
     component.destroy();
-    return this.elementComponentRefMap.delete(element);
+    return res;
   }
 
-  // probably(?) a mem leak
-  createChildComponent(data?, index?) {
-    data = data || {};
-    // what's fed to the component (and what is it called)
+  createChildComponent(data, index) {
     let inputProviders = [{
       provide: 'data',
       useValue: data
@@ -171,66 +190,67 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('.tree');
     this.host = D3.select(this.htmlElement);
-    //this.update(this.tree, false);
+    this.hostSubject.next(this.host);
+    this.treeSubject.next(this.tree);
   }
 
-  update(tree: any[], anim?) {
-    console.log('update');
-    anim = anim == null ? true : anim;
+  // update the position / presence of elements
+  subjectUpdate(tree) : Observable<any>{
+    let treeElementHeight = 40;
+    let treeElementIndent = 20;
+    let treeElementSelector = 'app-tree-element';
+    let animationDuration = 250;
 
-    this.host.style('height', tree.length*40 + 'px');
+    this.host.style('height', (tree.length * treeElementHeight) + 'px');
 
-    let selection = this.host.selectAll('app-tree-element')
-      .data(tree, function(d){return d.data.id});
+    let selection = this.host
+      .selectAll(treeElementSelector)
+      .data(tree, (d)=>d.data.id);
 
-    let t = D3.transition(null)
-      .duration(250);
+    let t = D3.transition(null).duration(animationDuration);
 
     // remove
     let toRemove = selection.exit()
-    if(anim) toRemove = toRemove.transition(t)
-      //.call(endall, function(){console.log('remove all done')})
-      .styleTween('opacity', ()=>D3.interpolate(1, 0))
-
-    toRemove = toRemove.remove();
+    let toRemoveTransition = toRemove.transition(t).styleTween('opacity', ()=>D3.interpolate(1,0));
+    toRemoveTransition.remove();
 
     // adjust
     let toAdjust = selection.order()
-      .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
-
-    if(anim) toAdjust = toAdjust
-      .transition(t)
-      //.call(endall, function(){console.log('adjust all done')});
-
-    toAdjust = toAdjust
-      .style('top', (el, i)=>(i*40) + 'px')
+      .style('width', (el)=>'calc(100% - ' + (el.depth * treeElementIndent) + 'px)')
+    let toAdjustTransition = toAdjust.transition(t).style('top', (el, i)=>(i*40) + 'px')
 
     // add
     let toAdd = selection
       .enter()
       .append(this.createChildComponent.bind(this))
       .order()
-      .style('top', (el, i)=>(i*40) + 'px')
-      .style('width', (el)=>'calc(100% - ' + (el.depth * 20) + 'px)')
+      .style('top', (el, i)=>(i*treeElementHeight)+'px')
+      .style('width', (el)=>'calc(100% - ' + (el.depth * treeElementIndent) + 'px)')
+    let toAddTransition = toAdd.transition(t).styleTween('opacity', ()=>D3.interpolate(0, 1))
+    toAdd.style('top', (el, i)=>(i*40) + 'px');
 
-    if(anim) toAdd = toAdd
-      .transition(t)
-      //.call(endall, ()=>console.log('add all done'))
-      .styleTween('opacity', ()=>D3.interpolate(0, 1))
+    return Observable.forkJoin(
+      waitForTransition(toRemoveTransition),
+      waitForTransition(toAdjustTransition),
+      waitForTransition(toAddTransition)
+    ).map(([removed, moved, added]:[any[], any[], any[]])=>{
+      removed.map(el=>{
+        return this.removeChildComponent(el.element);
+      });
 
-    toAdd = toAdd
-      .style('top', (el, i)=>(i*40) + 'px');
+      let remaining = moved.concat(added);
+      return remaining.map(({element: htmlElement, data, index})=>{
+        let component = this.elementComponentRefMap.get(htmlElement);
+        component.instance.data = data; // bastard
 
-    toRemove._groups.slice(0)[0].map(el=>this.removeChildComponent(el));
-
-    let arr = [];
-    for(let [prop, val] of this.elementComponentRefMap.entries()) {
-      arr.push(val.instance);
-    }
-    this.childComponents.next(arr);
+        return component;
+      });
+    });
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if(this.host && 'tree' in changes) this.update(this.tree)
+  ngOnChanges(changes) {
+    if('tree' in changes) {
+      this.treeSubject.next(this.tree);
+    }
   };
 }

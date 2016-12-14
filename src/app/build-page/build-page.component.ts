@@ -62,7 +62,8 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
 
       this.job = job;
       this.elements = elements;
-      this.jobService.elements.subscribe(elements => this.elements = elements);
+      //                       called by / updated by buildTree
+      this.jobService.elements.skip(1).subscribe(elements => this.elements = elements);
     });
   }
 

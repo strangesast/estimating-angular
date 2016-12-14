@@ -1,3 +1,4 @@
+import 'rxjs/Rx';
 import './rxjs-extensions';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
