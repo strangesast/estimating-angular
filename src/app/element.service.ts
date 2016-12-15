@@ -1,36 +1,27 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import * as Rx from 'rxjs/Rx';
 
-import * as gitModes        from 'js-git/lib/modes';
-import * as gitIndexedDb    from 'js-git/mixins/indexed-db';
-import * as gitMemDb        from 'js-git/mixins/mem-db';
-import * as gitCreateTree   from 'js-git/mixins/create-tree';
-import * as gitPackOps      from 'js-git/mixins/pack-ops';
-import * as gitWalkers      from 'js-git/mixins/walkers';
-import * as gitReadCombiner from 'js-git/mixins/read-combiner';
-import * as gitFormats      from 'js-git/mixins/formats';
+import { Repo, createGitRepo, gitModes, gitIndexedDb, gitMemDb, gitCreateTree, gitPackOps, gitWalkers, gitReadCombiner, gitFormats, gitModesInv } from './git';
 
-let gitModesInv = {
-  33188: 'text',
-  57344: 'commit',
-  16384: 'tree'
-};
+import { initObjectStore, streamify, promisify, random } from './util';
 
 import { diff } from 'deep-diff';
 
-import { Router, Resolve, ActivatedRouteSnapshot } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  Resolve,
+  Router
+} from '@angular/router';
 
 import {
-  User,
-  Element,
-  Child,
-  BasedOn,
   ComponentElement,
-  Location,
   FolderDef,
+  Location,
+  BasedOn,
   Folder,
+  Child,
+  User,
   Job
 } from './classes';
 
@@ -40,7 +31,7 @@ import {
 const USER_COLLECTION = 'users';
 const INVALID_FOLDER_TYPES = ['component', 'location'];
 
-const stores = [
+const STORES = [
   { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
                                                        { on: 'email',     name: 'email',     unique: true  }] },
   { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
@@ -53,43 +44,12 @@ const stores = [
   { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true  }] }
 ];
 
-function streamify(stream): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    let fn = (arr) => {
-      stream.read((err, result) => {
-        if(err) return reject(err); // error out
-        if(result == null) return resolve(arr); // done
-        fn(arr.concat(result));
-      });
-    };
-    fn([]);
-  });
-};
-
-function promisify(...args: any[]): Promise<any[]> {
-  let fn = args[0];
-  return new Promise((resolve, reject) => {
-    let cb = function(err) {
-      if(err) return reject(err);
-      resolve([].slice.call(arguments, 1))
-    };
-    fn.apply(null, args.slice(1).concat(cb));
-  });
-}
-
-function random():string {
-  return (Math.random().toString(36)+'00000000000000000').slice(2, 10+2);
-}
-
 const STORE_NAME = 'estimating';
 const STORE_VERSION = 1;
-const GIT_STORE_NAME = 'estimating-git';
-const GIT_STORE_VERSION = 1;
-const GIT_STORE_REF_PREFIX = 'testing'; // replaced with ?
 
 @Injectable()
 export class ElementService {
-  repo: any;
+  repo: Repo;
   gitdb: IDBDatabase;
   db: IDBDatabase;
 
@@ -104,83 +64,18 @@ export class ElementService {
   resolve(): Promise<any>|boolean {
     if(this.db == null || this.gitdb == null) {
       return Promise.all([
-        this.initObjectStore(),
-        this.createGitRepo()
-      ]).then(both => {
-        return {
-          store: both[0],
-          repo: both[1]
-        };
+        <any>initObjectStore(STORE_NAME, STORE_VERSION, STORES), // w/ <any> hack
+        createGitRepo()
+      ]).then(([store, {repo, gitdb}]) => {
+        this.db = store;
+        this.repo = repo;
+        this.gitdb = gitdb;
+        return { store, repo };
       });
     } else {
       return Promise.resolve();
     }
   }
-
-  findLocation(locArr) {
-    return Promise.resolve();
-  }
-
-  findLocationWithFolder(folderId) {
-    return new Promise((resolve, reject) => {
-      let storeName = 'locations';
-      let trans = this.db.transaction([storeName], 'readonly');
-      let store = trans.objectStore(storeName);
-      let index = store.index('folders');
-      let range = IDBKeyRange.only(folderId);
-
-      let req = index.openCursor(range);
-      let vals = [];
-      req.onsuccess = (e:any) => {
-        let cursor = e.target.result;
-        if(cursor) {
-          vals.push(cursor.value);
-          return cursor.continue();
-        }
-        resolve(vals)
-      };
-      req.onerror = (e:any) => {
-        reject(e.target.error);
-      }
-    });
-  }
-
-  getAllChildren(folder: Folder, maxLevel?):Promise<Folder> {
-    maxLevel = maxLevel == null ? 2 : maxLevel;
-    folder.children = folder.children || [];
-    if(maxLevel < 1 || folder.children.length == 0) return Promise.resolve(folder);
-    let promises = folder.children.map((childId)=>{
-      return this.retrieveFolder(childId).then((child)=>{
-        return this.getAllChildren(child, maxLevel - 1);
-      });
-    });
-    return Promise.all(promises).then((children)=>{
-      folder.children = children;
-      return folder;
-    });
-  }
-
-  addFolder(folder: Folder, parId, job: Job) {
-    let types = job.folders.types;
-    if(types.indexOf(folder.type) == -1) throw new Error('job does not have this type of folder');
-    return this.retrieveFolder(parId || job.folders.roots[job.folders.types.indexOf(folder.type)]).then((par)=>{
-      if(par.job != folder.job) throw new Error('cannot add folder to folder of another job ('+par.job+' and '+folder.job+')');
-      if(par instanceof Folder) {
-        // should not already be child
-        par.children = par.children || [];
-        if(par.children.indexOf(folder.id) != -1) throw new Error('already child of this folder');
-        par.children.push(folder.id);
-        return Promise.all([
-          this.saveRecord(this.db, 'folders', folder.toJSON()),
-          this.saveRecord(this.db, 'folders', par.toJSON())
-        ]);
-
-      } else {
-        throw new Error('invalid root folder');
-      }
-    });
-  }
-
 
   // returns [componentRecordId, locationRecordId]
   addComponent(component: ComponentElement, job: Job, folders) {
@@ -206,41 +101,11 @@ export class ElementService {
         let child = new Child(random(), component.id, 1);
         loc.children.push(child);
       }
+      component.saveState = 'saved:uncommitted';
       return Promise.all([
-        this.saveRecord(this.db, 'components', component.toJSON()),
+        this.saveRecord(this.db, 'components', component.toJSON(false)),
         this.saveRecord(this.db, 'locations', loc.toJSON())
       ]);
-    });
-  }
-
-  treeToObject(tree) {
-    let promises = [];
-    Object.keys(tree).forEach((key)=>{
-      if(tree[key].hash != null) {
-        let hash = tree[key].hash;
-        let mode = tree[key].mode;
-        if(mode == gitModes.file) {
-          let prom = this.loadAs('text', hash).then((text) => {
-            return [key, JSON.parse(text)];
-          });
-          promises.push(prom);
-
-        } else if (mode == gitModes.tree) {
-          let prom = this.loadAs('tree', hash).then((tree)=> {
-            return this.treeToObject(tree).then((obj)=>{
-              return [key, obj];
-            });
-          });
-          promises.push(prom);
-        }
-      }
-    });
-    let obj = {};
-    return Promise.all(promises).then((pairs)=>{
-      pairs.forEach((pair)=>{
-        obj[pair[0]] = pair[1];
-      });
-      return obj;
     });
   }
 
@@ -288,14 +153,6 @@ export class ElementService {
     let db = this.db;
     return this.getAll(db, USER_COLLECTION).then(savedUsers => {
       return savedUsers.map(User.create);
-      //let savedUsernames = savedUsers.map(user => user.username);
-      //return this.getJobs().then(jobs => {
-      //  let owners = jobs.map(job => job.owner);
-      //  return Promise.all(owners.map(owner => {
-      //    let i = savedUsernames.indexOf(owner.username);
-      //    return i == -1 ? this.saveRecord(this.db, USER_COLLECTION, owner).then(this.retrieveUser.bind(this)) : Promise.resolve(User.create(savedUsers[i]));
-      //  }));
-      //});
     });
   }
 
@@ -343,40 +200,6 @@ export class ElementService {
       let ob = {};
       storeNames.forEach((s, i)=>ob[s] = arr[i]);
       return ob;
-    });
-  }
-
-  allLocations(jobId:string) {
-    return new Promise((resolve, reject) => {
-      let storeName = 'locations';
-      let trans = this.db.transaction([storeName], 'readonly');
-      let store = trans.objectStore(storeName);
-
-      let q = IDBKeyRange.only(jobId);
-      let index = store.index('job');
-      let req = index.openCursor(q);
-      let results = [];
-      req.onsuccess = (e:any) => {
-        let cursor = e.target.result;
-        if(cursor) {
-          results.push(cursor.value);
-          cursor.continue();
-        } else {
-          resolve(results)
-        }
-      };
-      req.onerror = (e:any) => {
-        reject(e.target.error);
-      }
-    });
-  }
-
-  retrieveFolder(id: string): Promise<Folder|null> {
-    return this.retrieveRecordFrom('folders', id).then((res)=>{
-      if(res != null) {
-        return Folder.create(res);
-      }
-      return null;
     });
   }
 
@@ -465,6 +288,15 @@ export class ElementService {
     return this.retrieveRecordFrom('components', id).then((res)=>{
       if(res != null) {
         return ComponentElement.create(res);
+      }
+      return null;
+    });
+  }
+
+  retrieveFolder(id: string): Promise<Folder|null> {
+    return this.retrieveRecordFrom('folders', id).then((res)=>{
+      if(res != null) {
+        return Folder.create(res);
       }
       return null;
     });
@@ -563,70 +395,6 @@ export class ElementService {
     });
   }
 
-  // returns keypath of created user
-  saveUser(user: User): Promise<string> {
-    return this.saveRecord(this.db, 'users', user);
-  }
-
-  initObjectStore(): Promise<any> {
-    let name = STORE_NAME;
-    let version = STORE_VERSION;
-    return new Promise((resolve, reject) => {
-      let request = indexedDB.open(name, version);
-
-      request.onupgradeneeded = (e:any) => {
-        let db = e.target.result;
-
-        let createStore = (name, keypath, indexes) => {
-          let store = db.createObjectStore(name, { keyPath: keypath });
-          indexes.forEach((index)=> {
-            store.createIndex(index.name, index.on, { unique: index.unique, multiEntry: !!index.multiEntry });
-          });
-        }
-
-        let trans = e.target.transaction;
-
-        stores.forEach((store)=> {
-          if(db.objectStoreNames.contains(store.name)) {
-            db.deleteObjectStore(store.name);
-          }
-          createStore(store.name, store.keypath, store.indexes);
-        });
-
-        this.db = db;
-
-        trans.onsuccess = (e) => {
-          resolve(db);
-        }
-      };
-
-      request.onsuccess = (e:any) => {
-        let db = e.target.result;
-        this.db = db;
-        resolve(db);
-      };
-    });
-  }
-
-  createGitRepo(): Promise<any> {
-    return new Promise((resolve, reject) => {
-      gitIndexedDb.init(GIT_STORE_NAME, GIT_STORE_VERSION, (err, db) => {
-        if(err) return reject(err);
-        let repo = {};
-        gitIndexedDb(repo, GIT_STORE_REF_PREFIX);
-        gitCreateTree(repo);
-        gitFormats(repo);
-        gitPackOps(repo);
-        gitReadCombiner(repo);
-        gitWalkers(repo);
-
-        this.repo = repo
-        this.gitdb = db;
-        resolve(this.repo);
-      });
-    });
-  }
-
   readRefs(db: any): Promise<string[]> {
     return new Promise((resolve, reject) => {
       if(db == null) throw new Error('db undefined, run init');
@@ -645,9 +413,9 @@ export class ElementService {
     }).then((arr: string[]) => {
       // filter out different prefixes
       return arr.filter((str) => {
-        return str.startsWith(GIT_STORE_REF_PREFIX) && str.split('/')[0] == GIT_STORE_REF_PREFIX;
+        return str.startsWith(this.repo.refPrefix) && str.split('/')[0] == this.repo.refPrefix;
       }).map((str)=>{
-        return str.substring(GIT_STORE_REF_PREFIX.length + 1);
+        return str.substring(this.repo.refPrefix.length + 1);
       });
     });
   }

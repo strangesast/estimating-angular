@@ -55,15 +55,11 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private htmlElement: HTMLElement;
 
   private childComponentFactory;
+  // for storing ref to child components
   private elementComponentRefMap = new Map();
-
   private childComponents = new Subject();
 
-  private childEventSourceContainer = new Subject();
-  private childEventSource = new Subject();
-
   private dragging: boolean = false;
-  private isDragging = new Subject();
 
   private hostSubject: Subject<any> = new Subject();
   private treeSubject: BehaviorSubject<any[]>;
@@ -81,6 +77,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ) { }
 
   ngOnInit(): void {
+    // tree update watcher
     this.treeSubject = new BehaviorSubject([]);
     this.treeSubject
       .skipUntil(this.hostSubject) // wait for host to load in afterViewInit, only 
@@ -88,12 +85,14 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       .switchMap(this.subjectUpdate.bind(this)) // call subject update, interrupt if necessary
       .subscribe(this.childComponents); // feed into childcomponents
 
+    // child component update watcher
     this.childComponents.map(
       (components:any[])=>Observable.merge(...components.map(
         ({instance: component})=>component.dragEmitter
       )))
       .subscribe(this.dragSink); // on childcomponents update, update drag listeners
 
+    // drag event source
     let source = this.dragSink.switchMap(el=>el);
     let arr = ['dragstart', 'drop', 'dragend'];
     let [dragged, draggedOver] = source.partition(({event:{type:t},component:c})=>arr.indexOf(t)!=-1);
@@ -149,6 +148,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   createChildComponent(data, index) {
+    // creation of child component / passing in data
     let inputProviders = [{
       provide: 'data',
       useValue: data
@@ -174,30 +174,39 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.hostSubject.next(this.host);
     this.treeSubject.next(this.tree);
   }
+
   // update the position / presence of elements
   subjectUpdate(tree) : Observable<any>{
     let treeElementHeight = 40;
-    let treeElementIndent = 20;
+    let treeElementIndent = 20; // should probably be offloaded to child
     let treeElementSelector = 'app-tree-element';
     let animationDuration = ANIMATION_TIME;
 
+    // children are absolute-ly positioned
     this.host.style('height', (tree.length * treeElementHeight) + 'px');
 
+    // use child, folder, component ids.
+    // will probably break with multiple instances of same
     let selection = this.host
       .selectAll(treeElementSelector)
       .data(tree, (d)=>d.data.id);
 
+    // use the same transition for the three selections
     let t = D3.transition(null).duration(animationDuration);
 
     // remove
     let toRemove = selection.exit()
-    let toRemoveTransition = toRemove.transition(t).styleTween('opacity', ()=>D3.interpolate(1,0));
-    toRemoveTransition.remove();
+    let toRemoveTransition = toRemove
+      .transition(t)
+      .styleTween('opacity', ()=>D3.interpolate(1,0))
+      .remove();
 
     // adjust
     let toAdjust = selection.order()
       .style('width', (el)=>'calc(100% - ' + (el.depth * treeElementIndent) + 'px)')
-    let toAdjustTransition = toAdjust.transition(t).style('top', (el, i)=>(i*40) + 'px')
+    let toAdjustTransition = toAdjust
+      .transition(t)
+      .style('top', (el, i)=>(i*40) + 'px')
 
     // add
     let toAdd = selection
@@ -206,8 +215,10 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       .order()
       .style('top', (el, i)=>(i*treeElementHeight)+'px')
       .style('width', (el)=>'calc(100% - ' + (el.depth * treeElementIndent) + 'px)')
-    let toAddTransition = toAdd.transition(t).styleTween('opacity', ()=>D3.interpolate(0, 1))
-    toAdd.style('top', (el, i)=>(i*40) + 'px');
+    let toAddTransition = toAdd
+      .transition(t)
+      .styleTween('opacity', ()=>D3.interpolate(0, 1))
+      .style('top', (el, i)=>(i*40) + 'px');
 
     return Observable.forkJoin(
       waitForTransition(toRemoveTransition),

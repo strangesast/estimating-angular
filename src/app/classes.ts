@@ -17,30 +17,6 @@ export class User {
   }
 }
 
-export class TreeElement {
-  // reference component or folder
-  ref: any;
-
-  constructor(public refid: string, public reftype: 'component'|'phase'|'building'|'folder', public level: number, public ctx: any) { }
-
-  static fromElement(obj, ctx, level:number):TreeElement {
-    let t;
-    if(obj instanceof ComponentElement) {
-      t = 'component';
-    } else if (obj instanceof Folder) {
-      t = obj['type'] || 'folder'; // perhaps undesirable
-    } else {
-      console.error('unrecognized type', obj);
-      throw new Error('unrecognized type');
-    }
-    return new TreeElement(obj.id, t, level, ctx);
-  }
-
-  getURL():string {
-    return [this.reftype, this.refid].join('/');
-  }
-}
-
 export class EditElement {
   public init: any;
   constructor(
@@ -54,7 +30,7 @@ export class EditElement {
 }
 
 // root 'element' of phase, building, component, job, etc
-export class Element {
+export class BaseElement {
   _id?: string|null;   // server id.  may be null if unsaved
 
   constructor(
@@ -74,9 +50,10 @@ export class Child {
     public qty: number,
     public _ref?: string,
     public data?: any,
-    public folders?: any
+    public folders?: any,
+    public saveState: SaveState = "unsaved"
   ) { }
-  static exclude: string[] = ['data', 'folders'];
+  static exclude: string[] = ['data', 'folders', 'saveState'];
   toJSON(removeExcluded?) {
     if(removeExcluded == null) removeExcluded = true;
     let copy = Object.assign({}, this);
@@ -107,7 +84,7 @@ export class BasedOn {
 }
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
-export class ComponentElement extends Element {
+export class ComponentElement extends BaseElement {
   constructor(
     id,
     name,
@@ -115,7 +92,8 @@ export class ComponentElement extends Element {
     public job: string, 
     public children?: Child[], 
     public basedOn?: BasedOn|null,
-    public hash?: string
+    public hash?: string,
+    public saveState: SaveState = "unsaved"
   ) {
     super(id, name, description);
     if(children == null) this.children = [];
@@ -125,7 +103,7 @@ export class ComponentElement extends Element {
     return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn, obj.hash);
   }
 
-  static exclude: string[] = ['hash'];
+  static exclude: string[] = ['hash', 'saveState'];
 
   toJSON(removeExcluded?:Boolean) {
     if(removeExcluded == null) removeExcluded = true;
@@ -186,7 +164,10 @@ export class FolderDef {
   ) { }
 }
 
-export class Folder extends Element {
+//                      not in commit         in commit       saved remotely   none of the prev
+export type SaveState = "saved:uncommitted" | "saved:local" | "saved:remote" | "unsaved";
+
+export class Folder extends BaseElement {
   constructor(
     id,
     name,
@@ -194,12 +175,14 @@ export class Folder extends Element {
     public type: string,
     public job: string,
     public children: any[],
-    public hash?: string
+    public hash?: string,
+    public open?: boolean,
+    public saveState: SaveState = "unsaved"
   ) {
     super(id, name, description);
   }
 
-  static exclude: string[] = ['commit'];
+  static exclude: string[] = ['commit', 'open', 'saveState'];
 
   toJSON(removeExcluded?:Boolean) {
     if(removeExcluded == null) removeExcluded = true;
@@ -220,7 +203,7 @@ export class Folder extends Element {
   }
 }
 
-export class Job extends Element {
+export class Job extends BaseElement {
   constructor(
     id,
     name,

@@ -1,7 +1,11 @@
-import { Injectable }               from '@angular/core';
-import { Observable }               from 'rxjs/Observable';
-import { Subject }                  from 'rxjs/Subject';
-import { BehaviorSubject }          from 'rxjs/BehaviorSubject';
+import { Injectable } from '@angular/core';
+
+import {
+  BehaviorSubject,
+  Observable,
+  Subject
+} from 'rxjs';
+
 import {
   Resolve,
   Router,
@@ -27,8 +31,7 @@ export class ElementEditService implements Resolve<Promise<any>> {
   _elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
   elements: Observable<any[]> = this._elements.asObservable();
 
-  _activeElement: BehaviorSubject<any> = new BehaviorSubject(null);
-  activeElement: Observable<any> = this._activeElement.asObservable();
+  _activeElement: BehaviorSubject<any> = new BehaviorSubject(null); activeElement: Observable<any> = this._activeElement.asObservable();
 
   constructor(private jobService: JobService, private elementService: ElementService, private router: Router) { }
 
