@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
+import { Observable } from 'rxjs';
+
 import { TreeComponent } from '../tree.component';
 
 import {
@@ -58,6 +60,10 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   focused: boolean = false;
   isOpen: boolean = true; // folder only
 
+  confirmActive: boolean = false;
+  confirmMessage: string = 'Are you sure?';
+
+  @Output() confirmSink: EventEmitter<any> = new EventEmitter();
   @Output() dragEmitter: EventEmitter<any> = new EventEmitter();
 
   constructor(private injector: Injector, public element: ElementRef, private router: Router, private route: ActivatedRoute) {
@@ -137,6 +143,18 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   //  this.drop.emit({ component: this, event: event });
   //}
 
+  confirmPlacement() {
+    this.confirmActive = true;
+    this.confirmMessage = 'Some message.';
+
+    return this.confirmSink.take(1).map(res=>{
+      console.log('result...', res);
+      return res;
+    }).finally(()=>{
+      this.confirmActive = false;
+      this.confirmMessage = '';
+    });
+  }
   enableHover(rev) {
     this.focused = false;
     this.draggable = rev == null ? true : rev;

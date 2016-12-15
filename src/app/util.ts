@@ -1,3 +1,19 @@
+// d3
+import { Observable } from 'rxjs';
+export function waitForTransition(_transition) {
+  return Observable.create(subscriber => {
+    let size = _transition.size();
+    if(size === 0) subscriber.complete();
+    let n = 0;
+    _transition.each(()=>++n).on('end', function(d, i) {
+      subscriber.next({element: this, data: d, index: i}); // this == html element
+      if(!--n) subscriber.complete();
+    });
+  }).toArray();
+}
+
+
+// should move to observable stream
 export function streamify(stream): Promise<any[]> {
   return new Promise((resolve, reject) => {
     let fn = (arr) => {

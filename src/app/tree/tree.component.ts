@@ -2,9 +2,8 @@ import {
   Input,
   Component,
   OnInit,
-  OnDestroy,
   AfterViewInit,
-  OnChanges, // used with input
+  OnChanges,
   ElementRef,
   ViewChild,
   ViewContainerRef,
@@ -12,15 +11,13 @@ import {
   ComponentFactoryResolver,
   ReflectiveInjector,
   SimpleChanges,
-  trigger,
-  state,
-  animate,
-  style,
-  transition
 } from '@angular/core';
 
-import { BehaviorSubject, Subject } from 'rxjs';
-import {Observable} from 'rxjs/Rx';
+import {
+  BehaviorSubject,
+  Observable,
+  Subject
+} from 'rxjs';
 
 import * as D3 from 'd3';
 import { nest } from 'd3-collection';
@@ -29,19 +26,7 @@ import { TreeElementComponent } from  './tree-element/tree-element.component';
 import { TreeOptions } from '../tree-options';
 import { defaultOptions } from '../defaults'; // annoying
 
-let waitForTransition = function(_transition) {
-  return Observable.create(subscriber => {
-    let size = _transition.size();
-    if(size === 0) subscriber.complete();
-    let n = 0;
-    _transition.each(()=>++n).on('end', function(d, i) {
-      subscriber.next({element: this, data: d, index: i}); // this == html element
-      if(!--n) subscriber.complete();
-    });
-  }).toArray();
-}
-
-const ANIMATION_TIME = 250; // ms
+import { waitForTransition } from '../util';
 
 @Component({
   selector: 'app-tree',
@@ -101,44 +86,73 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
     let currentDrag=null;
     let initialPosition=null;
+    let last = null;
     draggedOver
       .switchMap((evt:any)=>{
         let t = evt.event.type;
-        return t == 'dragenter' ? Observable.of(evt) : t == 'dragover' ? Observable.never() : Observable.of(evt).delay(500);
+        return (
+          t == 'dragenter' ? Observable.of(evt) : // if 'dragenter', return immediately
+          t == 'dragover' ? Observable.never() : // if over, prevent 'dragleave'
+          Observable.of(evt).delay(500) // else return 'dragleave' after delay
+        );
       })
-      // may be longer, shorter fails to call 'this.dragging = false' for some reason
+      // may be longer - shorter fails to call 'this.dragging = false' for some reason
       // shouldn't be shorter than animation time
-      .debounceTime(ANIMATION_TIME)
+      .debounceTime(Math.round(this.options.animationTime/2))
       // create window formed by start/end/drop
       .windowToggle(dragStart.withLatestFrom(this.treeSubject).do(([{component}, tree]:[any,any[]])=>{
-        this.dragging = true; // disable pointer events
+        console.log('first');
         initialPosition = tree.indexOf(component.data); // store for reset
         currentDrag=component; // store dragged element
-      }), ()=>dragEnd)
-      // drag window sequence (may be interrupted)
-      .switchMap(ob=>{
-        return ob.finally(()=>{
-          this.dragging = false;
-        });
-      })
-      // use the most recent tree (might be updated by the following)
-      .withLatestFrom(this.treeSubject).subscribe(([{component, event:{type:t}}, tree])=>{
-        let currentPosition = tree.indexOf(currentDrag.data);
-        let desiredPosition = tree.indexOf(component.data);
+      }), ()=>dragEnd.do(()=>this.dragging=false))
+      // drag window sequence (may not be interrupted)
+      .exhaustMap(ob=>{
+        this.dragging = true; // disable pointer events
+        return ob
+        // use the most recent tree (might be updated by the following)
+        .withLatestFrom(this.treeSubject)
+        .map(([{component, event:{type:t}}, tree])=>{
+          let currentPosition = tree.indexOf(currentDrag.data);
+          let desiredPosition = tree.indexOf(component.data);
 
-        // should error if these dont hold
-        if(currentPosition != -1) {
+          let ret:any = { component: currentDrag };
+
+          // should error if these dont hold
+          if(desiredPosition == -1 || currentPosition == -1) throw new Error('this shouldn\'t happen');
           let r = tree.splice(currentPosition, 1);
-          if(t == 'dragenter' && desiredPosition != -1) {
+
+          if(t == 'dragenter') {
             tree = tree.slice(0, desiredPosition).concat(r, tree.slice(desiredPosition));
+            currentPosition = desiredPosition;
+            ret.index = desiredPosition;
           } else {
             tree = tree.slice(0, initialPosition).concat(r, tree.slice(initialPosition));
+            currentPosition = initialPosition;
+            ret.index = initialPosition;
           }
           this.treeSubject.next(tree);
-        }
+          return ret;
+        })
+        .finally(()=>{
+          this.dragging = false;
+          initialPosition = null;
+          currentDrag =null;
+        })
+        .takeLast(1)
+        .concatMap(result=>{
+          // check if valid
+          return result.component.confirmPlacement();
+        });
+      }).subscribe(x=>{
+        console.log('finished', x);
       });
+
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
   };
+
+  confirmPlacement(component) {
+    component.confirmPlacement()
+  }
 
   removeChildComponent(element: HTMLElement) {
     let component = this.elementComponentRefMap.get(element);
@@ -180,7 +194,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     let treeElementHeight = 40;
     let treeElementIndent = 20; // should probably be offloaded to child
     let treeElementSelector = 'app-tree-element';
-    let animationDuration = ANIMATION_TIME;
+    let animationDuration = this.options.animationTime;
 
     // children are absolute-ly positioned
     this.host.style('height', (tree.length * treeElementHeight) + 'px');

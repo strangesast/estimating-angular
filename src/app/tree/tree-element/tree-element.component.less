@@ -15,45 +15,50 @@
   padding: 0 4px;
   height: @tree-element-height;
   line-height: @tree-element-height;
-  display: flex;
-  flex-direction: row;
+  & > .content {
+    display: flex;
+    flex-direction: row;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    .name, .description, .qty {
+      margin-right: 8px;
+    }
+    .description {
+      flex-shrink: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .name {
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right:8px;
+    }
+    span {
+      line-height: @tree-element-height;
+    }
+    .icon {
+      padding: 0 4px;
+    }
+    .qty {
+      padding: 0 10px;
+    }
+  }
+  & > .confirm-window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 0 8px;
+    color: @blue2;
+  }
   z-index: 9;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   transition: transform 0.25s ease, height 0.25s ease, width 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
-  .spacer {
-    flex-grow: 1;
-  }
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  .name, .description, .qty {
-    margin-right: 8px;
-  }
-  .description {
-    flex-shrink: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .name {
-    flex-shrink: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right:8px;
-  }
-
-  span {
-    line-height: @tree-element-height;
-  }
-  .icon {
-    padding: 0 4px;
-  }
-
-  .qty {
-    //background: @blue2;
-    //color: @blue4;
-    padding: 0 10px;
-  }
 }
 
 :host-context(.dragging) * {
@@ -89,4 +94,7 @@
 }
 :host.active:not(.dragged) {
   height: 2*@tree-element-height;
+}
+.blurred {
+  filter: blur(5px);
 }

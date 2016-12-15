@@ -8,3 +8,6 @@ html, body {
   /*background: #FFFFFF;*/
   background: #E5E1D1;
 }
+.spacer {
+  flex-grow: 1;
+}

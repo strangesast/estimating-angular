@@ -36,7 +36,8 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
     source: true,
     sink: true,
     reorder: true,
-    sort: true
+    sort: true,
+    animationTime: 250
   };
 
   private job: Job;

@@ -4,5 +4,6 @@ export const defaultOptions: TreeOptions = {
   source: false,
   sink: false,
   reorder: false,
-  sort: false
+  sort: false,
+  animationTime: 250
 }

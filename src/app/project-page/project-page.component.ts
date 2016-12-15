@@ -47,7 +47,8 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     source: true,
     sink: false,
     reorder: false,
-    sort: false
+    sort: false,
+    animationTime: 250
   };
 
   private htmlElement: HTMLElement;
