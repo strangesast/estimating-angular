@@ -34,11 +34,11 @@ const DROP = {'type':'on', value: 'drop'};
   styleUrls: ['./tree-element.component.less'],
   host: {
     //'(drag)':         'dragEmitter.emit({ event: $event, component: this })',
-    '(dragstart)':    'dragEmitter.emit({ event: $event, component: this })',
+    '(dragstart)':    'this.dragged = true; dragEmitter.emit({ event: $event, component: this })',
     '(dragover)':     '$event.preventDefault(); dragEmitter.emit({ event: $event, component: this })',
     '(dragleave)':    'dragEmitter.emit({ event: $event, component: this })',
     '(dragenter)':    'dragEmitter.emit({ event: $event, component: this })',
-    '(dragend)':      'dragEmitter.emit({ event: $event, component: this })',
+    '(dragend)':      'this.dragged = false; dragEmitter.emit({ event: $event, component: this })',
     '(drop)':         'dragEmitter.emit({ event: $event, component: this })',
     '[draggable]':    'draggable',
     '[class.dragged]':'dragged',

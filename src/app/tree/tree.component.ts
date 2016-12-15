@@ -41,6 +41,8 @@ let waitForTransition = function(_transition) {
   }).toArray();
 }
 
+const ANIMATION_TIME = 250; // ms
+
 @Component({
   selector: 'app-tree',
   animations: [],
@@ -80,47 +82,62 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   ngOnInit(): void {
     this.treeSubject = new BehaviorSubject([]);
-    // wait for host to load in afterViewInit, only 
     this.treeSubject
-      .skipUntil(this.hostSubject)
+      .skipUntil(this.hostSubject) // wait for host to load in afterViewInit, only 
       .distinct()
-      .switchMap(this.subjectUpdate.bind(this))
-      .subscribe(this.childComponents);
+      .switchMap(this.subjectUpdate.bind(this)) // call subject update, interrupt if necessary
+      .subscribe(this.childComponents); // feed into childcomponents
 
     this.childComponents.map(
       (components:any[])=>Observable.merge(...components.map(
         ({instance: component})=>component.dragEmitter
       )))
-      .subscribe(this.dragSink);
+      .subscribe(this.dragSink); // on childcomponents update, update drag listeners
 
     let source = this.dragSink.switchMap(el=>el);
     let arr = ['dragstart', 'drop', 'dragend'];
     let [dragged, draggedOver] = source.partition(({event:{type:t},component:c})=>arr.indexOf(t)!=-1);
 
-    let [dragStart, dragEnd] = dragged.partition(({event:{type:t}})=>t=='dragstart'); // dragstart | dragend, drop
+    let [dragStart, dragEnd] = dragged.partition(({event:{type:t}})=>t=='dragstart'); // dragstart OR dragend, drop
 
     let currentDrag=null;
-    draggedOver.filter(({event:{type:t}})=>t=='dragenter').windowToggle(dragStart.do(({component})=>{
-      this.dragging = true;
-      currentDrag=component;
-    }), ()=>dragEnd).switchMap(ob=>{
-      return ob.finally(()=>{
-        this.dragging = false;
-      });
-    }).withLatestFrom(this.treeSubject).subscribe(([{component}, tree])=>{
-      let currentPosition = tree.indexOf(currentDrag.data);
-      let desiredPosition = tree.indexOf(component.data);
+    let initialPosition=null;
+    draggedOver
+      .switchMap((evt:any)=>{
+        let t = evt.event.type;
+        return t == 'dragenter' ? Observable.of(evt) : t == 'dragover' ? Observable.never() : Observable.of(evt).delay(500);
+      })
+      // may be longer, shorter fails to call 'this.dragging = false' for some reason
+      // shouldn't be shorter than animation time
+      .debounceTime(ANIMATION_TIME)
+      // create window formed by start/end/drop
+      .windowToggle(dragStart.withLatestFrom(this.treeSubject).do(([{component}, tree]:[any,any[]])=>{
+        this.dragging = true; // disable pointer events
+        initialPosition = tree.indexOf(component.data); // store for reset
+        currentDrag=component; // store dragged element
+      }), ()=>dragEnd)
+      // drag window sequence (may be interrupted)
+      .switchMap(ob=>{
+        return ob.finally(()=>{
+          this.dragging = false;
+        });
+      })
+      // use the most recent tree (might be updated by the following)
+      .withLatestFrom(this.treeSubject).subscribe(([{component, event:{type:t}}, tree])=>{
+        let currentPosition = tree.indexOf(currentDrag.data);
+        let desiredPosition = tree.indexOf(component.data);
 
-      // should error if these dont hold
-      if(currentPosition != -1) {
-        let r = tree.splice(currentPosition, 1);
-
-        if(desiredPosition != -1) {
-          tree = tree.slice(0, desiredPosition).concat(r, tree.slice(desiredPosition));
+        // should error if these dont hold
+        if(currentPosition != -1) {
+          let r = tree.splice(currentPosition, 1);
+          if(t == 'dragenter' && desiredPosition != -1) {
+            tree = tree.slice(0, desiredPosition).concat(r, tree.slice(desiredPosition));
+          } else {
+            tree = tree.slice(0, initialPosition).concat(r, tree.slice(initialPosition));
+          }
           this.treeSubject.next(tree);
         }
-      }
-    });
+      });
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
   };
 
@@ -162,7 +179,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     let treeElementHeight = 40;
     let treeElementIndent = 20;
     let treeElementSelector = 'app-tree-element';
-    let animationDuration = 250;
+    let animationDuration = ANIMATION_TIME;
 
     this.host.style('height', (tree.length * treeElementHeight) + 'px');
 
