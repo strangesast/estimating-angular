@@ -1,6 +1,7 @@
 import {
   Component,
   EventEmitter,
+  Host,
   Input,
   Output,
   OnInit,
@@ -9,6 +10,8 @@ import {
   Injector
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+
+import { TreeComponent } from '../tree.component';
 
 import {
   ComponentElement,
@@ -30,14 +33,16 @@ const DROP = {'type':'on', value: 'drop'};
   templateUrl: './tree-element.component.html',
   styleUrls: ['./tree-element.component.less'],
   host: {
-    '(dragstart)':'onDragStart($event)',
-    '(dragover)':'onDragOver($event)',
-    '(dragleave)':'onDragLeave($event)',
-    '(dragenter)':'onDragEnter($event)',
-    '(dragend)':'onDragEnd($event)',
-    '(drop)':'onDragDrop($event)',
-    '[draggable]':'draggable',
+    //'(drag)':         'dragEmitter.emit({ event: $event, component: this })',
+    '(dragstart)':    'dragEmitter.emit({ event: $event, component: this })',
+    '(dragover)':     '$event.preventDefault(); dragEmitter.emit({ event: $event, component: this })',
+    '(dragleave)':    'dragEmitter.emit({ event: $event, component: this })',
+    '(dragenter)':    'dragEmitter.emit({ event: $event, component: this })',
+    '(dragend)':      'dragEmitter.emit({ event: $event, component: this })',
+    '(drop)':         'dragEmitter.emit({ event: $event, component: this })',
+    '[draggable]':    'draggable',
     '[class.dragged]':'dragged',
+    'tabindex': '1',
     //'(focus)':'focus($event)',
     '(focusout)':'blur($event)',
     '[class.active]':'options.expand && focused'
@@ -52,6 +57,7 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   draggable: boolean = false;
   focused: boolean = false;
   isOpen: boolean = true; // folder only
+
   @Output() dragEmitter: EventEmitter<any> = new EventEmitter();
 
   constructor(private injector: Injector, public element: ElementRef, private router: Router, private route: ActivatedRoute) {
@@ -66,7 +72,6 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     } else if (this.data.data instanceof ComponentElement) {
       this.kind = 'component';
     }
-
   }
 
   ngOnInit() {
@@ -80,30 +85,58 @@ export class TreeElementComponent implements OnInit, OnDestroy {
     this.focused = false;
   }
 
-  onDragStart() {
-    //setTimeout(()=>this.dragged = true, 100);
-    this.dragged = true;
-    this.dragEmitter.emit(ONSTART);
-  }
-  onDragOver(event) {
-    //this.dragEmitter.emit(OVER);
-    event.preventDefault();
-  }
-  onDragLeave() {
-    if(this.options.sink) this.dragEmitter.emit(LEAVE);
-  }
-  onDragEnter(event) {
-    if(this.options.sink) this.dragEmitter.emit(ENTER);
-  }
-  onDragEnd() {
-    this.dragged = false;
-    this.dragEmitter.emit(ONEND);
-  }
-  onDragDrop(event) {
-    event.preventDefault();
-    if(this.options.sink) this.dragEmitter.emit(DROP);
-    console.log('drop');
-  }
+  // 'drag'
+  //@Output() drag: EventEmitter<any> = new EventEmitter();
+  //onDrag(event) {
+  //  this.drag.emit({ component: this, event: event });
+  //}
+
+  // 'dragstart'
+  //@Output() dragstart: EventEmitter<any> = new EventEmitter();
+  //onDragStart(event) {
+  //  this.dragged = true;
+  //  this.dragstart.emit({ component: this, event: event });
+  //}
+
+  // 'dragover'
+  //@Output() dragover: EventEmitter<any> = new EventEmitter();
+  //onDragOver(event) {
+  //  event.preventDefault();
+  //  this.dragover.emit({ component: this, event: event });
+  //}
+
+  // 'dragleave'
+  //@Output() dragleave: EventEmitter<any> = new EventEmitter();
+  //onDragLeave(event) {
+  //  this.dragleave.emit({ component: this, event: event });
+  //}
+
+  // 'dragexit'
+  //@Output() dragexit: EventEmitter<any> = new EventEmitter();
+  //onDragExit(event) {
+  //  this.dragexit.emit({ component: this, event: event });
+  //}
+
+  // 'dragenter'
+  //@Output() dragenter: EventEmitter<any> = new EventEmitter();
+  //onDragEnter(event) {
+  //  this.dragenter.emit({ component: this, event: event });
+  //}
+
+  // 'dragend'
+  //@Output() dragend: EventEmitter<any> = new EventEmitter();
+  //onDragEnd(event) {
+  //  this.dragged = false;
+  //  this.dragend.emit({ component: this, event: event });
+  //}
+
+  // 'drop'
+  //@Output() drop: EventEmitter<any> = new EventEmitter();
+  //onDrop(event) {
+  //  event.preventDefault();
+  //  this.drop.emit({ component: this, event: event });
+  //}
+
   enableHover(rev) {
     this.focused = false;
     this.draggable = rev == null ? true : rev;

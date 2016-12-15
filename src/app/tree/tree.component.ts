@@ -63,8 +63,10 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private dragging: boolean = false;
   private isDragging = new Subject();
 
-  private treeSubject: BehaviorSubject<any[]> = new BehaviorSubject([]);
-  private hostSubject = new Subject();
+  private hostSubject: Subject<any> = new Subject();
+  private treeSubject: BehaviorSubject<any[]>;
+
+  private dragSink: Subject<any> = new Subject();
 
   @Input() tree: any[];
   @Input() options: TreeOptions;
@@ -77,86 +79,49 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ) { }
 
   ngOnInit(): void {
-    this.treeSubject.debounceTime(200).skipUntil(this.hostSubject).concatMap(tree=>{
-      // store component in output of emitter
-      return this.subjectUpdate(tree).map(components=>{
-        let emitters = components.map(c=>{
-          return (function(component) {
-            return component.instance.dragEmitter.map(value=>{
-              return {
-                component: component,
-                value: value
-              }
-            });
-          })(c);
-        });
-        return Observable.merge(...emitters);
-      });
-    }).subscribe(this.childEventSourceContainer);
+    this.treeSubject = new BehaviorSubject([]);
+    // wait for host to load in afterViewInit, only 
+    this.treeSubject
+      .skipUntil(this.hostSubject)
+      .distinct()
+      .switchMap(this.subjectUpdate.bind(this))
+      .subscribe(this.childComponents);
 
-    this.childEventSourceContainer.switchMap((el:any) =>{
-      return el;
-    }).subscribe(this.childEventSource);
-        
-    let source = this.childEventSource;
-    let [lastDragged, lastMoved] = source.partition((x:any)=> x.value['type']=='on');
+    this.childComponents.map(
+      (components:any[])=>Observable.merge(...components.map(
+        ({instance: component})=>component.dragEmitter
+      )))
+      .subscribe(this.dragSink);
 
-    let [lastStart, lastEnd] = lastDragged.partition((x:any)=>x.value.value == 'start');
+    let source = this.dragSink.switchMap(el=>el);
+    let arr = ['dragstart', 'drop', 'dragend'];
+    let [dragged, draggedOver] = source.partition(({event:{type:t},component:c})=>arr.indexOf(t)!=-1);
 
-    let lastDraggedComponent = null;
+    let [dragStart, dragEnd] = dragged.partition(({event:{type:t}})=>t=='dragstart'); // dragstart | dragend, drop
 
-    let revertTree = null;
-    let currentTree = null;
-    let wasDropped = false;
-
-    lastMoved.windowToggle(lastStart.do((evt:any)=>{
-      lastDraggedComponent=evt.component;
-      revertTree = this.treeSubject.getValue();
-      wasDropped = false;
-      currentTree = revertTree.slice(0);
-    }), ()=>lastEnd.do((x)=>{
-      wasDropped = x.value.value == 'drop';
-      this.dragging = false;
-    })).do(()=>{
+    let currentDrag=null;
+    draggedOver.filter(({event:{type:t}})=>t=='dragenter').windowToggle(dragStart.do(({component})=>{
       this.dragging = true;
-    }).map(seq=>{
-      //let lastEnter, lastLeave;
-      //[lastEnter, lastLeave] = seq.partition((x:any)=>x.value.value=='enter');
-
-      // TODO: this breaks when leaving + re-entering same component
-      // return enter immediately, leave after delay if no new enter supercedes it
-      let [lastEnter, lastLeave] = Observable.combineLatest(...seq.partition((x:any)=>x.value.value=='enter'))
-        .switchMap(([a,b]:[any,any])=>a.component==b.component?Observable.of(b).delay(500):Observable.of(a))
-        .distinct()
-        .partition(x=>x.value.value=='enter')
-        .map(ob=>ob.pluck('component'));
-
-      return Observable.merge(
-        lastEnter.do((x:any)=>{
-          //currentTree = this.treeSubject.getValue();
-          
-          let currentPosition = currentTree.indexOf(lastDraggedComponent.instance.data)
-          let desiredPosition = currentTree.indexOf(x.instance.data);
-          if(currentPosition == desiredPosition) return;
-          let r = currentTree.splice(currentPosition, 1);
-          currentTree = [].concat(currentTree.slice(0, desiredPosition), r, currentTree.slice(desiredPosition));
-          this.treeSubject.next(currentTree);
-          //console.log('entered', data.data ? data.data.name : data.name);
-        }),
-        lastLeave.do(()=>{
-          console.log('left');
-          currentTree = revertTree.slice();
-          this.treeSubject.next(currentTree);
-        })
-      ).finally(()=>{
-        this.dragging=false;
-        console.log('finished dragging');
+      currentDrag=component;
+    }), ()=>dragEnd).switchMap(ob=>{
+      return ob.finally(()=>{
+        this.dragging = false;
       });
-    }).mergeAll().subscribe((evt:any)=>{
-      console.log(evt);
+    }).withLatestFrom(this.treeSubject).subscribe(([{component}, tree])=>{
+      let currentPosition = tree.indexOf(currentDrag.data);
+      let desiredPosition = tree.indexOf(component.data);
+
+      // should error if these dont hold
+      if(currentPosition != -1) {
+        let r = tree.splice(currentPosition, 1);
+
+        if(desiredPosition != -1) {
+          tree = tree.slice(0, desiredPosition).concat(r, tree.slice(desiredPosition));
+          this.treeSubject.next(tree);
+        }
+      }
     });
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
-    this.treeSubject.next(this.tree);
   };
 
   removeChildComponent(element: HTMLElement) {
@@ -181,7 +146,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this._parent.insert(componentRef.hostView);
 
     let element = componentRef.instance.element.nativeElement;
-
     this.elementComponentRefMap.set(element, componentRef);
 
     return element;
@@ -193,7 +157,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.hostSubject.next(this.host);
     this.treeSubject.next(this.tree);
   }
-
   // update the position / presence of elements
   subjectUpdate(tree) : Observable<any>{
     let treeElementHeight = 40;
@@ -234,7 +197,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       waitForTransition(toAdjustTransition),
       waitForTransition(toAddTransition)
     ).map(([removed, moved, added]:[any[], any[], any[]])=>{
-      removed.map(el=>{
+      removed.forEach(el=>{
         return this.removeChildComponent(el.element);
       });
 
@@ -249,7 +212,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   ngOnChanges(changes) {
-    if('tree' in changes) {
+    if(this.host && 'tree' in changes) {
       this.treeSubject.next(this.tree);
     }
   };
