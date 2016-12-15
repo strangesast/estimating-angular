@@ -7,7 +7,12 @@ import {
   OnInit,
   OnDestroy,
   ElementRef,
-  Injector
+  Injector,
+  trigger,
+  state,
+  animate,
+  transition,
+  style
 } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
@@ -48,7 +53,15 @@ const DROP = {'type':'on', value: 'drop'};
     //'(focus)':'focus($event)',
     '(focusout)':'blur($event)',
     '[class.active]':'options.expand && focused'
-  }
+  },
+  animations:[
+    trigger('confirmActive', [
+      state('active', style({opacity: 1})),
+      state('inactive', style({opacity: 0})),
+      transition('active => inactive', animate('100ms')),
+      transition('inactive => active', animate('250ms'))
+    ])
+  ]
 })
 export class TreeElementComponent implements OnInit, OnDestroy {
   kind: string = 'unknown';

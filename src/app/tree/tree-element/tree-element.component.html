@@ -7,7 +7,7 @@
   <span *ngIf="kind == 'child'" class="qty">{{data.data.qty}}</span>
   <span *ngIf="options.reorder || (kind != 'folder' && options.source)" (mouseenter)="enableHover()" (mouseleave)="enableHover(false)" class="grip fa fa-grip"></span>
 </div>
-<div *ngIf="confirmActive" class="confirm-window">
+<div [class.nopointer]="!confirmActive" [@confirmActive]="confirmActive ? 'active' : 'inactive'" class="confirm-window">
   <span>{{confirmMessage}}</span>
   <button (click)="confirmSink.emit(true)">Confirm</button>
   <button (click)="confirmSink.emit(false)">Cancel</button>
