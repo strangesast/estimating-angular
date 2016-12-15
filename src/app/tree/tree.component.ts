@@ -135,14 +135,28 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
         })
         .finally(()=>{
           this.dragging = false;
-          initialPosition = null;
-          currentDrag =null;
         })
         .takeLast(1)
         .concatMap(result=>{
           // check if valid
-          return result.component.confirmPlacement();
-        });
+          return result.component.confirmPlacement().switchMap(res=>{
+            if(res) return Observable.of(result);
+            return Observable.of(result).withLatestFrom(this.treeSubject).map(([{component},tree])=>{
+              // should be a better way to do this
+              let i = tree.indexOf(component.data);
+              if(i == -1 || initialPosition == null || initialPosition == -1) throw new Error('this shouldn\'t happen');
+              let r = tree.splice(i, 1);
+              tree = tree.slice(0, initialPosition).concat(r, tree.slice(initialPosition));
+              this.treeSubject.next(tree);
+              return result;
+            });
+          });
+        })
+        .finally(()=>{
+          initialPosition = null;
+          currentDrag =null;
+        })
+
       }).subscribe(x=>{
         console.log('finished', x);
       });
