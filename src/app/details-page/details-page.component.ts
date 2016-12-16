@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { JobService } from '../job.service';
 
@@ -12,7 +13,9 @@ import { Job } from '../classes';
   templateUrl: './details-page.component.html',
   styleUrls: ['./details-page.component.less']
 }) export class DetailsPageComponent implements OnInit {
-  private sub: Subscription;
+  private sub1: Subscription;
+  private sub2: Subscription;
+  private sub3: Subscription;
   private job: Job;
   private jobForm: FormGroup;
   private status: any[] = [];
@@ -23,39 +26,46 @@ import { Job } from '../classes';
 
   constructor(
     private jobService: JobService,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit() {
-    //this.sub = this.jobService.job.subscribe(job => {
-    //  this.jobForm = this.formBuilder.group({
-    //    name: [job.name, [
-    //      Validators.minLength(5),
-    //      Validators.required]
-    //    ],
-    //    description: job.description,
-    //    owner: this.formBuilder.group({
-    //      name: [job.owner.name, Validators.required],
-    //      username: [job.owner.username, [Validators.required, Validators.pattern('^[A-Za-z0-9]+$')]],
-    //      email: [job.owner.email, Validators.required],
-    //    }),
-    //    shortname: [job.shortname, [
-    //      Validators.required,
-    //      Validators.minLength(3),
-    //      Validators.pattern('^[A-Za-z0-9-_]+$')]
-    //    ]
-    //  });
-
-    //  this.job = job;
-    //  this.jobService.findChanges();
-    //});
+    this.sub1 = this.route.parent.data.subscribe(({jobData: {job:jobSubject}})=>{
+      jobSubject.first().subscribe(job => {
+        this.job = job;
+        this.jobForm = this.formBuilder.group({
+          name: [job.name, [
+            Validators.minLength(5),
+            Validators.required]
+          ],
+          description: job.description,
+          owner: this.formBuilder.group({
+            name: [job.owner.name, Validators.required],
+            username: [job.owner.username, [Validators.required, Validators.pattern('^[A-Za-z0-9]+$')]],
+            email: [job.owner.email, Validators.required],
+          }),
+          shortname: [job.shortname, [
+            Validators.required,
+            Validators.minLength(3),
+            Validators.pattern('^[A-Za-z0-9-_]+$')]
+          ]
+        });
+      });
+      // probably ugly way of doing this
+      this.sub2 = jobSubject.skip(1).subscribe(job => {
+        this.jobForm.patchValue(job)
+        this.jobForm.markAsPristine();
+        this.job = job;
+      });
+    });
     this.jobService.status.subscribe(s=>{
-      console.log('status', s);
       this.status = s;
     });
   }
   ngOnDestroy() {
-    this.sub.unsubscribe();
+    this.sub2.unsubscribe();
+    this.sub1.unsubscribe();
   }
 
   reset() {

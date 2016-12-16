@@ -85,7 +85,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         //this.tree = tree;
       });
       elements.subscribe(elements => {
-        this.tree = elements;
+        this.elements = elements;
       });
 
     });

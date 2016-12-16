@@ -32,8 +32,10 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   private elements: any[] = [];
 
   private config: any = {};
-  private enabled: any;
   private sort: string = '';
+
+  private enabled: any;
+  private enabledSubject: BehaviorSubject<any>;
 
   private tree: Tree;
   private treeSubject: BehaviorSubject<Tree>;
@@ -61,8 +63,12 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   ) { }
 
   ngOnInit() {
+    this.enabledSubject.subscribe(enabled => this.enabled = enabled);
     this.route.parent.data.subscribe(({jobData:{job, tree, elements}})=>{
-      Observable.combineLatest(tree, job).subscribe(([t, j]:[Tree,Job])=>{
+      tree.subscribe(t=>{
+        t.folders
+      })
+      this.jobSub = Observable.combineLatest(tree, job).subscribe(([t, j]:[Tree,Job])=>{
         this.enabled = t.folders;
 
         this.job = j;
@@ -96,17 +102,16 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    console.log('changes');
   }
 
   toggleEnabled(name:string) {
-    /*
     let ne = !this.enabled[name];
     if(!ne && Object.keys(this.enabled).filter(k=>this.enabled[k]).length < 2) return false;
     let ob = {};
     ob[name] = ne;
     this.jobService.changeEnabled(ob);
     this.enabled[name] = ne;
-    */
   }
 
   ngOnDestroy() {
