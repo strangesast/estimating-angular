@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { Observable, Subject, BehaviorSubject } from 'rxjs';
 
 import { Repo, createGitRepo, gitModes, gitIndexedDb, gitMemDb, gitCreateTree, gitPackOps, gitWalkers, gitReadCombiner, gitFormats, gitModesInv } from './git';
 
@@ -24,6 +23,11 @@ import {
   User,
   Job
 } from './classes';
+
+const JOB_STORE_NAME = 'jobs';
+const FOLDER_STORE_NAME = 'folders';
+const LOCATION_STORE_NAME = 'locations';
+const COMPONENT_STORE_NAME = 'components';
 
 // useful
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
@@ -55,6 +59,8 @@ export class ElementService {
 
   public _users: BehaviorSubject<User[]> = new BehaviorSubject([]);
   public users: Observable<User[]> = this._users.asObservable();
+
+  public jobMap: any;
 
   public _jobs: BehaviorSubject<Job[]> = new BehaviorSubject([]);
   public jobs: Observable<Job[]> = this._jobs.asObservable();
@@ -111,8 +117,49 @@ export class ElementService {
 
   removeJob(job: Job): Promise<any> {
     return this.removeRecordFrom('jobs', job.id).then(res=> {
-      console.log('remove res', res);
       return res;
+    });
+  }
+
+  // should return observable
+  loadJob(id: string): Promise<Job> {
+    let args = [JOB_STORE_NAME, id], key = 'id';
+    return this.retrieveRecordFrom.apply(this, args).then(record=>{ // try default key
+      if(record != null) return record;
+      key = 'shortname';
+      return this.retrieveRecordFrom.apply(this, args.concat(key)); // try 'shortname'
+    }).then(record => {
+      if(record == null) throw new Error('job with that id "'+id+'" ( key "'+key+'") does not exist');
+      return Job.create(record);
+    });
+  }
+
+  // should return observable
+  loadFolder(id: string): Promise<Folder> {
+    return this.retrieveRecordFrom(FOLDER_STORE_NAME, id).then(record => {
+      if(record == null) throw new Error('folder with that id "'+id+'" does not exist');
+      return Folder.create(record);
+    });
+  }
+
+  loadLocation(id: string): Promise<Location> {
+    return this.retrieveRecordFrom(LOCATION_STORE_NAME, id).then(record => {
+      if(record == null) throw new Error('location with that id"'+id+'" does not exist');
+      return Location.create(record);
+    });
+  }
+
+  loadComponent(id: string): Promise<ComponentElement> {
+    return this.retrieveRecordFrom(COMPONENT_STORE_NAME, id).then(record => {
+      if(record == null) throw new Error('component with that id"'+id+'" does not exist');
+      return ComponentElement.create(record);
+    });
+  }
+
+  loadComponentInChild(child: Child): Promise<Child> {
+    return this.loadComponent(child.ref).then(comp=>{
+      child.data = comp;
+      return child;
     });
   }
 
@@ -233,7 +280,6 @@ export class ElementService {
     let p1 = this.resolveTree(newTree);
     let p2 = this.resolveTree(oldTree);
     return Promise.all([p1, p2]).then(trees => {
-      console.log(trees);
       return diff.diff(trees[1], trees[0]);
     });
   }
@@ -349,21 +395,21 @@ export class ElementService {
     return this.removeRecord(this.db, storeName, id, index);
   };
 
-  retrieveRecordFrom(storeName: string, id: string) {
-    return this.retrieveRecord(this.db, storeName, id);
+  retrieveRecordFrom(storeName: string, id: string, key?: string) {
+    return this.retrieveRecord(this.db, storeName, id, key);
   }
 
-  retrieveRecord(db: any, storeName: string, id: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      let trans = db.transaction(storeName);
-      let store = trans.objectStore(storeName);
-      let req = store.get(id);
-      req.onsuccess = (e) => {
-        resolve(e.target.result)
-      };
-      req.onerror = (e) => {
-        reject(e.target.error);
-      }
+  retrieveRecordFromAs(what:Folder|ComponentElement|Child|Job, storeName: string, id: string, key?: string) {
+  }
+
+  retrieveRecord(db: IDBDatabase, storeName: string, id: string, key?: string) {
+    return new Promise((resolve, reject)=> {
+      let trans = this.db.transaction([storeName]);
+      let req:any = trans.objectStore(storeName);
+      if(key!=null) req = req.index(key);
+      req = req.get(id);
+      req.onsuccess = (e) => resolve(e.target.result);
+      req.onerror = (e) => reject(e.target.error);
     });
   }
 
@@ -372,7 +418,7 @@ export class ElementService {
       let trans = db.transaction(storeName, 'readwrite');
       let store = trans.objectStore(storeName);
       let req = store.delete(id);
-      req.onsucces = (e) => {
+      req.onsuccess = (e) => {
         resolve(e.target.result);
       }
       req.onerror = (e) => {
@@ -438,7 +484,7 @@ export class ElementService {
     // should verify that job id is unique
     if(name == null) name = 'New Job';
     if(description == null) description = '(no description)';
-    let folders = new FolderDef(['phase', 'building']);
+    let folderDef = new FolderDef(['phase', 'building']);
 
     let job = new Job(
       random(),
@@ -446,28 +492,43 @@ export class ElementService {
       description,
       owner,
       shortname,
-      folders
+      folderDef
     );
 
-    let component = new ComponentElement(
-      random(),
-      'blank component',
-      'description',
-      job.id,
-      []
-    )
-
-    let child = new Child(
-      random(),
-      component.id, // comp id
-      1, // qty
-      null, // _id
-      component // data
-    );
+    let components = [0, 1, 2].map(i=>{
+      return new ComponentElement(
+        random(),
+        'Example Component ' + (i+1),
+        'description',
+        job.id, // job id
+        [] // children
+      );
+    });
+    let children = [0, 1, 2].map(i=>{
+      let c = components[i];
+      return new Child(
+        random(), // id
+        c.id, // 'ref' comp id
+        1+Math.floor(Math.random()*4), // qty
+        null, // _id
+        c // data
+      );
+    });
+    let folders = [0, 1, 2].map(i=>{
+      let folderType = job.folders.types[i%2];
+      return new Folder(
+        random(), // id
+        'Folder ' + (i+1) + ' (' + folderType + ')',   // name
+        ['folder', i, 'description'].join(' '), // description
+        folderType, // type
+        job.id, // job id
+        []
+      );
+    })
 
     return Observable.create(sub => {
       sub.next(job);
-      this.saveNewJob(job, [child], [component], []).then((res)=>{
+      this.saveNewJob(job, children, components, folders).then((res)=>{
         sub.next(res.jobs[0]);
         sub.complete();
       });
@@ -540,7 +601,7 @@ export class ElementService {
         'root "'+folderType+'" folder', // description
         folderType, // type
         job.id, // job id
-        folders.filter(f=>f['type']==folderType) // child folders
+        folders.filter(f=>f['type']==folderType).map(f=>f.id) // child folders
       );
       folders.push(folder);
       job.folders.roots.push(folder.id);

@@ -79,7 +79,12 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   @Output() confirmSink: EventEmitter<any> = new EventEmitter();
   @Output() dragEmitter: EventEmitter<any> = new EventEmitter();
 
-  constructor(private injector: Injector, public element: ElementRef, private router: Router, private route: ActivatedRoute) {
+  constructor(
+    private injector: Injector,
+    public element: ElementRef,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
     this.data = this.injector.get('data');
     this.options = this.injector.get('options');
     if(this.data.data instanceof Folder) {
@@ -94,6 +99,7 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    console.log('created');
   }
   ngOnDestroy() {
   }
@@ -103,58 +109,6 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   blur() {
     this.focused = false;
   }
-
-  // 'drag'
-  //@Output() drag: EventEmitter<any> = new EventEmitter();
-  //onDrag(event) {
-  //  this.drag.emit({ component: this, event: event });
-  //}
-
-  // 'dragstart'
-  //@Output() dragstart: EventEmitter<any> = new EventEmitter();
-  //onDragStart(event) {
-  //  this.dragged = true;
-  //  this.dragstart.emit({ component: this, event: event });
-  //}
-
-  // 'dragover'
-  //@Output() dragover: EventEmitter<any> = new EventEmitter();
-  //onDragOver(event) {
-  //  event.preventDefault();
-  //  this.dragover.emit({ component: this, event: event });
-  //}
-
-  // 'dragleave'
-  //@Output() dragleave: EventEmitter<any> = new EventEmitter();
-  //onDragLeave(event) {
-  //  this.dragleave.emit({ component: this, event: event });
-  //}
-
-  // 'dragexit'
-  //@Output() dragexit: EventEmitter<any> = new EventEmitter();
-  //onDragExit(event) {
-  //  this.dragexit.emit({ component: this, event: event });
-  //}
-
-  // 'dragenter'
-  //@Output() dragenter: EventEmitter<any> = new EventEmitter();
-  //onDragEnter(event) {
-  //  this.dragenter.emit({ component: this, event: event });
-  //}
-
-  // 'dragend'
-  //@Output() dragend: EventEmitter<any> = new EventEmitter();
-  //onDragEnd(event) {
-  //  this.dragged = false;
-  //  this.dragend.emit({ component: this, event: event });
-  //}
-
-  // 'drop'
-  //@Output() drop: EventEmitter<any> = new EventEmitter();
-  //onDrop(event) {
-  //  event.preventDefault();
-  //  this.drop.emit({ component: this, event: event });
-  //}
 
   confirmPlacement() {
     this.confirmActive = true;
@@ -180,6 +134,7 @@ export class TreeElementComponent implements OnInit, OnDestroy {
       this.focused = true;
       return;
     }
-    this.router.navigate(['../edit', this.kind, this.data.data.id], {relativeTo: this.route});
+    console.log(this.router, this.route);
+    this.router.navigate(['../edit', this.kind, this.data.data.id]);//, {relativeTo: this.route});
   }
 }

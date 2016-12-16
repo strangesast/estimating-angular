@@ -1,13 +1,13 @@
 <div class="navigation-controls">
   <div *ngIf="job" class="navigation-bar spacer">
     <div *ngFor="let type of job.folders.types">
-      <span class="hoverlink tab min" [class.active]="enabled[type]" (click)="toggleEnabled(type)">
+      <span class="hoverlink tab min" [class.active]="enabled[type].enabled" (click)="toggleEnabled(type)">
         <span [ngClass]="FOLDER_ICONS[type]"></span>
         <span>{{ type[0].toUpperCase() + type.slice(1) }}</span>
       </span>
     </div>
     <div>
-      <span class="hoverlink tab min" [class.active]="enabled['component']" (click)="toggleEnabled('component')">
+      <span class="hoverlink tab min" [class.active]="enabled['components'].enabled" (click)="toggleEnabled('component')">
         <span class="fa fa-cubes fa-lg"></span>
         <span>Component</span>
       </span>

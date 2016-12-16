@@ -28,6 +28,8 @@ import { defaultOptions } from '../defaults'; // annoying
 
 import { waitForTransition } from '../util';
 
+let cnt = 0;
+
 @Component({
   selector: 'app-tree',
   animations: [],
@@ -217,7 +219,10 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     // will probably break with multiple instances of same
     let selection = this.host
       .selectAll(treeElementSelector)
-      .data(tree, (d)=>d.data.id);
+      .data(tree, (d)=>d.temp || (d.temp = ++cnt))/*, (d)=>{
+        console.log('data', d);
+        return d.data.id;
+      });*/
 
     // use the same transition for the three selections
     let t = D3.transition(null).duration(animationDuration);
@@ -269,6 +274,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   ngOnChanges(changes) {
     if(this.host && 'tree' in changes) {
+      console.log('changes');
       this.treeSubject.next(this.tree);
     }
   };

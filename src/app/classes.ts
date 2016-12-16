@@ -43,14 +43,14 @@ export class BaseElement {
 }
 
 // how are other elements referenced
-export class Child {
+export class Child { // needs 'name', 'description'
   constructor(
     public id: string,
     public ref: string,
     public qty: number,
     public _ref?: string,
     public data?: any,
-    public folders?: any,
+    public folders?: any, // location
     public saveState: SaveState = "unsaved"
   ) { }
   static exclude: string[] = ['data', 'folders', 'saveState'];
@@ -243,6 +243,42 @@ export class Job extends BaseElement {
     ['id', 'name', 'description', 'owner', 'shortname', 'folders'].forEach((t)=>{
       if(obj[t] == null) throw new Error('key ' + t + ' required');
     });
-    return new Job(obj.id, obj.name, obj.description, owner, obj.shortname, obj.folders, obj.basedOn, commit||obj.commit, obj.hash);
+    return new Job(
+      obj.id,
+      obj.name,
+      obj.description,
+      owner,
+      obj.shortname,
+      obj.folders,
+      obj.basedOn,
+      commit||obj.commit,
+      obj.has
+    );
+  }
+}
+
+export class Tree {
+  constructor(
+    public folders: any,
+    // {
+    //   name: { enabled: boolean, currentRoot: string, filters: filter[] }
+    // }
+    public folderOrder: string[],
+    public elements: any[] = []
+  ) { }
+
+  static create(obj) {
+    return new Tree(obj.folders, obj.elements);
+  }
+
+  static fromJob(job:Job) {
+    let folders = {};
+    let order = job.folders.types;
+    order.forEach((t,i)=>{
+      let currentRoot = job.folders.roots[i];
+      folders[t] = { currentRoot, enabled:true, filters: []};
+    })
+    folders['components'] = { enabled:true, filters: []};
+    return new Tree(folders, order);
   }
 }

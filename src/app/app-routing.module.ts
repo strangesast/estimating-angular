@@ -38,7 +38,7 @@ const routes: Routes = [
         path: ':shortname',
         component: ProjectPageComponent,
         resolve: {
-          jobService: JobService,
+          jobData: JobService,
           userService: UserService
         },
         children: [

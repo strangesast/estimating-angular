@@ -49,8 +49,10 @@ export class JobListPageComponent implements OnInit {
           this.jobs.push(res);
         }
         job = res;
-      }, null, () => {
-        this.jobStatus[job.id] = 'ready';
+      }, (e)=>{
+        console.error(e);
+      }, () => {
+        if(job) this.jobStatus[job.id] = 'ready';
       }
     );
 

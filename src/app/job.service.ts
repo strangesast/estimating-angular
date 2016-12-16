@@ -8,17 +8,27 @@ import {
   RouterStateSnapshot
 } from '@angular/router';
 
-import { Subject, Observable, BehaviorSubject } from 'rxjs';
+import {
+  BehaviorSubject,
+  Subscription,
+  Observable,
+  Subject
+} from 'rxjs';
 
-import { ComponentElement, Folder, User, Job, Location } from './classes';
+import { ComponentElement, Folder, User, Job, Location, Tree } from './classes';
 
 import { ElementService } from './element.service';
 import { UserService } from './user.service';
 
-import { hierarchy, tree, treemap, HierarchyNode } from 'd3-hierarchy';
+import {
+  hierarchy,
+  treemap,
+  HierarchyNode
+} from 'd3-hierarchy';
 import { nest } from 'd3-collection';
 
 import * as D3 from 'd3';
+
 import { diff } from 'deep-diff';
 
 
@@ -44,16 +54,21 @@ const initOptions = {
 @Injectable()
 export class JobService implements Resolve<Promise<any>> {
   private _job: BehaviorSubject<Job> = new BehaviorSubject(null);
-  public job: Observable<Job> = this._job.asObservable();
+  //public job: Observable<Job> = this._job.asObservable();
+
+  public job: Job;
+  public tree: Tree;
+  private jobSubscription: Subscription;
+  private treeSubscription: Subscription;
+  public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
 
   private _saved: BehaviorSubject<Job> = new BehaviorSubject(null);
 
   private _status: BehaviorSubject<any[]> = new BehaviorSubject([]);
   public status: Observable<any[]> = this._status.asObservable();
 
-
   public config: BehaviorSubject<any> = new BehaviorSubject({});
-  public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
+  //public elements: BehaviorSubject<any[]> = new BehaviorSubject([]);
 
   public rootFolders: BehaviorSubject<any> = new BehaviorSubject({});
   public visibleFolders: BehaviorSubject<any> = new BehaviorSubject({});
@@ -95,8 +110,7 @@ export class JobService implements Resolve<Promise<any>> {
     let options = this._options.getValue();
     for(let prop in ob) {
       if(prop != 'component' && names.indexOf(prop) == -1) throw new Error('invalid name - not in this job');
-      options.enabled[prop] = ob[prop];
-    }
+      options.enabled[prop] = ob[prop]; }
     this._options.next(options);
     return options.enabled;
   }
@@ -125,11 +139,134 @@ export class JobService implements Resolve<Promise<any>> {
     return components.find(f=>f.id == id);
   }
 
+  watchJob(subject:BehaviorSubject<Job>): Subscription {
+    return subject.subscribe(job=>{
+      // update job save here
+      console.log('job updated', job);
+      this.job = job;
+    });
+  }
 
-  resolve(route: ActivatedRouteSnapshot): Promise<any> {
+  updateTree(tree:Tree) {
+    return Observable.fromPromise(Promise.all(tree.folderOrder.map(name=>{
+      return this.elementService.loadFolder(tree.folders[name].currentRoot);
+    })).then(roots=>{
+      // should use tree.elements as partial-replacement to determine what is open
+      return this.buildTree(roots, 0, 10).then(res=>{
+        return this.flattenTree(res).slice(1).map(n=>{
+          n.depth-=1;
+          return n;
+        });
+      });
+    }));
+  }
+
+  resolveChildren(root, depth) {
+    if(!root.children.length || depth < 1) return Promise.resolve(root);
+    return Promise.all(
+      root.children.map(
+        (id:string|Folder)=>this.elementService.loadFolder(id instanceof Folder ? id.id : id)
+      )
+    ).then(children=>{
+      root.children = children;
+      return root;
+    });
+  }
+
+  flattenTree(tree: HierarchyNode<any>) {
+    let arr = [];
+    arr.push(tree);
+    if(tree.children) {
+      for(let i=0; i<tree.children.length;i++) {
+        arr.push.apply(arr, this.flattenTree(tree.children[i]));
+      }
+    }
+    return arr;
+  }
+
+  buildTree(roots: any[], currentRoot:number=0, maxDepth: number=1) {
+    if(currentRoot < roots.length) {
+      let base = [];
+      let root = roots[currentRoot];
+
+      return this.resolveChildren(root, maxDepth).then(()=>{
+        let node = hierarchy(root, (n)=>n.children);//.filter(c=>(c instanceof Folder && c['type'] == n['type'])))
+
+        let promises = [];
+        node.each(child=>{
+          let newRoots = roots.slice();
+          newRoots.splice(currentRoot, 1, child.data);
+          promises.push(this.buildTree(newRoots, currentRoot+1, maxDepth-1).then(arr => {
+            if(arr instanceof hierarchy) {
+              child.children = child.children || [];
+              arr.each((n:any)=>{
+                n.depth = n.depth + child.depth;
+              });
+              [].push.apply(child.children, arr.children);
+            } else if (Array.isArray(arr)) {
+              child.children = child.children || [];
+              [].push.apply(child.children, arr.map((n:any)=>{
+                n.depth = n.depth + child.depth + 1;
+                return n;
+              }));
+            } else {
+              throw new Error('unexpected');
+            }
+          }));
+        });
+        return Promise.all(promises).then(arr=>{
+          // append any components to children of root nodes
+          //node.each((el:any)=>{
+          //  if(el['parent']) {
+          //    el.depth = el.parent.depth + 1;
+          //    // should also somehow update 'node.height'
+          //  }
+          //});
+          return node;
+        });
+      });
+    } else {
+      return this.elementService.loadLocation(roots.map(r=>r.id).join('-')).then(loc=>{
+        // set child folders (easier folder lookup), retrieve children
+        return Promise.all(loc.children.map(child=>{
+          child.folders = loc.folders; // may not be a good idea. parent <-- child
+          return this.elementService.loadComponentInChild(child).then(()=>{
+            return hierarchy(child, (n)=>n.data.children);
+          });
+        }));
+      }).catch(err=>{
+        // not finding location, may not exist -> no children
+        return [];
+      });
+    }
+  }
+
+  watchTree(subject:BehaviorSubject<Tree>): Subscription {
+    return subject.debounceTime(100).switchMap(this.updateTree.bind(this)).subscribe(this.elements);
+  }
+  
+  resolve(route: ActivatedRouteSnapshot): Promise<{job: BehaviorSubject<Job>, tree: BehaviorSubject<Tree>}> {
     let username = route.params['username'];
     let shortname = route.params['shortname'];
 
+    // get tree location (root folders, filters, etc)
+    // router.params['tree-root'] <-- like this
+
+    return this.elementService.loadJob(shortname).then((job:Job)=>{
+      let tree = Tree.fromJob(job);
+
+      let jobSubject = new BehaviorSubject(job);
+      let treeSubject = new BehaviorSubject(tree);
+
+      if(this.jobSubscription != null || this.treeSubscription != null) throw new Error('already watching');
+
+      this.jobSubscription = this.watchJob(jobSubject);
+      this.treeSubscription = this.watchTree(treeSubject);
+
+      return { job: jobSubject, tree: treeSubject, elements: this.elements };
+    });
+
+    /*
     return this.userService.userFromUsername(username).then(user => {
       //if(!user) {
       //  this.router.navigate(['/jobs']); // should be 404
@@ -166,13 +303,16 @@ export class JobService implements Resolve<Promise<any>> {
       throw err;
 
     });
+    */
   }
 
+  /*
   shuffleComponents() {
     let folders = this.folders.getValue();
     let components = this.components.getValue();
     return this.buildTree(folders, D3.shuffle(components));
   }
+  */
 
   fn(enabled, folders, cnest, par?, prev?, prevOrder?) {
     prev = prev || {};
@@ -186,7 +326,7 @@ export class JobService implements Resolve<Promise<any>> {
       });
       // components may have children
       return ob.map(comp=>{
-        let t = D3.hierarchy(comp, (d=>d.data.children));
+        let t = hierarchy(comp, (d=>d.data.children));
         if(par) {
           t['parent'] = par;
           t.each((e:any)=>{
@@ -226,6 +366,7 @@ export class JobService implements Resolve<Promise<any>> {
     return this._options.getValue();
   }
 
+  /*
   buildTree(rootFolders?, components?):Promise<any[]> {
     let options = this._options.getValue();
     let enabledObj = options.enabled;
@@ -279,18 +420,20 @@ export class JobService implements Resolve<Promise<any>> {
       return elements;
     });
   }
+  */
 
   createComponent(name:string, description:string, job?:Job):Promise<ComponentElement> {
     job = job||this._job.getValue();
-    return this.elementService.createComponent(name, description, job).then(component => {
+    return this.elementService.createComponent(name, description, job);/*.then(component => {
       return this.buildTree().then(()=> component);
     });
+    */
   }
 
-  resolveChildren(node, folders) {
-    node.children = node.children.map(n=>this.resolveChildren(folders.find(f=>f['type']==node['type']&&n['id']==f['id']), folders));
-    return node;
-  }
+  //resolveChildren(node, folders) {
+  //  node.children = node.children.map(n=>this.resolveChildren(folders.find(f=>f['type']==node['type']&&n['id']==f['id']), folders));
+  //  return node;
+  //}
 
   getJobElements(job: Job): Promise<[HierarchyNode<any>,any|null]> {
     return this.elementService.getAllOfJob(job.id).then((els:any) => {
@@ -307,7 +450,7 @@ export class JobService implements Resolve<Promise<any>> {
       job.folders.types.filter(t=>enabled[t]).map(t=>{
         let root = els.folders.find(f=>f['type']==t&&f['id']==roots[t]);
         if(root == null) throw new Error('folder root not found with that type ("'+t+'") and id ("'+roots[t]+'")')
-        root = D3.hierarchy(this.resolveChildren(root, els.folders));
+        root = hierarchy(this.resolveChildren(root, els.folders));
         folders[t] = root;
       });
 
