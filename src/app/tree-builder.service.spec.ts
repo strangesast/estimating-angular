@@ -10,7 +10,7 @@ describe('Service: TreeBuilder', () => {
     });
   });
 
-  it('should ...', inject([TreeBuilderService], (service: TreeBuilderService) => {
-    expect(service).toBeTruthy();
-  }));
+  //it('should ...', inject([TreeBuilderService], (service: TreeBuilderService) => {
+  //  expect(service).toBeTruthy();
+  //}));
 });

@@ -213,7 +213,8 @@ export class Job extends BaseElement {
     public folders: FolderDef,
     public basedOn?: BasedOn|null, // potentially ambigious, null vs undefined
     public commit?: string,
-    public hash?: string
+    public hash?: string,
+    public saveState: SaveState = "unsaved"
   ) {
     super(id, name, description);
   }

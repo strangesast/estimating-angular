@@ -24,32 +24,28 @@ import {
   Job
 } from './classes';
 
-const JOB_STORE_NAME = 'jobs';
-const FOLDER_STORE_NAME = 'folders';
-const LOCATION_STORE_NAME = 'locations';
-const COMPONENT_STORE_NAME = 'components';
+import {
+  COMPONENT_STORE_NAME,
+  INVALID_FOLDER_TYPES,
+  LOCATION_STORE_NAME,
+  FOLDER_STORE_NAME,
+  USER_COLLECTION,
+  JOB_STORE_NAME,
+  STORE_VERSION,
+  STORE_NAME,
+  STORES
+} from './indexedDB';
+
 
 // useful
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
 
-const USER_COLLECTION = 'users';
-const INVALID_FOLDER_TYPES = ['component', 'location'];
-
-const STORES = [
-  { name: 'users',      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
-                                                       { on: 'email',     name: 'email',     unique: true  }] },
-  { name: 'components', keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
-                                                       { on: 'job',       name: 'job',       unique: false }] },
-  { name: 'folders',    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false },
-                                                       { on: 'job',       name: 'job',       unique: false }] },
-  { name: 'locations',  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
-                                                       { on: 'folders',   name: 'folders',   unique: true,  multiEntry: true },
-                                                       { on: 'job',       name: 'job',       unique: false }] },
-  { name: 'jobs',       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true  }] }
-];
-
-const STORE_NAME = 'estimating';
-const STORE_VERSION = 1;
+const classToStoreName = {
+  Job:       JOB_STORE_NAME,
+  Folder:    FOLDER_STORE_NAME,
+  Location:  LOCATION_STORE_NAME,
+  Component: COMPONENT_STORE_NAME
+};
 
 @Injectable()
 export class ElementService {
@@ -118,6 +114,18 @@ export class ElementService {
   removeJob(job: Job): Promise<any> {
     return this.removeRecordFrom('jobs', job.id).then(res=> {
       return res;
+    });
+  }
+
+  load(_class, id:string, key?:string) {
+    if(typeof _class.create !== "function") throw new Error('need create method on class'); 
+    let storeName = classToStoreName[_class];
+    this.retrieveRecordFrom(storeName, id, key).then(record=>{
+      let inst = _class.create(record);
+      let bs = new BehaviorSubject(inst);
+      bs.subscribe(val=>{
+        console.log('val');
+      });
     });
   }
 
@@ -582,6 +590,24 @@ export class ElementService {
       return hash;
     });
   }
+  
+  baseJob(obj):BehaviorSubject<Job> {
+    if(obj.name == null) throw new Error('name required');
+    let job = new Job(
+      random(),
+      obj.name,
+      obj.description,
+      obj.owner,
+      obj.shortname || obj.name.split(' ').join('_').toLowerCase(),
+      new FolderDef(['phase', 'building'])
+    );
+    let bs = new BehaviorSubject(job);
+    let sub = bs.subscribe(_job=>{
+      console.log('saving', _job);
+      this.saveRecord(this.db, JOB_STORE_NAME, _job)
+    });
+    return bs;
+  }
 
   saveNewJob(job: Job, children?:Child[], components?:ComponentElement[], folders?:Folder[]): Promise<any> {
     let tree = {};
@@ -740,9 +766,7 @@ export class ElementService {
     } else {
       throw new Error('unknown obj type');
     }
-    return this.saveRecord(this.db, storeName, obj.toJSON(false)).then((key)=>{
-      return key;
-    });
+    return this.saveRecord(this.db, storeName, obj.toJSON(false));
   }
 
   updateJob(job: Job): Promise<string> {
@@ -796,14 +820,14 @@ export class ElementService {
     });
   }
 
-  logWalkGen(startHash:string) {
-    let g = function*(hash) {
-      while(true) {
-        yield this.loadAs('commit', hash)
-      }
-    }
-    return g(startHash);
-  }
+  //logWalkGen(startHash:string) {
+  //  let g = function*(hash) {
+  //    while(true) {
+  //      yield this.loadAs('commit', hash)
+  //    }
+  //  }
+  //  return g(startHash);
+  //}
 
   treeWalk(hash: string): Promise<any> {
     return new Promise((resolve, reject) => {

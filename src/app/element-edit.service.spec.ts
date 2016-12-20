@@ -10,7 +10,7 @@ describe('Service: ElementEdit', () => {
     });
   });
 
-  it('should ...', inject([ElementEditService], (service: ElementEditService) => {
-    expect(service).toBeTruthy();
-  }));
+  //it('should ...', inject([ElementEditService], (service: ElementEditService) => {
+  //  expect(service).toBeTruthy();
+  //}));
 });

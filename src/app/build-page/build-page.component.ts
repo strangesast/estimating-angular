@@ -9,9 +9,10 @@ import {
 import { ActivatedRoute } from '@angular/router';
 
 import {
+  Subject,
   Observable,
-  BehaviorSubject,
-  Subscription
+  Subscription,
+  BehaviorSubject
 } from 'rxjs';
 
 import { TreeComponent }  from '../tree/tree.component';
@@ -63,12 +64,14 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   ) { }
 
   ngOnInit() {
-    this.enabledSubject.subscribe(enabled => this.enabled = enabled);
+    //this.enabledSubject = new BehaviorSubject({});
+    //this.enabledSubject.subscribe(enabled => this.enabled = enabled);
     this.route.parent.data.subscribe(({jobData:{job, tree, elements}})=>{
       tree.subscribe(t=>{
-        t.folders
+        console.log('t.f', t.folders);
       })
       this.jobSub = Observable.combineLatest(tree, job).subscribe(([t, j]:[Tree,Job])=>{
+        console.log('j', j);
         this.enabled = t.folders;
 
         this.job = j;
