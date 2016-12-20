@@ -604,7 +604,18 @@ export class ElementService {
     let bs = new BehaviorSubject(job);
     let sub = bs.subscribe(_job=>{
       console.log('saving', _job);
-      this.saveRecord(this.db, JOB_STORE_NAME, _job)
+      this.saveRecord(this.db, JOB_STORE_NAME, _job).then(res=>{
+        console.log('successful', res);
+        //_job.id = res;
+        //bs.next(_job);
+
+      }, err=>{
+        console.log('caught error', err);
+        bs.error(err);
+      })
+    }, (err) => {
+      // ignore errors
+      //console.log('second error', err);
     });
     return bs;
   }
