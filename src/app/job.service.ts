@@ -281,9 +281,15 @@ export class JobService implements Resolve<Promise<any>> {
 
   buildTree(config: TreeConfig) {
     let folderIds = Object.keys(config.enabled).filter(n=>(n in config.roots) && config.enabled[n]).map(n=>config.roots[n]);
-    return Observable.fromPromise(this.loadElement(FolderElement, folderIds[0]).then(folder => {
+    return Observable.fromPromise(Promise.all(folderIds.map(folderId => this.loadElement(FolderElement, folderId).then(folder => {
       return this.buildBranch(folder).then(node => {
         return node.descendants();
+      });
+    }))).then(arr => {
+      if(arr.length == 1) return arr[0].slice(1);
+      arr.reverse();
+      return arr.reduce((a, b) => {
+        return b.slice(1).map(el => [el].concat(a.slice(1))).reduce((c,d)=>c.concat(d)).concat(a.slice(1))
       });
     }));
   }
