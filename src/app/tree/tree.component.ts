@@ -1,5 +1,6 @@
 import {
   Input,
+  Output,
   Component,
   OnInit,
   AfterViewInit,
@@ -11,6 +12,7 @@ import {
   ComponentFactoryResolver,
   ReflectiveInjector,
   SimpleChanges,
+  EventEmitter
 } from '@angular/core';
 
 import {
@@ -45,6 +47,8 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   // for storing ref to child components
   private elementComponentRefMap = new Map();
   private childComponents = new Subject();
+
+  @Output() public change = new EventEmitter();
 
   private dragging: boolean = false;
 
@@ -161,6 +165,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
       }).subscribe(x=>{
         console.log('finished', x);
+        this.change.emit(this.tree);
       });
 
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(TreeElementComponent);
@@ -274,7 +279,6 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   ngOnChanges(changes) {
     if(this.host && 'tree' in changes) {
-      console.log('changes');
       this.treeSubject.next(this.tree);
     }
   };

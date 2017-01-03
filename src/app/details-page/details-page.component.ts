@@ -5,7 +5,7 @@ import { JobService } from '../job.service';
 
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
-import { Job } from '../classes';
+import { Collection } from '../classes';
 
 
 @Component({
@@ -16,7 +16,7 @@ import { Job } from '../classes';
   private sub1: Subscription;
   private sub2: Subscription;
   private sub3: Subscription;
-  private job: Job;
+  private job: Collection;
   private jobForm: FormGroup;
   private status: any[] = [];
 
@@ -82,9 +82,9 @@ import { Job } from '../classes';
     })
   }
 
-  onSubmit({ dirty, value, valid }: { dirty: boolean, value: Job, valid: boolean}) {
+  onSubmit({ dirty, value, valid }: { dirty: boolean, value: Collection, valid: boolean}) {
     if(dirty && valid) {
-      let j = Job.create(Object.assign({}, this.job.toJSON(false), value))
+      let j = Collection.fromObject(Object.assign({}, this.job.toJSON(false), value))
       console.log('val!', value, j);
       this.jobService.updateJob(j).then((r)=>{
         console.log('result', r);

@@ -1,5 +1,6 @@
 // account of the user editing / saving job / components
 export class User {
+  static storeName = 'users';
   _id?: string;
 
   constructor(
@@ -8,7 +9,7 @@ export class User {
     public email: string
   ) { }
 
-  static create(obj) {
+  static fromObject(obj) {
     let user = new User(obj.name, obj.username, obj.email);
     if(obj._id) {
       user._id = obj._id;
@@ -39,7 +40,7 @@ export class BaseElement {
     public description: string
   ) { }
 
-  static exclude: string[] = [];
+  static excluded: string[] = [];
 }
 
 // how are other elements referenced
@@ -53,12 +54,11 @@ export class Child { // needs 'name', 'description'
     public folders?: any, // location
     public saveState: SaveState = "unsaved"
   ) { }
-  static exclude: string[] = ['data', 'folders', 'saveState'];
-  toJSON(removeExcluded?) {
-    if(removeExcluded == null) removeExcluded = true;
+  static excluded: string[] = ['data', 'folders', 'saveState'];
+  toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     for(let prop in copy) {
-      if(Child.exclude.indexOf(prop) != -1) {
+      if(Child.excluded.indexOf(prop) != -1) {
         delete copy[prop];
         continue;
       }
@@ -68,7 +68,7 @@ export class Child { // needs 'name', 'description'
     }
     return copy;
   }
-  static create(obj) {
+  static fromObject(obj) {
     return new Child(obj.id, obj.ref, obj.qty, obj._ref, obj.data);
   }
 }
@@ -85,6 +85,7 @@ export class BasedOn {
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
 export class ComponentElement extends BaseElement {
+  static storeName = 'components';
   constructor(
     id,
     name,
@@ -99,17 +100,16 @@ export class ComponentElement extends BaseElement {
     if(children == null) this.children = [];
   }
 
-  static create(obj) {
+  static fromObject(obj) {
     return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn, obj.hash);
   }
 
-  static exclude: string[] = ['hash', 'saveState'];
+  static excluded: string[] = ['hash', 'saveState'];
 
-  toJSON(removeExcluded?:Boolean) {
-    if(removeExcluded == null) removeExcluded = true;
+  toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     if(removeExcluded) {
-      ComponentElement.exclude.forEach((e)=>{
+      ComponentElement.excluded.forEach((e)=>{
         if(e in copy) {
           delete copy[e];
         }
@@ -120,11 +120,12 @@ export class ComponentElement extends BaseElement {
 }
 
 export class Location {
+  static storeName = 'locations';
   constructor(
     public id: string,
     public job: string,
     public children: Child[],
-    public folders: string[],
+    public folders: any,
     public hash?: string
   ) { }
 
@@ -132,18 +133,18 @@ export class Location {
     return job.folders.types.map((name, i)=>obj[name] || job.folders.roots[i]).join('-');
   }
 
-  static fromJob(job: Job, folders, children?: Child[]) {
+  static fromJob(job: Collection, folders, children?: Child[]) {
     let id = Location.createId(folders, job);
     let jobId = job.id;
-    return new Location(id, jobId, children || [], job.folders.types.map((name, i)=>folders[name] || job.folders.roots[i]));
+    return new Location(id, jobId, children || [], job.folders.order.map((name, i)=>folders[name] || job.folders.roots[i]));
   }
 
-  static create(obj) {
+  static fromObject(obj) {
     let children = obj.children;
-    return new Location(obj.id, obj.job, children.map(Child.create), obj.folders, obj.hash);
+    return new Location(obj.id, obj.job, children.map(Child.fromObject), obj.folders, obj.hash);
   }
 
-  toJSON(removeExcluded?: Boolean) {
+  toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     for(var prop in copy) {
       if(copy[prop] == null) continue;
@@ -157,17 +158,17 @@ export class Location {
   }
 }
 
-export class FolderDef {
-  constructor(
-    public types: string[], // names of kinds of folders (buildings/phases/etc)
-    public roots?: string[] // ids of root folders
-  ) { }
+export interface FolderDefinition {
+  roots?: any; // { 'phase' : 'abcd123', 'building': 'efgh456' }
+  order: string[]; // [ 'phase', 'building' ]
 }
 
 //                      not in commit         in commit       saved remotely   none of the prev
 export type SaveState = "saved:uncommitted" | "saved:local" | "saved:remote" | "unsaved";
 
-export class Folder extends BaseElement {
+export class FolderElement extends BaseElement {
+  static storeName = 'folders';
+
   constructor(
     id,
     name,
@@ -182,13 +183,12 @@ export class Folder extends BaseElement {
     super(id, name, description);
   }
 
-  static exclude: string[] = ['commit', 'open', 'saveState'];
+  static excluded: string[] = ['commit', 'open', 'saveState'];
 
-  toJSON(removeExcluded?:Boolean) {
-    if(removeExcluded == null) removeExcluded = true;
+  toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     if(removeExcluded) {
-      Folder.exclude.forEach((e)=>{
+      FolderElement.excluded.forEach((e)=>{
         if(e in copy) {
           delete copy[e];
         }
@@ -197,21 +197,23 @@ export class Folder extends BaseElement {
     return copy;
   }
 
-  static create(obj) {
+  static fromObject(obj) {
     let children = obj.children || [];
-    return new Folder(obj.id, obj.name, obj.description, obj.type, obj.job, children, obj.hash);
+    return new FolderElement(obj.id, obj.name, obj.description, obj.type, obj.job, children, obj.hash);
   }
 }
 
-export class Job extends BaseElement {
+export class Collection extends BaseElement {
+  static storeName = 'collections';
   constructor(
     id,
     name,
     description,
     public owner: User,
     public shortname: string,
-    public folders: FolderDef,
-    public basedOn?: BasedOn|null, // potentially ambigious, null vs undefined
+    public folders: FolderDefinition,
+    public kind: 'job'|'library' = 'job',
+    public basedOn?: BasedOn|null,
     public commit?: string,
     public hash?: string,
     public saveState: SaveState = "unsaved"
@@ -219,13 +221,12 @@ export class Job extends BaseElement {
     super(id, name, description);
   }
 
-  static exclude: string[] = ['commit', 'hash'];
+  static excluded: string[] = ['commit', 'hash', 'saveState'];
 
-  toJSON(removeExcluded?:Boolean) {
-    if(removeExcluded == null) removeExcluded = true;
+  toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     if(removeExcluded) {
-      Job.exclude.forEach((e)=>{
+      Collection.excluded.forEach((e)=>{
         if(e in copy) {
           delete copy[e];
         }
@@ -238,19 +239,20 @@ export class Job extends BaseElement {
     return [this.owner.username, this.shortname, 'build'].join('/');
   }
 
-  static create(obj, commit?) {
+  static fromObject(obj, commit?) {
     if(!obj.owner) throw new Error('object owner required');
-    let owner = User.create(obj.owner);
+    let owner = User.fromObject(obj.owner);
     ['id', 'name', 'description', 'owner', 'shortname', 'folders'].forEach((t)=>{
       if(obj[t] == null) throw new Error('key ' + t + ' required');
     });
-    return new Job(
+    return new Collection(
       obj.id,
       obj.name,
       obj.description,
       owner,
       obj.shortname,
       obj.folders,
+      obj.kind,
       obj.basedOn,
       commit||obj.commit,
       obj.has
@@ -258,6 +260,7 @@ export class Job extends BaseElement {
   }
 }
 
+/*
 export class Tree {
   constructor(
     public folders: any,
@@ -268,13 +271,13 @@ export class Tree {
     public elements: any[] = []
   ) { }
 
-  static create(obj) {
+  static fromObject(obj) {
     return new Tree(obj.folders, obj.elements);
   }
 
-  static fromJob(job:Job) {
+  static fromJob(job:Collection) {
     let folders = {};
-    let order = job.folders.types;
+    let order = job.folders.order;
     order.forEach((t,i)=>{
       let currentRoot = job.folders.roots[i];
       folders[t] = { currentRoot, enabled:true, filters: []};
@@ -282,4 +285,10 @@ export class Tree {
     folders['components'] = { enabled:true, filters: []};
     return new Tree(folders, order);
   }
+}
+*/
+export interface TreeConfig {
+  enabled: any;
+  order: string[];
+  roots: any; // { 'phase' : '123', 'building':  '456' }
 }

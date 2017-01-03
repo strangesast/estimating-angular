@@ -15,13 +15,13 @@ import {
 
 import {
   ComponentElement,
-  FolderDef,
+  FolderDefinition,
   Location,
   BasedOn,
-  Folder,
+  FolderElement,
   Child,
   User,
-  Job
+  Collection
 } from './classes';
 
 import {
@@ -33,7 +33,11 @@ import {
   JOB_STORE_NAME,
   STORE_VERSION,
   STORE_NAME,
-  STORES
+  STORES,
+  retrieveAllRecordsAs,
+  retrieveRecordAs,
+  saveRecordAs,
+  countRecords
 } from './indexedDB';
 
 
@@ -41,8 +45,8 @@ import {
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
 
 const classToStoreName = {
-  Job:       JOB_STORE_NAME,
-  Folder:    FOLDER_STORE_NAME,
+  Collection:       JOB_STORE_NAME,
+  FolderElement:    FOLDER_STORE_NAME,
   Location:  LOCATION_STORE_NAME,
   Component: COMPONENT_STORE_NAME
 };
@@ -58,8 +62,9 @@ export class ElementService {
 
   public jobMap: any;
 
-  public _jobs: BehaviorSubject<Job[]> = new BehaviorSubject([]);
-  public jobs: Observable<Job[]> = this._jobs.asObservable();
+  public _jobs: BehaviorSubject<Collection[]> = new BehaviorSubject([]);
+  public jobs: Observable<Collection[]> = this._jobs.asObservable();
+  public jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
 
   constructor() { }
 
@@ -80,7 +85,7 @@ export class ElementService {
   }
 
   // returns [componentRecordId, locationRecordId]
-  addComponent(component: ComponentElement, job: Job, folders) {
+  addComponent(component: ComponentElement, job: Collection, folders) {
     folders = folders || {};
     let locId = Location.createId(folders, job);
     return this.retrieveRecord(this.db, 'locations', locId).then((obj) => {
@@ -94,7 +99,7 @@ export class ElementService {
       }
       return obj;
     }).then((locRecord)=>{
-      let loc = Location.create(locRecord);
+      let loc = Location.fromObject(locRecord);
       let childIds = loc.children.map((c)=>c.id);
       let i = childIds.indexOf(component.id);
       if(i != -1) {
@@ -111,17 +116,17 @@ export class ElementService {
     });
   }
 
-  removeJob(job: Job): Promise<any> {
+  removeJob(job: Collection): Promise<any> {
     return this.removeRecordFrom('jobs', job.id).then(res=> {
       return res;
     });
   }
 
   load(_class, id:string, key?:string) {
-    if(typeof _class.create !== "function") throw new Error('need create method on class'); 
+    if(typeof _class.fromObject !== "function") throw new Error('need create method on class'); 
     let storeName = classToStoreName[_class];
     this.retrieveRecordFrom(storeName, id, key).then(record=>{
-      let inst = _class.create(record);
+      let inst = _class.fromObject(record);
       let bs = new BehaviorSubject(inst);
       bs.subscribe(val=>{
         console.log('val');
@@ -130,37 +135,48 @@ export class ElementService {
   }
 
   // should return observable
-  loadJob(id: string): Promise<Job> {
-    let args = [JOB_STORE_NAME, id], key = 'id';
-    return this.retrieveRecordFrom.apply(this, args).then(record=>{ // try default key
-      if(record != null) return record;
-      key = 'shortname';
-      return this.retrieveRecordFrom.apply(this, args.concat(key)); // try 'shortname'
-    }).then(record => {
-      if(record == null) throw new Error('job with that id "'+id+'" ( key "'+key+'") does not exist');
-      return Job.create(record);
+  loadJob(shortname: string): Promise<BehaviorSubject<Collection>> {
+    return retrieveRecordAs(this.db, Collection, shortname, 'shortname').then((job:Collection) => {
+      if(job == null || job.kind != 'job') throw new Error('invalid/nonexistant job');
+      let arr = [];
+      if(this.jobsSubject) {
+        arr = this.jobsSubject.getValue();
+        for (let i=0; i<arr.length; i++) {
+          if(arr[i].getValue().id == job.id) {
+            return arr[i];
+          }
+        }
+      }
+      let bs = new BehaviorSubject(job);
+      if(this.jobsSubject) this.jobsSubject.next(arr.concat(bs));
+      return bs;
     });
   }
 
+  loadElement(_class, id) {
+    // use loaded instance instead
+    return retrieveRecordAs(this.db, _class, id);
+  }
+
   // should return observable
-  loadFolder(id: string): Promise<Folder> {
+  loadFolder(id: string): Promise<FolderElement> {
     return this.retrieveRecordFrom(FOLDER_STORE_NAME, id).then(record => {
       if(record == null) throw new Error('folder with that id "'+id+'" does not exist');
-      return Folder.create(record);
+      return FolderElement.fromObject(record);
     });
   }
 
   loadLocation(id: string): Promise<Location> {
     return this.retrieveRecordFrom(LOCATION_STORE_NAME, id).then(record => {
       if(record == null) throw new Error('location with that id"'+id+'" does not exist');
-      return Location.create(record);
+      return Location.fromObject(record);
     });
   }
 
   loadComponent(id: string): Promise<ComponentElement> {
     return this.retrieveRecordFrom(COMPONENT_STORE_NAME, id).then(record => {
       if(record == null) throw new Error('component with that id"'+id+'" does not exist');
-      return ComponentElement.create(record);
+      return ComponentElement.fromObject(record);
     });
   }
 
@@ -172,13 +188,14 @@ export class ElementService {
   }
 
   getJob(username: string, shortname: string): Promise<any> {
-    return this.retrieveJob(username, shortname).then(({saved, current}:{saved: Job, current: Job}) => {
+    return this.retrieveJob(username, shortname).then(({saved, current}:{saved: Collection, current: Collection}) => {
       if(saved == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
       return {saved: saved, current: current};
     });
   }
 
-  getJobs(): Promise<Job[]> {
+  /*
+  getJobs(): Promise<Collection[]> {
     return this.readRefs(this.gitdb).then((refs) => {
       // read all refs -> many may point to same job
       return Promise.all(refs.map((ref)=>this.readRef(ref)));
@@ -195,35 +212,49 @@ export class ElementService {
             // load the most recent (perhaps unsaved) version of the job
             return this.retrieveJobById(data.id).then(job => {
               if(job != null) return job;
-              return Job.create(data); 
+              return Collection.fromObject(data); 
             });
           });
         });
       }));
     });
   };
+  */
 
-  // should not auto-create user if in job but not in users col.
-  getUsers(): Promise<User[]> {
-    let db = this.db;
-    return this.getAll(db, USER_COLLECTION).then(savedUsers => {
-      return savedUsers.map(User.create);
+  getJobs(): Promise<BehaviorSubject<BehaviorSubject<Collection>[]>> {
+    return retrieveAllRecordsAs(this.db, Collection).then(collections => {
+      let arr = collections.map(collection => new BehaviorSubject(collection));
+      if(this.jobsSubject) this.jobsSubject.next(arr);
+      return this.jobsSubject || (this.jobsSubject = new BehaviorSubject(arr));
     });
   }
 
-  getAll(db: any, storeName: string): Promise<any[]> {
-    if(db == null) throw new Error('db undefined, run init');
-    return new Promise((resolve, reject) => {
-      let trans = db.transaction([storeName]);
-      let store = trans.objectStore(storeName);
-      let req = store.getAll();
-      req.onsuccess = (e) => {
-        resolve(e.target.result);
-      };
-      req.onerror = (e) => {
-        reject(e.target.error);
-      };
-    });
+  aboutJob(job: Collection): Observable<any> {
+    // count components / children / folders
+    // get git save state
+    let about = {};
+
+    return Observable.create(subscriber => {
+      // should also search history
+      let ref = [job.owner.username, job.shortname].join('/');
+      let isHeadCommit = this.readRef(ref).then(commitHash => commitHash == job.commit).then(val => {
+        about['isHead'] = val;
+        subscriber.next(about);
+      });
+      let componentCount = countRecords(this.db, ComponentElement.storeName, job.id, 'job').then(val => {
+        about['components'] = val
+        subscriber.next(about);
+      });
+      let folderCount = countRecords(this.db, FolderElement.storeName, job.id, 'job').then(val => {
+        about['folders'] = val;
+        subscriber.next(about);
+      });
+      Promise.all([isHeadCommit, componentCount, folderCount]).then(() => {
+        subscriber.complete();
+      }).catch(err => {
+        subscriber.error(err);
+      });
+    }).debounceTime(100);
   }
 
   getAllOfJob(jobid):Promise<any> {
@@ -249,9 +280,9 @@ export class ElementService {
         req.onerror = (e:any) => reject(e.target.error);
       });
     })).then((arr:any)=>{
-      arr[0] = arr[0].map(ComponentElement.create);
-      arr[1] = arr[1].map(Folder.create);
-      arr[2] = arr[2].map(Location.create);
+      arr[0] = arr[0].map(ComponentElement.fromObject);
+      arr[1] = arr[1].map(FolderElement.fromObject);
+      arr[2] = arr[2].map(Location.fromObject);
       let ob = {};
       storeNames.forEach((s, i)=>ob[s] = arr[i]);
       return ob;
@@ -292,7 +323,7 @@ export class ElementService {
     });
   }
 
-  findChanges(job:Job) {
+  findChanges(job:Collection) {
     return this.getAllOfJob(job.id).then(res => {
       return Promise.all([
         this.buildTree(job, res.components, res.folders, res.locations),
@@ -341,16 +372,16 @@ export class ElementService {
   retrieveComponent(id: string): Promise<ComponentElement|null> {
     return this.retrieveRecordFrom('components', id).then((res)=>{
       if(res != null) {
-        return ComponentElement.create(res);
+        return ComponentElement.fromObject(res);
       }
       return null;
     });
   }
 
-  retrieveFolder(id: string): Promise<Folder|null> {
+  retrieveFolder(id: string): Promise<FolderElement|null> {
     return this.retrieveRecordFrom('folders', id).then((res)=>{
       if(res != null) {
-        return Folder.create(res);
+        return FolderElement.fromObject(res);
       }
       return null;
     });
@@ -359,17 +390,17 @@ export class ElementService {
   retrieveUser(username: string): Promise<User|null> {
     return this.retrieveRecordFrom('users', username).then(res => {
       if(res != null) {
-        return User.create(res);
+        return User.fromObject(res);
       } else {
         return null;
       }
     });
   }
 
-  retrieveJobById(id: string): Promise<Job|null> {
+  retrieveJobById(id: string): Promise<Collection|null> {
     return this.retrieveRecordFrom('jobs', id).then(obj => {
       if(obj == null) throw new Error('job with that id ("'+id+'") does not exist');
-      return Job.create(obj);
+      return Collection.fromObject(obj);
     });
   }
 
@@ -385,7 +416,7 @@ export class ElementService {
         if(jobRef == null) throw new Error('malformed tree');
         return this.loadAs('text', jobRef.hash);
       }).then(text => {
-        let job = Job.create(JSON.parse(text), commitHash);
+        let job = Collection.fromObject(JSON.parse(text), commitHash);
         return job;
       });
     }).then(saved => {
@@ -407,7 +438,7 @@ export class ElementService {
     return this.retrieveRecord(this.db, storeName, id, key);
   }
 
-  retrieveRecordFromAs(what:Folder|ComponentElement|Child|Job, storeName: string, id: string, key?: string) {
+  retrieveRecordFromAs(what:FolderElement|ComponentElement|Child|Collection, storeName: string, id: string, key?: string) {
   }
 
   retrieveRecord(db: IDBDatabase, storeName: string, id: string, key?: string) {
@@ -488,21 +519,130 @@ export class ElementService {
     });
   }
 
-  createJob(owner: User, shortname: string, name?: string, description?: string):Observable<Job> {
-    // should verify that job id is unique
-    if(name == null) name = 'New Job';
-    if(description == null) description = '(no description)';
-    let folderDef = new FolderDef(['phase', 'building']);
+  createJob(owner: User, shortname: string, name='New Job', description='(no description)', folderNames=['phase', 'building']):BehaviorSubject<Collection> {
+    shortname = shortname || name.replace(' ', '_').replace(/[^\w-]/gi, '').substring(0, 50);
+    let folderDefinition = { order: folderNames }
 
-    let job = new Job(
-      random(),
+    let job = new Collection(
+      '',
       name,
       description,
       owner,
       shortname,
-      folderDef
+      folderDefinition,
+      'job'
     );
 
+    let bs = new BehaviorSubject(job);
+
+    if(!shortname) {
+      bs.error(new Error('invalid shortname'));
+    }
+    if(shortname.length < 4) {
+      bs.error(new Error('shortname must be at least 4 characters long'));
+    }
+
+    saveRecordAs(this.db, job).then(jobId => {
+      job.id = jobId;
+
+      job.folders.roots = {};
+      return Promise.all(job.folders.order.map(folderName => {
+        // create root folders
+        let folder = new FolderElement(
+          '',
+          'root',
+          ['root', folderName, 'folder'].join(' '),
+          folderName,
+          job.id,
+          []
+        );
+        return saveRecordAs(this.db, folder).then(folderId => {
+          folder.id = folderId;
+          console.log('job', job);
+          job.folders.roots[folder.type] = folder.id;
+          return folder;
+        });
+      })).then(folders => {
+        let rootTypes = folders.map(f=>f.type);
+        return Promise.all([0, 1, 2, 3, 4, 5, 6].map(i => {
+          let t = rootTypes[i%rootTypes.length] ;
+          let folder = new FolderElement(
+            '',
+            ['Example Folder ', i, ' (', t, ')'].join(''),
+            'description',
+            t,
+            job.id,
+            []
+          );
+          return saveRecordAs(this.db, folder).then(folderId => {
+            folder.id = folderId;
+            folders.find(f=>f.type==t).children.push(folder.id);
+            return folder;
+          });
+        })).then(newFolders => {
+          return Promise.all(folders.map(folder => saveRecordAs(this.db, folder))).then(()=>{
+            return folders.concat(newFolders);
+          });
+        });
+
+      }).then(folders => {
+        // create example components
+        return Promise.all([0, 1, 2].map(i => {
+          let component = new ComponentElement(
+            '',
+            'Example Component ' + (i+1),
+            'description',
+            job.id, // job id
+            [] // children
+          );
+          return saveRecordAs(this.db, component).then(componentId => {
+            component.id = componentId;
+            return component;
+          });
+        })).then(components => {
+          // create example children
+          let children = [0, 1, 2].map(i => {
+            let component = components[i];
+            return new Child(
+              '', // id
+              component.id, // 'ref' comp id
+              1+Math.floor(Math.random()*4), // qty
+              null, // _id
+              component // data
+            );
+          });
+          let folderObj = {};
+          folders.filter(f=>f.name == 'root').forEach(f=>{
+            folderObj[f.type] = f.id;
+          });
+          let loc = new Location(
+            '',
+            job.id,
+            children,
+            folderObj,
+            null
+          );
+          return saveRecordAs(this.db, loc).then(locId => {
+            loc.id = locId;
+            return loc;
+          });
+        });
+      }).then(() => {
+        return saveRecordAs(this.db, job).then(() => {
+          job.saveState = 'saved:uncommitted';
+          bs.next(job);
+    
+          this.jobsSubject.next(this.jobsSubject.getValue().concat(bs))
+
+        });
+      });
+    }).catch(err => {
+      bs.error(err);
+    });
+
+    return bs;
+
+    /*
     let components = [0, 1, 2].map(i=>{
       return new ComponentElement(
         random(),
@@ -524,7 +664,7 @@ export class ElementService {
     });
     let folders = [0, 1, 2].map(i=>{
       let folderType = job.folders.types[i%2];
-      return new Folder(
+      return new FolderElement(
         random(), // id
         'Folder ' + (i+1) + ' (' + folderType + ')',   // name
         ['folder', i, 'description'].join(' '), // description
@@ -541,6 +681,7 @@ export class ElementService {
         sub.complete();
       });
     });
+    */
   }
 
   buildTree(job, components, folders, locations) {
@@ -591,15 +732,16 @@ export class ElementService {
     });
   }
   
-  baseJob(obj):BehaviorSubject<Job> {
+  baseJob(obj):BehaviorSubject<Collection> {
     if(obj.name == null) throw new Error('name required');
-    let job = new Job(
+    let job = new Collection(
       random(),
       obj.name,
       obj.description,
       obj.owner,
       obj.shortname || obj.name.split(' ').join('_').toLowerCase(),
-      new FolderDef(['phase', 'building'])
+      { order: ['phase', 'building'] },
+      'job'
     );
     let bs = new BehaviorSubject(job);
     let sub = bs.subscribe(_job=>{
@@ -620,7 +762,7 @@ export class ElementService {
     return bs;
   }
 
-  saveNewJob(job: Job, children?:Child[], components?:ComponentElement[], folders?:Folder[]): Promise<any> {
+  saveNewJob(job: Collection, children?:Child[], components?:ComponentElement[], folders?:FolderElement[]): Promise<any> {
     let tree = {};
     folders = folders || [];
     children = children || [];
@@ -629,10 +771,10 @@ export class ElementService {
     job.folders.roots = job.folders.roots || [];
 
     // create root folder for each type. add children from 'folders' of similar type
-    job.folders.types.forEach(folderType => {
+    job.folders.order.forEach(folderType => {
       if(INVALID_FOLDER_TYPES.indexOf(folderType) != -1)
         throw new Error('invalid folder type');
-      let folder = new Folder(
+      let folder = new FolderElement(
         random(), // id
         'root',   // name
         'root "'+folderType+'" folder', // description
@@ -712,7 +854,7 @@ export class ElementService {
 
       let updateHashesPromise = this.loadAs('tree', hash).then(tree => {
         job.hash = tree['job.json'].hash
-        let p1 = Promise.all(job.folders.types.map(t=>{
+        let p1 = Promise.all(job.folders.order.map(t=>{
           return this.loadAs('tree', tree[t].hash).then(t2 => {
             folders.filter(f=>f['type']==t).forEach(f=>{
               let obj = t2[f.id + '.json'];
@@ -766,9 +908,9 @@ export class ElementService {
 
   updateRecord(obj) {
     let storeName;
-    if(obj instanceof Job) {
+    if(obj instanceof Collection) {
       storeName = 'jobs';
-    } else if (obj instanceof Folder) {
+    } else if (obj instanceof FolderElement) {
       storeName = 'folders';
     } else if (obj instanceof ComponentElement) {
       storeName = 'components';
@@ -780,11 +922,11 @@ export class ElementService {
     return this.saveRecord(this.db, storeName, obj.toJSON(false));
   }
 
-  updateJob(job: Job): Promise<string> {
+  updateJob(job: Collection): Promise<string> {
     return this.updateRecord(job);
   }
 
-  saveJob(job: Job, message: string): Promise<Job> {
+  saveJob(job: Collection, message: string): Promise<Collection> {
     return this.loadAs('commit', job.commit).then((commit) => {
       let jobText = JSON.stringify(job.toJSON());
       let changes:any = [{
@@ -830,15 +972,6 @@ export class ElementService {
       });
     });
   }
-
-  //logWalkGen(startHash:string) {
-  //  let g = function*(hash) {
-  //    while(true) {
-  //      yield this.loadAs('commit', hash)
-  //    }
-  //  }
-  //  return g(startHash);
-  //}
 
   treeWalk(hash: string): Promise<any> {
     return new Promise((resolve, reject) => {

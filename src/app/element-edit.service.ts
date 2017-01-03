@@ -18,9 +18,9 @@ import {
 import {
   ComponentElement,
   EditElement,
-  Folder,
+  FolderElement,
   Child,
-  Job
+  Collection
 } from './classes';
 
 import { ElementService } from './element.service';
@@ -61,7 +61,7 @@ export class ElementEditService implements Resolve<Promise<any>> {
     });
   }
 
-  resolve(route: ActivatedRouteSnapshot): Promise<ComponentElement|Folder|Child|null> {
+  resolve(route: ActivatedRouteSnapshot): Promise<ComponentElement|FolderElement|Child|null> {
     let params: any = route.params;
     let kind = params.kind;
     let id = params.id;
@@ -94,13 +94,13 @@ export class ElementEditService implements Resolve<Promise<any>> {
   }
 
   // kind, id || element
-  loadElement(elementOrKind: string|Folder|ComponentElement, id?:string): Promise<any> {
+  loadElement(elementOrKind: string|FolderElement|ComponentElement, id?:string): Promise<any> {
     if(elementOrKind == null) {
       this._activeElement.next(null)
       return Promise.resolve(null);
     }
     let prom;
-    if(elementOrKind instanceof ComponentElement || elementOrKind instanceof Folder) {
+    if(elementOrKind instanceof ComponentElement || elementOrKind instanceof FolderElement) {
       prom = Promise.resolve(elementOrKind);
     } else if (typeof elementOrKind == 'string') {
       if(id == null) throw new Error('id required for "'+elementOrKind+'"');

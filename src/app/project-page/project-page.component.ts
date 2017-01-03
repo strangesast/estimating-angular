@@ -18,9 +18,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 import {
   ComponentElement,
-  Folder,
-  Tree,
-  Job
+  FolderElement,
+  TreeConfig,
+  Collection
 } from '../classes';
 import { ElementService } from '../element.service';
 import { TreeOptions }    from '../tree-options';
@@ -35,10 +35,10 @@ import { defaultOptions } from '../defaults';
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private sub: any;
   private sub2: any;
-  treeSubject: BehaviorSubject<Tree>;
-  jobSubject: BehaviorSubject<Job>;
-  tree: Tree;
-  job: Job;
+  jobSubject: BehaviorSubject<Collection>;
+  tree: BehaviorSubject<any[]>;
+  treeConfig: BehaviorSubject<TreeConfig>;
+  job: Collection;
 
   elements: any[] = [];
   //private data: any[];
@@ -71,15 +71,15 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   }
 
   ngOnInit() {
-    this.route.data.subscribe(({jobData: {job, tree, elements}})=>{
+    this.route.data.subscribe(({jobData: {job, tree, treeConfig}})=>{
       console.log('once');
       this.jobSubject = job;
-      this.treeSubject = tree;
-
       this.jobSubject.subscribe(job => {
-        console.log('got job!');
         this.job = job;
       });
+      /*
+      this.treeSubject = tree;
+
       this.treeSubject.subscribe(tree => {
         console.log('got tree!', tree);
         //this.tree = tree;
@@ -87,22 +87,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
       elements.subscribe(elements => {
         this.elements = elements;
       });
+      */
 
     });
-    //this.sub = this.route.data.subscribe((data:any) => {
-    //  this.job = data.jobService.job;
-    //  this.elements = data.jobService.elements;
-
-    //  if(this.sub2) this.sub2.unsubscribe();
-
-    //  this.sub2 = this.jobService.elements.subscribe(elements => this.elements = elements);
-
-    //  this.jobService.job.subscribe(job => this.job = job);
-
-    //  this.jobService.options.subscribe(o => {
-    //    this.jobService.buildTree();
-    //  });
-    //});
   }
 
   newComponentActiveJob() {
@@ -118,10 +105,11 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   }
 
   ngOnChanges() {
+
   }
 
   ngOnDestroy() {
-    if(this.sub2) this.sub2.unsubscribe();
-    this.sub.unsubscribe();
+    //if(this.sub2) this.sub2.unsubscribe();
+    //this.sub.unsubscribe();
   }
 }

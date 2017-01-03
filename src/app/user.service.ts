@@ -24,7 +24,8 @@ export class UserService {
   constructor(private elementService: ElementService) { }
 
   resolve():Promise<any>|boolean {
-    return this.elementService.getUsers();
+    //return this.elementService.getUsers();
+    return true;
   }
 
   isAuthenticated():Observable<Boolean> {

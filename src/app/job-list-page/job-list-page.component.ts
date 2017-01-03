@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 import { ElementService } from '../element.service';
 
-import { User, Job } from '../classes';
+import { User, Collection } from '../classes';
 
 @Component({
   selector: 'app-job-list-page',
@@ -11,15 +11,21 @@ import { User, Job } from '../classes';
   styleUrls: ['../app.component.less', './job-list-page.component.less']
 })
 export class JobListPageComponent implements OnInit {
-  jobs: Job[] = [];
+  jobs: Collection[] = [];
   jobStatus: any = {};
   users: User[] = [];
 
+  aboutJob: any = {}; // { job: about }
+
+  jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
   constructor(private elementService: ElementService) { }
 
   ngOnInit() {
+    // get list of jobs from db
+    // get save state from git
+    /*
     return Promise.all([
-      this.elementService.getJobs().then((jobs: Job[])=> {
+      this.elementService.getJobs().then((jobs: Collection[])=> {
         this.jobs = jobs;
         let ob = {};
         jobs.forEach(j=>ob[j.id] = 'ready');
@@ -29,10 +35,30 @@ export class JobListPageComponent implements OnInit {
         this.users = users;
       })
     ]);
+    */
+   let handleAbout = (job) => {
+     let getAbout = this.elementService.aboutJob(job).map(about => {
+       job.about = about;
+     });
+     return Observable.of(job).concat(getAbout.ignoreElements().map(()=>job));
+   };
+   this.elementService.getJobs().then(bs => {
+     this.jobsSubject = bs;
+     this.jobsSubject.flatMap(jobs => {
+       let forJob = jobs.map(_bs => {
+         return _bs.flatMap(handleAbout.bind(this))
+       });
+       return Observable.combineLatest(...forJob);
+
+     }).subscribe((jobs:Collection[]) => {
+       console.log(this.aboutJob);
+       this.jobs = jobs
+     });
+   });
   }
 
   createNewJob():void {
-    // createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Job> {
+    // createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Collection> {
     let owner = new User('Sam Zagrobelny', 'sazagrobelny', 'Samuel.Zagrobelny@dayautomation.com');
 
     let shortname = 'test_job_' + Math.floor(Math.random()*100);
@@ -58,7 +84,7 @@ export class JobListPageComponent implements OnInit {
 
   }
 
-  deleteJob(job:Job) {
+  deleteJob(job:Collection) {
     this.elementService.removeJob(job);
   }
 }

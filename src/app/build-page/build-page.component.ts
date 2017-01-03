@@ -19,7 +19,7 @@ import { TreeComponent }  from '../tree/tree.component';
 import { TreeOptions }    from '../tree-options';
 import { JobService }     from '../job.service';
 import { defaultOptions } from '../defaults';
-import { Job, Tree }      from '../classes';
+import { Collection, TreeConfig }      from '../classes';
 
 @Component({
   selector: 'app-build-page',
@@ -28,7 +28,7 @@ import { Job, Tree }      from '../classes';
   providers: [TreeComponent]
 })
 export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
-  private jobSub: Subscription;
+  private treeBuildSub: Subscription;
   private elSub: Subscription;
   private elements: any[] = [];
 
@@ -38,8 +38,10 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   private enabled: any;
   private enabledSubject: BehaviorSubject<any>;
 
-  private tree: Tree;
-  private treeSubject: BehaviorSubject<Tree>;
+  private tree: any[];
+  private treeSubject: BehaviorSubject<any[]>;
+  private treeConfig: TreeConfig;
+  private treeConfigSubject: BehaviorSubject<TreeConfig>;
 
   private treeOptions: TreeOptions = {
     expand: true,
@@ -50,13 +52,17 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
     animationTime: 250
   };
 
-  private job: Job;
+  private job: Collection;
 
-  private FOLDER_ICONS = {
+  public FOLDER_ICONS = {
     phase: 'fa fa-bookmark-o fa-lg',
     building: 'fa fa-building-o fa-lg',
     component: 'fa fa-cubes fa-lg'
   };
+
+  objToArray(obj) {
+    return Object.keys(obj);
+  }
 
   constructor(
     private jobService: JobService,
@@ -64,35 +70,18 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   ) { }
 
   ngOnInit() {
-    //this.enabledSubject = new BehaviorSubject({});
-    //this.enabledSubject.subscribe(enabled => this.enabled = enabled);
-    this.route.parent.data.subscribe(({jobData:{job, tree, elements}})=>{
-      tree.subscribe(t=>{
-        console.log('t.f', t.folders);
+    this.route.parent.data.subscribe(({jobData:{job, tree, treeConfig}})=>{
+      this.treeConfigSubject = treeConfig;
+      this.treeSubject = tree;
+      this.treeBuildSub = this.treeConfigSubject.switchMap(this.jobService.buildTree.bind(this.jobService)).subscribe(this.treeSubject);
+      this.treeSubject.subscribe(tree => {
+        console.log('tree', tree);
+        this.tree = tree;
       })
-      this.jobSub = Observable.combineLatest(tree, job).subscribe(([t, j]:[Tree,Job])=>{
-        console.log('j', j);
-        this.enabled = t.folders;
-
-        this.job = j;
-      });
-      elements.debounceTime(100).subscribe(els=>{
-        console.log('elements', els);
-        this.elements =  els;
+      this.treeConfigSubject.subscribe(treeConfig => {
+        this.treeConfig = treeConfig;
       });
     });
-    //this.jobSub = this.route.parent.data.subscribe((data:any) => {
-    //  let job = data.jobService.job;
-    //  let elements = data.jobService.elements;
-
-    //  let options = this.jobService.getOptions();
-    //  this.enabled = options.enabled;
-
-    //  this.job = job;
-    //  this.elements = elements;
-    //  //                       called by / updated by buildTree
-    //  this.jobService.elements.skip(1).subscribe(elements => this.elements = elements);
-    //});
   }
 
   changeSort(sort: string) {
@@ -105,19 +94,25 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('changes');
+    console.log('changes', changes);
   }
 
   toggleEnabled(name:string) {
-    let ne = !this.enabled[name];
-    if(!ne && Object.keys(this.enabled).filter(k=>this.enabled[k]).length < 2) return false;
-    let ob = {};
-    ob[name] = ne;
-    this.jobService.changeEnabled(ob);
-    this.enabled[name] = ne;
+    let config = this.treeConfigSubject.getValue();
+    if(name in config.roots || name == 'component') {
+      let val = !config.enabled[name];
+      if(val || Object.keys(config.enabled).map(n=>config.enabled[n]).filter(n=>!!n).length > 1) {
+        config.enabled[name] = val;
+        this.treeConfigSubject.next(config);
+      }
+    }
+  }
+
+  treeChanges(evt) {
+    console.log('changes', evt);
   }
 
   ngOnDestroy() {
-    this.jobSub.unsubscribe();
+    this.treeBuildSub.unsubscribe();
   }
 }

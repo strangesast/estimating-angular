@@ -17,7 +17,7 @@ import { JobService } from '../job.service';
 import { Element } from '../element';
 import { TreeBuilderService } from '../tree-builder.service';
 
-import { Child, ComponentElement, Folder } from '../classes';
+import { Child, ComponentElement, FolderElement } from '../classes';
 
 @Component({
   selector: 'app-edit-page',
@@ -79,7 +79,7 @@ export class EditPageComponent implements OnInit {
     if(el == null) {
       this.router.navigate(['edit'], {relativeTo: this.route.parent});
     } else {
-      let t = el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof Folder ? 'folder' : 'unknown';
+      let t = el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof FolderElement ? 'folder' : 'unknown';
       let id = el.id;
       this.router.navigate(['edit', t, id], {relativeTo: this.route.parent});
     }

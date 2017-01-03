@@ -14,7 +14,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 // for use in edit page in '.main' and on build / elsewhere in lower window
 
-import { ComponentElement, Child, Folder } from '../classes';
+import { ComponentElement, Child, FolderElement } from '../classes';
 
 @Component({
   selector: 'app-edit-window',
@@ -44,7 +44,7 @@ import { ComponentElement, Child, Folder } from '../classes';
 })
 export class EditWindowComponent implements OnInit, OnChanges {
   @Input() active: boolean = false;
-  @Input() element: ComponentElement|Folder|Child|null;
+  @Input() element: ComponentElement|FolderElement|Child|null;
   private isNew: boolean = true;
   private kind: string;
   private form: FormGroup
@@ -63,7 +63,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
   }
 
   whichKind(el) {
-    return el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof Folder ? 'folder' : el == null ? 'new' : null;
+    return el instanceof Child ? 'child' : el instanceof ComponentElement ? 'component' : el instanceof FolderElement ? 'folder' : el == null ? 'new' : null;
   }
 
   initializeForm(kind: string, el?) {

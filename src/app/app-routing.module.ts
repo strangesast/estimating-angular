@@ -31,6 +31,7 @@ const routes: Routes = [
   {
     path: 'jobs/:username',
     resolve: {
+      userService: UserService,
       elementService: ElementService
     },
     children: [
@@ -42,6 +43,11 @@ const routes: Routes = [
           userService: UserService
         },
         children: [
+          {
+            path: '',
+            redirectTo: 'build',
+            pathMatch: 'full'
+          },
           {
             path: 'details',
             component: DetailsPageComponent

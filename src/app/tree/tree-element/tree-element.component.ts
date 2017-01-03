@@ -23,7 +23,7 @@ import { TreeComponent } from '../tree.component';
 import {
   ComponentElement,
   Child,
-  Folder
+  FolderElement
 } from '../../classes';
 
 import { TreeOptions } from '../../tree-options';
@@ -87,7 +87,7 @@ export class TreeElementComponent implements OnInit, OnDestroy {
   ) {
     this.data = this.injector.get('data');
     this.options = this.injector.get('options');
-    if(this.data.data instanceof Folder) {
+    if(this.data.data instanceof FolderElement) {
       this.kind = 'folder';
 
     } else if (this.data.data instanceof Child) {

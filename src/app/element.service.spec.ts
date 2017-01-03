@@ -10,10 +10,10 @@ import {
   FolderDef,
   Location,
   BasedOn,
-  Folder,
+  FolderElement,
   Child,
   User,
-  Job
+  Collection
 } from './classes';
 
 import { initObjectStore } from './util';

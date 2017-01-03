@@ -6,13 +6,12 @@
         <span (click)="deleteJob(job)" class="hoverlink icon fa fa-close fa-lg"></span>
       </div>
       <div class="details">
-        <span [attr.title]="job.name" class="name hoverunderline" routerLink="{{job.getURL()}}">{{ job.name }}</span>
+        <span [attr.title]="job.name" class="name hoverunderline" [routerLink]="job.id ? [ './', job.owner.username, job.shortname ] : null">{{ job.name }}</span>
         <span [attr.title]="job.description" class="description">{{ job.description }}</span>
       </div>
       <div class="cnts">
-        <span class="cnt">10</span><span class="cnt fa fa-building-o"></span>
-        <span class="cnt">4</span><span class="cnt fa fa-bookmark-o"></span>
-        <span class="cnt">223</span><span class="cnt fa fa-cubes"></span>
+        <span class="cnt">{{ job.about ? job.about.folders : 0 }}</span><span class="cnt fa fa-folder-o"></span>
+        <span class="cnt">{{ job.about ? job.about.components : 0 }}</span><span class="cnt fa fa-cubes"></span>
       </div>
       <div class="statusBox">
         <span>
