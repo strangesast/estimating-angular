@@ -11,3 +11,51 @@ html, body {
 .spacer {
   flex-grow: 1;
 }
+
+input[type="checkbox"], input[type="radio"] {
+  display: none;
+}
+
+.tab label, .tab a {
+  color: black;
+  background: white;
+  padding: 0 8px;
+}
+
+.tab input:checked + label {
+  /* active-mixin */
+  background: @blue4;
+  color: @blue2;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, currently not supported by any browser */
+}
+
+.hoverlight:hover {
+  box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.3);
+}
+
+.hoverlink:hover {
+  cursor: pointer;
+}
+
+.nostyle {
+  text-decoration: none;
+  color: inherit;
+}
+
+.hoverunderline {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hoverunderline:hover {
+  text-decoration: underline;
+}

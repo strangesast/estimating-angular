@@ -1,0 +1,49 @@
+@import '../../styles/basic';
+
+@tree-element-height: 40px;
+
+:host {
+  height: 100%;
+  position: relative;
+}
+
+.search-container {
+  height: ~"calc(100% -" @navigation-height ~");";
+  margin-top: @navigation-height;
+  position: relative;
+  overflow-y: auto;
+}
+
+.search-result {
+  height: @tree-element-height;
+  width: 100%;
+}
+
+.search-result > div {
+  width: 100%;
+  display: flex;
+  height: @tree-element-height;
+  & > * {
+    min-width: 0;
+  }
+  span, a {
+    line-height: @tree-element-height;
+    &:not(:first-child):not(.spacer):not(.icon) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+  .icon {
+    min-width: @tree-element-height;
+    width: @tree-element-height;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    & > span {
+      display: inline;
+    }
+  }
+  display: flex;
+  flex-direction: row;
+}

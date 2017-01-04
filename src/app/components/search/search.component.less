@@ -1,0 +1,66 @@
+@import '../../styles/basic';
+
+.search-body {
+  position: relative;
+  display: flex;
+  width: @search-width;
+  //outline: 1.5px solid black;
+  padding: 0 2px;
+  box-sizing: border-box;
+  overflow: hidden;
+  float: right; // temporary solution
+  input, .filters {
+    display: inline-block;
+  }
+  border: 1px solid black;
+  border-radius: 2px;
+
+  & > input {
+    margin: 0;
+    padding: 0 0 0 4px;
+    border: 0;
+    outline: none;
+    font-size: 1.2em;
+    text-overflow: ellipsis;
+    background: inherit;
+    height: @navigation-height - 2px;
+    flex-grow: 1;
+    min-width: 0;
+  }
+
+  .filters {
+    display: flex;
+    align-items: center;
+
+    .filter {
+      .noselect-mixin;
+      display: inline-block;
+      background: lightgrey;
+      border-radius: 4px;
+      font-size: 1.0em;
+      padding: 4px;
+      &:last-child {
+        margin: 0 4px 0 0;
+      }
+      white-space: nowrap;
+
+      span.fa-remove:hover {
+        cursor: pointer;
+      }
+
+      &:not(:first-child) {
+        margin-left: 2px;
+      }
+    }
+  }
+  .new-filter {
+    align-self: center;
+    padding: 8px;
+    color: lightgrey;
+
+    &:hover {
+      color: black;
+      cursor: pointer;
+    }
+  }
+}

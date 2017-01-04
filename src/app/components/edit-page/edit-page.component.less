@@ -1,0 +1,41 @@
+@import '../../styles/basic';
+
+.main {
+  @media(min-width:@lrg) {
+    margin-left: 10px;
+  }
+  margin-top: 10px;
+  position: relative;
+}
+
+.main > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.type-button {
+  border: none;
+  background: none;
+  font-size: 1em;
+  color: inherit;
+}
+.icon {
+  padding: 4px;
+}
+.navigation-bar label.active {
+  .active-mixin;
+}
+
+.navigation-controls {
+  max-width: 100%;
+  overflow-x: auto;
+}
+//.navigation-bar {
+//  max-width: 100%;
+//  overflow-x: auto;
+//}
+
+.navigation-bar > label {
+  min-width: 100px;
+}

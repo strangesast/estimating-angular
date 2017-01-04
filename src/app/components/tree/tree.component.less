@@ -1,0 +1,48 @@
+@import '../../styles/basic';
+
+@small-tree-element-height: 20px;
+@tree-element-height: 40px;
+
+:host .tree {
+  position: relative;
+}
+
+:host {
+  & .tree {
+    & /deep/ li {
+      position: absolute;
+      top: 0;
+      right: 0;
+      list-style-type: none;
+      padding: 0 10px;
+      height: @tree-element-height;
+      line-height: @tree-element-height;
+      display: flex;
+      flex-direction: row;
+      z-index: 9;
+      -webkit-box-sizing: border-box;
+      box-sizing: border-box;
+      transition: width 0.250s ease;
+      .spacer {
+        flex-grow: 1;
+      }
+    }
+  }
+}
+
+:host.shadow .tree /deep/ li {
+  box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  background: lighten(@blue2, 10%);
+  border: 1px solid @blue2;
+}
+
+:host.small .tree /deep/ li {
+  height: @small-tree-element-height;
+  line-height: @tree-element-height;
+}
+
+:host /deep/ app-tree-element.active:not(.dragged) {
+  & ~ app-tree-element {
+    transform: translate(0, 40px) !important;
+  }
+}

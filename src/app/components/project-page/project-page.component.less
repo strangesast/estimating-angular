@@ -1,0 +1,210 @@
+@import '../../styles/basic';
+
+.search {
+  display: inline-block;
+  line-height: 0;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 4px;
+  display: flex;
+  & > input {
+    flex-grow: 1;
+    border-radius: 4px 0 0 4px;
+    font-size: 1em;
+    border: none;
+    color: inherit;
+    outline: none;
+    padding: 4px 0 4px 4px;
+    background: inherit;
+  }
+  & > .icon {
+    padding: 4px;
+  }
+}
+
+.tree-search {
+  border: none;
+  height: 40px;
+  line-height: 40px;
+  background: lighten(@blue2, 5%);
+  border: 1px inset;
+  input {
+    border-radius: 4px;
+  }
+}
+
+ul.tree {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 10px 0 0 0;
+  position: relative;
+  & /deep/ li {
+    height: 40px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: lighten(@blue2, 10%);
+    width: 100%;
+    border: 1px solid @blue2;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    z-index: 9;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    &:hover {
+      font-weight: bold;
+      cursor: pointer;
+    }
+    &:before {
+      padding: 4px;
+      content: "\002B";
+    }
+    &.open:before {
+      content: "\2212";
+    }
+  }
+}
+
+
+.header {
+  color: @blue2;
+  background: @blue4;
+
+  & > .container {
+    height: 60px;
+    line-height: 60px;
+    display: flex;
+    flex-direction: row;
+    .left, .right {
+      white-space: nowrap;
+    }
+    .left {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: row;
+      & > div, & > span {
+      }
+
+      .details {
+        position: relative;
+        .arrow {
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          height: 0;
+          width: 0;
+          border-left: 14px solid transparent;
+          border-right: 14px solid transparent;
+          border-bottom: 14px solid @blue3;
+          margin-bottom: -2px / 0.707;
+        }
+        //.arrow + .arrow {
+        //  border-left: 14px solid transparent;
+        //  border-right: 14px solid transparent;
+        //  border-bottom: 14px solid @blue3;
+        //  margin-bottom: -2px / 0.707;
+        //}
+      }
+      .details + .details {
+        margin-left: 10px;
+      }
+    }
+    .right div {
+      display: inline-block;
+    }
+    .search {
+      background: lighten(@blue4, 10%);
+      border-color: @blue4;
+      input {
+        font-size: 1em;
+      }
+    }
+    .save a {
+      color: inherit;
+    }
+    .name {
+      font-size: 1.5em;
+      padding: 0 8px;
+    }
+    .shortname {
+      font-size: 1.25em;
+      padding-right: 8px;
+    }
+    .tab {
+      padding: 0 8px;
+      &.active {
+        font-style: italic;
+      }
+    }
+  }
+}
+.main {
+  padding-top: 4px;
+  margin: 0 -4px;
+  //box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  border-radius: 0 0 4px 4px;
+  /* hack */
+  .body {
+    min-height: ~"calc(100vh - " 162px ~");";
+  }
+}
+@bar-height: 32px;
+.bar {
+  border-top: 2px solid @blue3;
+  border-bottom: 2px solid @blue3;
+  background: @blue3;
+  color: @blue1;
+  & > .container {
+    display: flex;
+    .piece {
+      position: relative;
+      padding: 0 4px;
+      height: @bar-height;
+      line-height: @bar-height;
+      white-space: nowrap;
+      &:first-element {
+        padding-left: 0;
+      }
+      &:last-element {
+        padding-right: 0;
+      }
+      &:not(:last-element) {
+        border-right: 2px solid @blue4;
+      }
+      .val {
+        color: @blue1;
+        background: darken(@blue3, 10%);
+        padding: 0 3px;
+        height: @bar-height;
+        display: inline-block;
+      }
+    }
+  }
+}
+.body {
+  position: relative;
+  min-height: 600px;
+  & > .mini-tree {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding-right: 5px;
+    overflow: hidden;
+    width: @search-width;
+    transition: max-height 1s ease;
+    height: 100%;
+    min-height: 100%; //uhh
+    max-height: 100%;
+    @media(max-width:@lrg) {
+      min-height: 0;
+      max-height: @navigation-height;
+      height: @navigation-height;
+    }
+  }
+  
+  & > .page {
+    @media(min-width:@lrg) {
+      margin-left: @search-width+@gutter;
+    }
+  }
+}
