@@ -34,6 +34,7 @@ import { DetailsPageComponent } from './details-page/details-page.component';
 import { EstimatingPageComponent } from './estimating-page/estimating-page.component';
 import { UserListPageComponent } from './user-list-page/user-list-page.component';
 import { EditWindowComponent } from './edit-window/edit-window.component';
+import { NestComponent } from './nest/nest.component';
 
 @NgModule({
   declarations: [
@@ -57,7 +58,8 @@ import { EditWindowComponent } from './edit-window/edit-window.component';
     DetailsPageComponent,
     EstimatingPageComponent,
     UserListPageComponent,
-    EditWindowComponent
+    EditWindowComponent,
+    NestComponent
   ],
   imports: [
     BrowserModule,

@@ -281,6 +281,42 @@ export class JobService implements Resolve<Promise<any>> {
 
   buildTree(config: TreeConfig) {
     let folderIds = Object.keys(config.enabled).filter(n=>(n in config.roots) && config.enabled[n]).map(n=>config.roots[n]);
+    let foldersPromise = Promise.all(folderIds.map(folderId =>
+      this.loadElement(FolderElement, folderId).then(folder =>
+      this.buildBranch(folder)))).then(nodes => {
+        console.log(nodes);
+        if(nodes.length > 1) {
+          let nodea = nodes[0];
+          let nodeb = nodes[1];
+
+          nodea.descendants().forEach(n => {
+            let copy = nodeb.copy();
+            copy.parent = n;
+            copy.each(_n => {
+              _n.depth += n.depth+1;
+            });
+            n.children = n.children || [];
+            n.children.push(copy);
+          });
+
+          let max = 0;
+          nodea.each(n => {
+            max = n.depth > max ? n.depth : max
+          });
+
+          nodea.each(n => {
+            n.height = max - n.depth;
+          });
+
+          return [nodea].concat(nodea.children);
+        } else {
+          return nodes[0].descendants();
+        }
+      });
+
+
+    return Observable.fromPromise(foldersPromise);
+    /*
     return Observable.fromPromise(Promise.all(folderIds.map(folderId => this.loadElement(FolderElement, folderId).then(folder => {
       return this.buildBranch(folder).then(node => {
         return node.descendants();
@@ -289,9 +325,11 @@ export class JobService implements Resolve<Promise<any>> {
       if(arr.length == 1) return arr[0].slice(1);
       arr.reverse();
       return arr.reduce((a, b) => {
-        return b.slice(1).map(el => [el].concat(a.slice(1))).reduce((c,d)=>c.concat(d)).concat(a.slice(1))
+        let copy = a.slice(1);
+        return b.slice(1).map(el => [el].concat(copy.map(n=>n.copy()))).reduce((c,d)=>c.concat(d)).concat(copy.map(n=>n.copy()))
       });
     }));
+    */
   }
 
   buildBranch(root, maxDepth=3) {

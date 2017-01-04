@@ -73,6 +73,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.treeSubject
       .skipUntil(this.hostSubject) // wait for host to load in afterViewInit, only 
       .distinct()
+      .pairwise()
       .switchMap(this.subjectUpdate.bind(this)) // call subject update, interrupt if necessary
       .subscribe(this.childComponents); // feed into childcomponents
 
@@ -211,7 +212,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   // update the position / presence of elements
-  subjectUpdate(tree) : Observable<any>{
+  subjectUpdate([prev, tree]) : Observable<any>{
     let treeElementHeight = 40;
     let treeElementIndent = 20; // should probably be offloaded to child
     let treeElementSelector = 'app-tree-element';
@@ -224,12 +225,16 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     // will probably break with multiple instances of same
     let selection = this.host
       .selectAll(treeElementSelector)
-      //.data(tree, (d)=>d.temp || (d.temp = ++cnt))/*, (d)=>{
-      //  console.log('data', d);
-      //  return d.data.id;
-      //});*/
-     .data(tree, (d)=>d.data.id)
-     .order()
+
+    if(tree.length != prev.length+1) {
+      selection = selection.data(tree, (d)=>{
+        if(!d.temp) d.temp = ++cnt;
+        return d.data.id;
+      });
+    } else { 
+      selection = selection.data(tree, (d)=>d.temp || (d.temp = ++cnt))
+    }
+    selection = selection.order()
 
     // use the same transition for the three selections
     let t = D3.transition(null).duration(animationDuration);
