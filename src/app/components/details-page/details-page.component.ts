@@ -89,7 +89,7 @@ import { Collection } from '../../models/classes';
 
   onSubmit({ dirty, value, valid }: { dirty: boolean, value: Collection, valid: boolean}) {
     if(dirty && valid) {
-      let j = Collection.fromObject(Object.assign({}, this.job.toJSON(false), value))
+      let j = Collection.fromObject(Object.assign({}, this.job.toJSON(0), value))
       console.log('val!', value, j);
       /*
       this.jobService.updateJob(j).then((r)=>{

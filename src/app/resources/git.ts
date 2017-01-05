@@ -18,15 +18,15 @@ const gitModesInv = {
 
 type GitObjectType = 'tree'|'blob'|'file'|'exec'|'sym'|'commit';
 export interface Repo {
-  createTree(entries:any, callback):void;
-  hasHash(hash:string, callback):void;
-  loadAs(type:GitObjectType, hash:string, callback):void;
-  logWalk(ref:string, callback):void;
-  readRef(ref:string, callback):void;
-  refPrefix:string;
-  saveAs(type:GitObjectType, body:any, callback):void;
-  treeWalk(hash:string, callback):void;
-  updateRef(ref:string, hash:string, callback):void;
+  refPrefix: string;
+  createTree(entries: any, callback): void;
+  hasHash(hash: string, callback): void;
+  loadAs(type: GitObjectType, hash: string, callback): void;
+  logWalk(ref: string, callback): void;
+  readRef(ref: string, callback): void;
+  saveAs(type: GitObjectType, body: any, callback): void;
+  treeWalk(hash: string, callback): void;
+  updateRef(ref: string, hash: string, callback): void;
 }
 
 const GIT_STORE_NAME = 'estimating-git';
@@ -36,7 +36,9 @@ const GIT_STORE_VERSION = 1;
 export function createGitRepo(): Promise<{repo: Repo, gitdb}> {
   return new Promise((resolve, reject) => {
     gitIndexedDb.init(GIT_STORE_NAME, GIT_STORE_VERSION, (err, gitdb) => {
-      if(err) return reject(err);
+      if (err) {
+        return reject(err);
+      }
       let repo = {};
       gitIndexedDb(repo, GIT_STORE_REF_PREFIX);
       gitCreateTree(repo);
@@ -52,7 +54,9 @@ export function createGitRepo(): Promise<{repo: Repo, gitdb}> {
 export function logWalk(repo, hash: string): Promise<any> {
   return new Promise((resolve, reject) => {
     repo.logWalk(hash, (err, stream) => {
-      if(err) return reject(err);
+      if (err) {
+        return reject(err);
+      }
       resolve(stream);
     });
   });
@@ -61,19 +65,21 @@ export function logWalk(repo, hash: string): Promise<any> {
 export function treeWalk(repo, hash: string): Promise<any> {
   return new Promise((resolve, reject) => {
     repo.treeWalk(hash, (err, stream) => {
-      if(err) return reject(err);
+      if (err) {
+        return reject(err);
+      }
       resolve(stream);
     });
   });
 }
 
-export function loadHashAs(repo, kind: 'blob'|'tree'|'commit'|'text', hash: string):Promise<any>{
+export function loadHashAs(repo, kind: 'blob'|'tree'|'commit'|'text', hash: string): Promise<any> {
   return promisify(repo.loadAs.bind(repo), kind, hash).then((res) => {
-    return res[0]; //=body, res[1]=hash
+    return res[0];
   });
 }
 
-export function saveToHash(repo, kind: 'blob'|'tree'|'commit', body: any):Promise<string> {
+export function saveToHash(repo, kind: 'blob'|'tree'|'commit', body: any): Promise<string> {
   return promisify(repo.saveAs.bind(repo), kind, body).then((res) => {
     return res[0];
   });
@@ -98,7 +104,7 @@ export function folderHashFromArray(repo, array: any[]): Promise<string> {
 
 export function readRefs(db: any): Promise<string[]> {
   return new Promise((resolve, reject) => {
-    if(!db.objectStoreNames.contains('refs')) {
+    if (!db.objectStoreNames.contains('refs')) {
       return reject(new Error('refs uninitialized, run init'));
     }
     let trans = db.transaction(['refs']);
@@ -109,19 +115,19 @@ export function readRefs(db: any): Promise<string[]> {
     };
     req.onerror = (e) => {
       reject(e.target.error);
-    }
+    };
   }).then((arr: string[]) => {
     // filter out different prefixes
     return arr.filter((str) => {
-      return str.startsWith(this.repo.refPrefix) && str.split('/')[0] == this.repo.refPrefix;
-    }).map((str)=>{
+      return str.startsWith(this.repo.refPrefix) && str.split('/')[0] === this.repo.refPrefix;
+    }).map((str) => {
       return str.substring(this.repo.refPrefix.length + 1);
     });
   });
 }
 
-export function readRef(repo, ref: string):Promise<any> {
-  return promisify(repo.readRef.bind(repo), ref).then((res)=>{
+export function readRef(repo, ref: string): Promise<any> {
+  return promisify(repo.readRef.bind(repo), ref).then((res) => {
     return res[0];
   });
 }

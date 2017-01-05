@@ -1,7 +1,6 @@
 import { NgModule }             from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { TreeComponent }              from '../components/tree/tree.component';
 import { JobListPageComponent }       from '../components/job-list-page/job-list-page.component';
 import { UserListPageComponent }      from '../components/user-list-page/user-list-page.component';
 import { ProjectPageComponent }       from '../components/project-page/project-page.component';

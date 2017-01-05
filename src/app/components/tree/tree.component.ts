@@ -47,7 +47,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   @Output() public change = new EventEmitter();
 
-  private dragging: boolean = false;
+  public dragging: boolean = false;
 
   private hostSubject: Subject<any> = new Subject();
   private treeSubject: BehaviorSubject<any[]>;

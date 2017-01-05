@@ -12,8 +12,8 @@
       <div class="cnts">
         <span class="cnt">{{ job.about ? job.about.folders : 0 }}</span><span class="cnt fa fa-folder-o"></span>
         <span class="cnt">{{ job.about ? job.about.components : 0 }}</span><span class="cnt fa fa-cubes"></span>
-        <span class="fa fa-floppy-o" *ngIf="job.about && job.about.isSaved"></span>
-        <span class="fa-stack" *ngIf="!job.about || !job.about.isSaved">
+        <span class="fa fa-floppy-o" *ngIf="job.about && job.about.isHead"></span>
+        <span class="fa-stack" *ngIf="!job.about || !job.about.isHead">
           <span class="fa fa-floppy-o fa-stack-1x"></span>
           <span class="fa fa-ban fa-stack-2x"></span>
         </span>

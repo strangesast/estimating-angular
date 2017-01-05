@@ -1,4 +1,7 @@
-//indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
+/*
+indexedDB.webkitGetDatabaseNames().onsuccess = (res) =>\
+{console.log([].slice.call(res.target.result).forEach((e) => {indexedDB.deleteDatabase(e)}))}
+*/
 import {
   Child,
   User,
@@ -40,7 +43,7 @@ export function saveRecord(db, storeName: string, obj: any) {
     let trans = db.transaction(storeName, 'readwrite');
     let store = trans.objectStore(storeName);
     let req;
-    if(obj.id == '') { // new objects have { id: '', ... }
+    if (obj.id === '') { // new objects have { id: '', ... }
       // need to check random() unique-ness
       obj.id = random();
       req = store.add(obj);
@@ -57,14 +60,16 @@ export function saveRecordAs(db, obj: Location|Child|ComponentElement|FolderElem
     throw new Error('improper instance of class');
   }
   let storeName = (<any>obj.constructor).storeName;
-  return saveRecord(db, storeName, obj.toJSON())
+  return saveRecord(db, storeName, obj.toJSON());
 }
 
 export function retrieveRecord(db, storeName: string, id: string, key?: string) {
-  return new Promise((resolve, reject)=> {
+  return new Promise((resolve, reject) => {
     let trans = db.transaction([storeName]);
-    let req:any = trans.objectStore(storeName);
-    if(key!=null) req = req.index(key);
+    let req: any = trans.objectStore(storeName);
+    if (key != null) {
+      req = req.index(key);
+    }
     req = req.get(id);
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
@@ -77,18 +82,22 @@ export function retrieveRecordAs(db, _class: any, id: string, key?: string): Pro
   }
   let storeName = _class.storeName;
   return retrieveRecord(db, storeName, id, key).then(record => {
-    if(record == null) return null;
+    if (record == null) {
+      return null;
+    }
     let el = _class.fromObject(record);
     el.saveState = 'saved:uncommitted';
     return el;
   });
 }
 
-export function retrieveAllRecords(db, storeName: string, query?: IDBKeyRange, index?:string, max?: number): Promise<any[]> {
+export function retrieveAllRecords(db, storeName: string, query?: IDBKeyRange, index?: string, max?: number): Promise<any[]> {
   return new Promise((resolve, reject) => {
     let trans = db.transaction([storeName]);
-    let store:any = trans.objectStore(storeName);
-    if(index) store = store.index(index);
+    let store: any = trans.objectStore(storeName);
+    if (index) {
+      store = store.index(index);
+    }
     let req = (<any>store).getAll(query, max);
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
@@ -101,8 +110,8 @@ export function retrieveAllRecordsAs(db, _class: any, query?: IDBKeyRange, index
   }
   let storeName = _class.storeName;
   return retrieveAllRecords(db, storeName, query, index, max).then(records => {
-    return records.map(_class.fromObject.bind(_class)).map((el:any)=>{
-      el.saveState='saved:uncommitted'
+    return records.map(_class.fromObject.bind(_class)).map((el: any) => {
+      el.saveState = 'saved:uncommitted';
       return el;
     });
   });
@@ -111,8 +120,10 @@ export function retrieveAllRecordsAs(db, _class: any, query?: IDBKeyRange, index
 export function removeRecord(db, storeName: string, id: string, key?: string) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction(storeName, 'readwrite');
-    let store:any = trans.objectStore(storeName);
-    if(key!=null) store = store.index(key);
+    let store: any = trans.objectStore(storeName);
+    if (key != null) {
+      store = store.index(key);
+    }
     let req = store.delete(id);
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
@@ -127,13 +138,15 @@ export function removeRecordAs(db, obj: Location|Child|ComponentElement|FolderEl
   return removeRecord(db, storeName, obj.id);
 }
 
-export function countRecords(db, storeName, id?:string, key?: string) {
+export function countRecords(db, storeName, id?: string, key?: string) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction(storeName);
-    let store:any = trans.objectStore(storeName);
-    if(key!=null) store = store.index(key);
+    let store: any = trans.objectStore(storeName);
+    if (key != null) {
+      store = store.index(key);
+    }
     let req;
-    if(id!=null) {
+    if (id != null) {
       req = store.count(IDBKeyRange.only(id));
     } else {
       req = store.count();
@@ -143,13 +156,13 @@ export function countRecords(db, storeName, id?:string, key?: string) {
   });
 }
 
-export function retrieveRecordArray(db, storeName, arr, key, only=true) {
+export function retrieveRecordArray(db, storeName, arr, key, only = true) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction(storeName);
     let store = trans.objectStore(storeName);
     let index = store.index(key);
     let q = IDBKeyRange.only(arr);
-    if(only) { // only one result, typically for len 2 array
+    if (only) { // only one result, typically for len 2 array
       let req = index.get(q);
       req.onsuccess = (e) => resolve(e.target.result);
     } else {
@@ -164,9 +177,9 @@ export function retrieveRecordArray(db, storeName, arr, key, only=true) {
         } else {
           resolve(results);
         }
-      }
+      };
     }
-  })
+  });
 }
 
 export function retrieveUniqueId() {

@@ -15,9 +15,11 @@ export class UserListPageComponent implements OnInit {
   constructor(private elementService: ElementService) { }
 
   ngOnInit() {
-    //this.elementService.getUsers().then(users => {
-    //  this.users = users;
-    //});
+    /*
+    this.elementService.getUsers().then(users => {
+      this.users = users;
+    });
+    */
   }
 
 }
