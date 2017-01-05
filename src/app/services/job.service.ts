@@ -522,6 +522,7 @@ export class JobService implements Resolve<Promise<any>> {
   //  return d;
   //}
 
+  /*
   updateJob(job: Collection) {
     return this.elementService.updateJob(job).then(j=>{
       this._job.next(job);
@@ -529,6 +530,7 @@ export class JobService implements Resolve<Promise<any>> {
       return job;
     });
   }
+  */
 
   findComponent(id: string):Promise<ComponentElement>{
     return this.elementService.retrieveComponent(id);

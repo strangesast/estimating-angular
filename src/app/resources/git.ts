@@ -49,42 +49,86 @@ export function createGitRepo(): Promise<{repo: Repo, gitdb}> {
   });
 }
 
-export function logWalk(hash: string): Promise<any> {
+export function logWalk(repo, hash: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    this.repo.logWalk(hash, (err, stream) => {
+    repo.logWalk(hash, (err, stream) => {
       if(err) return reject(err);
       resolve(stream);
     });
   });
 }
 
-export function treeWalk(hash: string): Promise<any> {
+export function treeWalk(repo, hash: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    this.repo.treeWalk(hash, (err, stream) => {
+    repo.treeWalk(hash, (err, stream) => {
       if(err) return reject(err);
       resolve(stream);
     });
   });
 }
 
-export function loadAs(kind: 'blob'|'tree'|'commit'|'text', hash: string):Promise<any>{
-  return promisify(this.repo.loadAs.bind(this.repo), kind, hash).then((res) => {
+export function loadHashAs(repo, kind: 'blob'|'tree'|'commit'|'text', hash: string):Promise<any>{
+  return promisify(repo.loadAs.bind(repo), kind, hash).then((res) => {
     return res[0]; //=body, res[1]=hash
   });
 }
 
-export function saveToHash(kind: 'blob'|'tree'|'commit', body: any):Promise<string> {
-  return promisify(this.repo.saveAs.bind(this.repo), kind, body).then((res) => {
+export function saveToHash(repo, kind: 'blob'|'tree'|'commit', body: any):Promise<string> {
+  return promisify(repo.saveAs.bind(repo), kind, body).then((res) => {
     return res[0];
   });
 }
 
-export function updateRef(ref: string, hash: string): Promise<void> {
+export function updateRef(repo, ref: string, hash: string): Promise<void> {
   // repo.updateRef doesn't return anything
-  return promisify(this.repo.updateRef.bind(this.repo), ref, hash).then((res)=>{
-    return null;
+  return promisify(repo.updateRef.bind(repo), ref, hash);
+}
+
+export function folderHashFromArray(repo, array: any[]): Promise<string> {
+  let folder = {};
+  return Promise.all(array.map(element => {
+    let text = JSON.stringify(element.toJSON());
+    return saveToHash(repo, 'blob', text).then(hash => {
+      folder[element.id + '.json'] = { mode: gitModes.file, hash: hash };
+    });
+  })).then(() => {
+    return saveToHash(repo, 'tree', folder);
   });
 }
+
+export function readRefs(db: any): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    if(!db.objectStoreNames.contains('refs')) {
+      return reject(new Error('refs uninitialized, run init'));
+    }
+    let trans = db.transaction(['refs']);
+    let store = trans.objectStore('refs');
+    let req = store.getAllKeys();
+    req.onsuccess = (e) => {
+      resolve(e.target.result);
+    };
+    req.onerror = (e) => {
+      reject(e.target.error);
+    }
+  }).then((arr: string[]) => {
+    // filter out different prefixes
+    return arr.filter((str) => {
+      return str.startsWith(this.repo.refPrefix) && str.split('/')[0] == this.repo.refPrefix;
+    }).map((str)=>{
+      return str.substring(this.repo.refPrefix.length + 1);
+    });
+  });
+}
+
+export function readRef(repo, ref: string):Promise<any> {
+  return promisify(repo.readRef.bind(repo), ref).then((res)=>{
+    return res[0];
+  });
+}
+
+
+
+
 
 export {
   gitModes,

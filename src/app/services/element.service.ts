@@ -3,16 +3,13 @@ import { Observable, Subject, BehaviorSubject } from 'rxjs';
 
 import {
   Repo,
+  gitModes,
   createGitRepo,
-  //gitModes, 
-  //gitIndexedDb, 
-  //gitMemDb, 
-  //gitCreateTree, 
-  //gitPackOps, 
-  //gitWalkers, 
-  //gitReadCombiner, 
-  //gitFormats, 
-  //gitModesInv
+  saveToHash,
+  updateRef,
+  loadHashAs,
+  folderHashFromArray,
+  readRef
 } from '../resources/git';
 
 import * as git from '../resources/git';
@@ -114,37 +111,6 @@ export class ElementService {
 
   /*
   // returns [componentRecordId, locationRecordId]
-  addComponent(component: ComponentElement, job: Collection, folders) {
-    folders = folders || {};
-    let locId = Location.createId(folders, job);
-    return this.retrieveRecord(this.db, 'locations', locId).then((obj) => {
-      // get record, create if not exists
-      if(obj == null) {
-        let loc = Location.fromJob(job, folders, []);
-        if(locId != loc.id) throw new Error('wtf');
-        return this.saveRecord(this.db, 'locations', loc.toJSON()).then((recordId)=>{
-          return this.retrieveRecord(this.db, 'locations', recordId);
-        });
-      }
-      return obj;
-    }).then((locRecord)=>{
-      let loc = Location.fromObject(locRecord);
-      let childIds = loc.children.map((c)=>c.id);
-      let i = childIds.indexOf(component.id);
-      if(i != -1) {
-        loc.children[i].qty = loc.children[i].qty + 1;
-      } else {
-        let child = new Child(random(), component.id, 1);
-        loc.children.push(child);
-      }
-      component.saveState = 'saved:uncommitted';
-      return Promise.all([
-        this.saveRecord(this.db, 'components', component.toJSON(false)),
-        this.saveRecord(this.db, 'locations', loc.toJSON())
-      ]);
-    });
-  }
-  */
 
   /*
   getJobs(): Promise<Collection[]> {
@@ -154,11 +120,11 @@ export class ElementService {
 
     }).then((jobs) => {
       return Promise.all(jobs.map((commitHash)=>{
-        return this.loadAs('commit', commitHash).then((commit) => {
-          return this.loadAs('tree', commit.tree);
+        return this.loadHashAs('commit', commitHash).then((commit) => {
+          return this.loadHashAs('tree', commit.tree);
         }).then((tree)=>{
           if(tree['job.json'] == null) throw new Error('malformed job tree');
-          return this.loadAs('text', tree['job.json'].hash).then((text)=>{
+          return this.loadHashAs('text', tree['job.json'].hash).then((text)=>{
             let data = JSON.parse(text);
             data.commit = commitHash;
             // load the most recent (perhaps unsaved) version of the job
@@ -426,6 +392,101 @@ export class ElementService {
     return bs;
   }
 
+  retrieveElementChildren(root, array=[]): Promise<any[]> {
+    if(!root.children || root.children.length == 0) return Promise.resolve(array);
+    return Promise.all(root.children.map(id => retrieveRecordAs(this.db, root.constructor, id).then(child => {
+      if(array.indexOf(child) == -1) array.push(child);
+      return this.retrieveElementChildren(child, array);
+    }))).then(() => {
+      return array;
+    });
+  }
+
+  saveTree(collection: Collection) {
+    let baseObj = {};
+
+    // toJSON may be extraneous when using stringify
+    let createJobHash = saveToHash(this.repo, 'blob', JSON.stringify(collection.toJSON())).then(hash => {
+      baseObj['job.json'] = { mode: gitModes.file, hash: hash };
+    });
+
+    // get root+descendant folders, save in folders/phase, folders/building
+    let roots = collection.folders.roots;
+    let createFoldersTree = Promise.all(Object.keys(roots).map(name=>{
+      return retrieveRecordAs(this.db, FolderElement, roots[name]).then(folder => {
+        return this.retrieveElementChildren(folder).then(children => {
+          return children.concat(folder);
+        });
+      }).then(folders => {
+        return folderHashFromArray(this.repo, folders).then(hash => {
+          return [name, hash];
+        });
+      });
+    })).then(folderTrees => {
+      let folderObj = {};
+      folderTrees.forEach(([name, hash])=>{
+        folderObj[name + 's'] = { mode: gitModes.tree, hash: hash };
+      });
+      return saveToHash(this.repo, 'tree', folderObj);
+    }).then(hash => {
+      baseObj[FolderElement.storeName] = { mode: gitModes.tree, hash: hash };
+    });
+
+    // get locations, save in locations/.  should eventually identify empty/unused
+    let createLocationsTree = retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(collection.id), 'job').then(locations => {
+      return folderHashFromArray(this.repo, locations).then(hash => {
+        baseObj[Location.storeName] = { mode: gitModes.tree, hash: hash };
+      });
+    });
+
+    // gets complicated when multiple commits (different version, same id) are in db
+    // should only grab objects without commits.  modifying objects should remove commit attribute
+    let createComponentsTree = retrieveAllRecordsAs(this.db, ComponentElement, IDBKeyRange.only(collection.id), 'job').then(components => {
+      return folderHashFromArray(this.repo, components).then(hash => {
+        baseObj[ComponentElement.storeName] = { mode: gitModes.tree, hash: hash };
+      });
+    });
+
+    // build tree
+    return Promise.all([
+      createJobHash,
+      createFoldersTree,
+      createLocationsTree,
+      createComponentsTree
+    ]).then(() => {
+      // save tree
+      return saveToHash(this.repo, 'tree', baseObj)
+    });
+  }
+
+  saveJob(collection: Collection, message) {
+    return this.saveTree(collection).then(tree => {
+      // save commit
+      let commitObj = {
+        author: collection.owner,
+        tree,
+        message,
+        parents: []
+      };
+      collection.hash = tree;
+      if(collection.commit) commitObj.parents.push(collection.commit);
+      return saveToHash(this.repo, 'commit', commitObj);
+    }).then(hash => {
+      // update ref
+      collection.commit = hash;
+      return Promise.all([
+        loadHashAs(this.repo, 'commit', hash),
+        saveRecordAs(this.db, collection),
+        updateRef(this.repo, collection.shortname, hash)
+      ]).then(([commit, saveResult]) => {
+        return {
+          commit,
+          job: collection
+        };
+      });
+    });
+  }
+
   removeJob(id:string): Promise<any> {
     if(id in this.loaded) {
       return removeRecordAs(this.db, this.loaded[id].getValue()).then(res=> {
@@ -450,9 +511,17 @@ export class ElementService {
 
     return Observable.create(subscriber => {
       // should also search history
-      let ref = [job.owner.username, job.shortname].join('/');
-      let isHeadCommit = this.readRef(ref).then(commitHash => commitHash == job.commit).then(val => {
+      let ref = job.shortname;
+      let isHeadCommit = readRef(this.repo, ref).then(commitHash => commitHash == job.commit).then(val => {
         about['isHead'] = val;
+        subscriber.next(about);
+      });
+      let isSaved = Promise.all([
+        // will break when no commit exists
+        readRef(this.repo, job.shortname).then(commit=>commit ? loadHashAs(this.repo, 'commit', commit) : Promise.resolve({tree: null})),
+        this.saveTree(job)
+      ]).then(([commit, treeHash]) => commit.tree == treeHash).then(val => {
+        about['isSaved'] = val;
         subscriber.next(about);
       });
       let componentCount = countRecords(this.db, ComponentElement.storeName, job.id, 'job').then(val => {
@@ -463,7 +532,12 @@ export class ElementService {
         about['folders'] = val;
         subscriber.next(about);
       });
-      Promise.all([isHeadCommit, componentCount, folderCount]).then(() => {
+      Promise.all([
+        isHeadCommit,
+        componentCount,
+        folderCount,
+        isSaved
+      ]).then(() => {
         subscriber.complete();
       }).catch(err => {
         subscriber.error(err);
@@ -521,7 +595,7 @@ export class ElementService {
   }
   
   saveJob(job: Collection, message: string): Promise<Collection> {
-    return this.loadAs('commit', job.commit).then((commit) => {
+    return this.loadHashAs('commit', job.commit).then((commit) => {
       let jobText = JSON.stringify(job.toJSON());
       let changes:any = [{
         path: 'job.json',
@@ -558,36 +632,4 @@ export class ElementService {
     });
   };
   */
-  readRefs(db: any): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      if(db == null) throw new Error('db undefined, run init');
-      if(!db.objectStoreNames.contains('refs')) {
-        return reject(new Error('refs uninitialized, run init'));
-      }
-      let trans = db.transaction(['refs']);
-      let store = trans.objectStore('refs');
-      let req = store.getAllKeys();
-      req.onsuccess = (e) => {
-        resolve(e.target.result);
-      };
-      req.onerror = (e) => {
-        reject(e.target.error);
-      }
-    }).then((arr: string[]) => {
-      // filter out different prefixes
-      return arr.filter((str) => {
-        return str.startsWith(this.repo.refPrefix) && str.split('/')[0] == this.repo.refPrefix;
-      }).map((str)=>{
-        return str.substring(this.repo.refPrefix.length + 1);
-      });
-    });
-  }
-
-  readRef(ref: string):Promise<any> {
-    return promisify(this.repo.readRef.bind(this.repo), ref).then((res)=>{
-      return res[0];
-    });
-  }
-
-
 }

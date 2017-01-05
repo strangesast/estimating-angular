@@ -84,21 +84,23 @@ export function retrieveRecordAs(db, _class: any, id: string, key?: string): Pro
   });
 }
 
-export function retrieveAllRecords(db, storeName: string, query?: IDBKeyRange, max?: number): Promise<any[]> {
+export function retrieveAllRecords(db, storeName: string, query?: IDBKeyRange, index?:string, max?: number): Promise<any[]> {
   return new Promise((resolve, reject) => {
     let trans = db.transaction([storeName]);
-    let store = trans.objectStore(storeName); let req = (<any>store).getAll(query, max);
+    let store:any = trans.objectStore(storeName);
+    if(index) store = store.index(index);
+    let req = (<any>store).getAll(query, max);
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
 }
 
-export function retrieveAllRecordsAs(db, _class: any, query?: IDBKeyRange, max?: number): Promise<any[]> {
+export function retrieveAllRecordsAs(db, _class: any, query?: IDBKeyRange, index?: string, max?: number): Promise<any[]> {
   if (typeof _class.storeName !== 'string') {
     throw new Error('improper class or class definition');
   }
   let storeName = _class.storeName;
-  return retrieveAllRecords(db, storeName, query, max).then(records => {
+  return retrieveAllRecords(db, storeName, query, index, max).then(records => {
     return records.map(_class.fromObject.bind(_class)).map((el:any)=>{
       el.saveState='saved:uncommitted'
       return el;

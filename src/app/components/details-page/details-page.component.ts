@@ -91,10 +91,12 @@ import { Collection } from '../../models/classes';
     if(dirty && valid) {
       let j = Collection.fromObject(Object.assign({}, this.job.toJSON(false), value))
       console.log('val!', value, j);
+      /*
       this.jobService.updateJob(j).then((r)=>{
         console.log('result', r);
 
       });
+      */
     } else if (!valid) {
       alert('invalid');
     }

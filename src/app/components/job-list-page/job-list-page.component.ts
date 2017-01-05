@@ -38,6 +38,7 @@ export class JobListPageComponent implements OnInit {
     */
    let handleAbout = (job) => {
      let getAbout = this.elementService.aboutJob(job).map(about => {
+       console.log(about);
        job.about = about;
      });
      return Observable.of(job).concat(getAbout.ignoreElements().map(()=>job));
@@ -65,7 +66,9 @@ export class JobListPageComponent implements OnInit {
     let name = shortname.split('_').map((n)=>n[0].toUpperCase()+n.slice(1)).join(' ');
 
     let job;
-    this.elementService.createJob(owner, shortname, name, 'blank description').subscribe(
+    let jobSubject = this.elementService.createJob(owner, shortname, name, 'blank description')
+    
+    jobSubject.takeWhile(job => !job.saveState.startsWith('saved')).subscribe(
       res => {
         if(job) {
           this.jobs.splice(this.jobs.indexOf(job), 1, res);
@@ -78,9 +81,11 @@ export class JobListPageComponent implements OnInit {
         console.error(e);
       }, () => {
         if(job) this.jobStatus[job.id] = 'ready';
+        this.elementService.saveJob(job, 'first').then(saveResult => {
+          console.log('saveResult', saveResult);
+        });
       }
     );
-
   }
 
   deleteJob(job:Collection) {

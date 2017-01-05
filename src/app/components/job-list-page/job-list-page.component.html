@@ -3,7 +3,7 @@
     <div class="header-item">Jobs</div>
     <div *ngFor="let job of jobs" class="list-item job" [ngClass]="jobStatus[job.id]" [attr.tabindex]="jobStatus[job.id]=='ready' ? 1 : null">
       <div>
-        <span (click)="deleteJob(job)" class="hoverlink icon fa fa-close fa-lg"></span>
+        <!--<span (click)="deleteJob(job)" class="hoverlink icon fa fa-close fa-lg"></span>-->
       </div>
       <div class="details">
         <span [attr.title]="job.name" class="name hoverunderline" [routerLink]="job.id ? [ './', job.owner.username, job.shortname ] : null">{{ job.name }}</span>
@@ -12,6 +12,11 @@
       <div class="cnts">
         <span class="cnt">{{ job.about ? job.about.folders : 0 }}</span><span class="cnt fa fa-folder-o"></span>
         <span class="cnt">{{ job.about ? job.about.components : 0 }}</span><span class="cnt fa fa-cubes"></span>
+        <span class="fa fa-floppy-o" *ngIf="job.about && job.about.isSaved"></span>
+        <span class="fa-stack" *ngIf="!job.about || !job.about.isSaved">
+          <span class="fa fa-floppy-o fa-stack-1x"></span>
+          <span class="fa fa-ban fa-stack-2x"></span>
+        </span>
       </div>
       <div class="statusBox">
         <span>
