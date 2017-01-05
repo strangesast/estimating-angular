@@ -17,16 +17,26 @@ export const STORE_VERSION = 1;
 export const USER_COLLECTION = 'users';
 export const INVALID_FOLDER_TYPES = ['component', 'location'];
 export const STORES = [
-  { name: User.storeName,      keypath: 'username', indexes: [{ on: 'name',      name: 'name',      unique: false },
-                                                       { on: 'email',     name: 'email',     unique: true  }] },
-  { name: ComponentElement.storeName, keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
-                                                       { on: 'job',       name: 'job',       unique: false }] },
-  { name: FolderElement.storeName,    keypath: 'id',       indexes: [{ on: 'type',      name: 'type',      unique: false },
-                                                       { on: 'job',       name: 'job',       unique: false }] },
-  { name: Location.storeName,  keypath: 'id',       indexes: [{ on: 'children',  name: 'children',  unique: false, multiEntry: true },
-                                                       { on: 'folders',   name: 'folders',   unique: true,  multiEntry: true },
-                                                       { on: 'job',       name: 'job',       unique: false }] },
-  { name: Collection.storeName,       keypath: 'id',       indexes: [{ on: 'shortname', name: 'shortname', unique: true  }] }
+  { name: User.storeName,             keypath: 'username', indexes: [
+    { on: 'name',      name: 'name',      unique: false },
+    { on: 'email',     name: 'email',     unique: true  }
+  ] },
+  { name: ComponentElement.storeName, keypath: 'id', indexes: [
+    { on: 'children',  name: 'children',  unique: false, multiEntry: true },
+    { on: 'job',       name: 'job',       unique: false }
+  ] },
+  { name: FolderElement.storeName,    keypath: 'id', indexes: [
+    { on: 'type',      name: 'type',      unique: false },
+    { on: 'job',       name: 'job',       unique: false }
+  ] },
+  { name: Location.storeName,         keypath: 'id', indexes: [
+    { on: 'children',  name: 'children',  unique: false, multiEntry: true },
+    { on: ['folder1', 'folder2'], name: 'folders', unique: true },
+    { on: 'job',       name: 'job',       unique: false }
+  ] },
+  { name: Collection.storeName,       keypath: 'id', indexes: [
+    { on: 'shortname', name: 'shortname', unique: true  }
+  ] }
 ];
 
 export function saveRecord(db, storeName: string, obj: any) {
@@ -125,4 +135,34 @@ export function countRecords(db, storeName, id?:string, key?: string) {
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
+}
+
+export function retrieveRecordArray(db, storeName, arr, key, only=true) {
+  return new Promise((resolve, reject) => {
+    let trans = db.transaction(storeName);
+    let store = trans.objectStore(storeName);
+    let index = store.index(key);
+    let q = IDBKeyRange.only(arr);
+    if(only) { // only one result, typically for len 2 array
+      let req = index.get(q);
+      req.onsuccess = (e) => resolve(e.target.result);
+    } else {
+      let req = index.openCursor(q);
+      let results = [];
+      req.onsuccess = (e) => {
+        let cursor = e.target.result;
+        if (cursor) {
+          results.push(cursor.value);
+          cursor.continue();
+
+        } else {
+          resolve(results);
+        }
+      }
+    }
+  })
+}
+
+export function retrieveUniqueId() {
+  return random();
 }

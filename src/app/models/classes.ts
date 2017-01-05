@@ -47,6 +47,8 @@ export class BaseElement {
 export class Child { // needs 'name', 'description'
   constructor(
     public id: string,
+    public name: string,
+    public description: string,
     public ref: string,
     public qty: number,
     public _ref?: string,
@@ -58,7 +60,7 @@ export class Child { // needs 'name', 'description'
   toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     for(let prop in copy) {
-      if(Child.excluded.indexOf(prop) != -1) {
+      if(removeExcluded && Child.excluded.indexOf(prop) != -1) {
         delete copy[prop];
         continue;
       }
@@ -121,13 +123,19 @@ export class ComponentElement extends BaseElement {
 
 export class Location {
   static storeName = 'locations';
+  static excluded: string[] = ['commit', 'open', 'saveState'];
+  public folder1:string;
+  public folder2:string;
   constructor(
     public id: string,
     public job: string,
     public children: Child[],
-    public folders: any,
+    folders: any,
     public hash?: string
-  ) { }
+  ) {
+    this.folder1 = folders[0];
+    this.folder2 = folders[1];
+  }
 
   static createId(obj, job) {
     return job.folders.types.map((name, i)=>obj[name] || job.folders.roots[i]).join('-');
@@ -141,12 +149,17 @@ export class Location {
 
   static fromObject(obj) {
     let children = obj.children;
+    obj.folders = [obj.folder1, obj.folder2]; // bit hacky
     return new Location(obj.id, obj.job, children.map(Child.fromObject), obj.folders, obj.hash);
   }
 
   toJSON(removeExcluded=true) {
     let copy = Object.assign({}, this);
     for(var prop in copy) {
+      if(removeExcluded && Location.excluded.indexOf(prop) != -1) {
+        delete copy[prop];
+        continue;
+      }
       if(copy[prop] == null) continue;
       if(typeof copy[prop].toJSON == 'function') {
         copy[prop] = copy[prop].toJSON();

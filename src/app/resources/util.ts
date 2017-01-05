@@ -46,7 +46,7 @@ interface StoreDefinition {
   name: string;
   keypath: string,
   indexes?: {
-    on: string,
+    on: string|string[],
     name: string,
     unique: boolean
   }[];

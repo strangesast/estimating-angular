@@ -56,7 +56,9 @@ import {
   retrieveAllRecordsAs,
   retrieveRecordAs,
   saveRecordAs,
-  countRecords
+  countRecords,
+  retrieveRecordArray,
+  retrieveUniqueId
 } from '../resources/indexedDB';
 
 
@@ -87,6 +89,7 @@ export class ElementService {
 
   constructor() { }
 
+  // int db
   resolve(): Promise<any>|boolean {
     if(this.db == null || this.gitdb == null) {
       return Promise.all([
@@ -103,6 +106,21 @@ export class ElementService {
     }
   }
 
+  /* return BehaviorSubject */
+  // create job
+  // create component
+  // create child
+  // create folder
+  // load job
+  // load component
+  // load child
+  // load folder
+  /* Git */
+  // save job
+  //   add hash property to job/folder/location/child/component
+  // load save
+
+  /*
   // returns [componentRecordId, locationRecordId]
   addComponent(component: ComponentElement, job: Collection, folders) {
     folders = folders || {};
@@ -134,6 +152,7 @@ export class ElementService {
       ]);
     });
   }
+  */
 
   removeJob(job: Collection): Promise<any> {
     return this.removeRecordFrom('jobs', job.id).then(res=> {
@@ -449,9 +468,11 @@ export class ElementService {
   }
   */
 
+  /*
   retrieveLocation(id: string) {
     return this.retrieveRecordFrom('locations', id);
   }
+  */
 
   removeRecordFrom(storeName: string, id: string, index?:string) {
     return this.removeRecord(this.db, storeName, id, index);
@@ -503,47 +524,180 @@ export class ElementService {
     });
   }
 
-  readRefs(db: any): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      if(db == null) throw new Error('db undefined, run init');
-      if(!db.objectStoreNames.contains('refs')) {
-        return reject(new Error('refs uninitialized, run init'));
-      }
-      let trans = db.transaction(['refs']);
-      let store = trans.objectStore('refs');
-      let req = store.getAllKeys();
-      req.onsuccess = (e) => {
-        resolve(e.target.result);
-      };
-      req.onerror = (e) => {
-        reject(e.target.error);
-      }
-    }).then((arr: string[]) => {
-      // filter out different prefixes
-      return arr.filter((str) => {
-        return str.startsWith(this.repo.refPrefix) && str.split('/')[0] == this.repo.refPrefix;
-      }).map((str)=>{
-        return str.substring(this.repo.refPrefix.length + 1);
+  retrieveLocation(id:string|string[]): Promise<Location> {
+    if(typeof id === 'string') {
+      return retrieveRecordAs(this.db, Location, id);
+    } else if (Array.isArray(id)) {
+      return retrieveRecordArray(this.db, Location.storeName, id, 'folders').then(result => {
+        if(result == null) return null;
+        return Location.fromObject(result);
+      });
+    } else {
+      throw new Error('invalid type');
+    }
+  }
+
+  createLocation(job, loc, children=[]):Promise<Location> {
+    let folders = Object.keys(job.folders.roots).map(n => n in loc ? loc[n] : job.folders.roots[n]);
+    let _location = new Location(
+      '',
+      job.id,
+      children,
+      folders
+    );
+    return saveRecordAs(this.db, _location).then((locationId)=>{
+      _location.id = locationId;
+      return _location;
+    });
+  }
+
+  // TODO: Allow passing of component instead of id
+  //                                               { 'phase': 123123 ... }
+  createChild(job:Collection, componentId:string|ComponentElement, loc={}, name?:string, description?:string, qty=1): Promise<Child> {
+    return (typeof componentId === 'string' ? this.retrieveComponent(componentId) : Promise.resolve(componentId)).then(component => {
+      if(component == null) throw new Error('cannot create child if component does not exist');
+      name = name || component.name;
+      description = description || component.description;
+
+      for(let prop in job.folders.roots) if(!(prop in loc)) loc[prop] = job.folders.roots[prop];
+      let q = job.folders.order.map(n=>loc[n]);
+      let child = new Child('', name, description, component.id, 1);
+      return Promise.all([
+        retrieveUniqueId(),
+        this.retrieveLocation(q)
+      ]).then(([childId, _location]:[string, any])=>{
+        child.id = childId;
+        if(_location != null) return _location;
+        return this.createLocation(job, loc, []);
+      }).then(_location => {
+        _location.children = _location.children || [];
+        _location.children.push(child);
+        return saveRecordAs(this.db, _location);
+      }).then(()=> {
+        return child;
       });
     });
   }
 
-  readRef(ref: string):Promise<any> {
-    return promisify(this.repo.readRef.bind(this.repo), ref).then((res)=>{
-      return res[0];
-    });
-  }
-
-  createComponent(name, description, job): Promise<ComponentElement> {
-    let id = random(); // should be unique
-    let component = new ComponentElement(id, name, description, job.id, []);
-    return this.addComponent(component, job, {}).then(result => {
+  createComponent(job, name, description, parentId?): Promise<ComponentElement> {
+    let component = new ComponentElement(
+      '',
+      name,
+      description,
+      job.id, // job id
+      [] // children
+    );
+    return Promise.all([
+      saveRecordAs(this.db, component),
+      parentId ? retrieveRecordAs(this.db, ComponentElement, parentId) : Promise.resolve(null)
+    ]).then(([componentId, par]:[string, any]) => {
+      component.id = componentId;
+      if(par) {
+        par.children = par.children || [];
+        par.children.push(componentId);
+        return saveRecordAs(this.db, par);
+      }
+    }).then(() => {
       return component;
     });
   }
 
+  createFolder(job, _type, name, description='(no description)', parentId?): Promise<FolderElement> {
+    if(parentId == null && (!job.folders.roots || !(_type in job.folders.roots))) {
+      // root case
+      if(name !== 'root') throw new Error('root folder name must be \'root\' ('+name+')');
+      let folder = new FolderElement(
+        '',
+        name,
+        'root folder (' + _type + ')',
+        _type,
+        job.id,
+        []
+      );
+      return saveRecordAs(this.db, folder).then(folderId => {
+        folder.id = folderId;
+        job.folders.roots[_type] = folderId;
+        return saveRecordAs(this.db, job);
+      }).then(() => {
+        return folder;
+      });
+    } else {
+      if(!job.folders.roots) throw new Error('root folders have not yet been defined');
+      if(!(_type in job.folders.roots)) throw new Error('invalid type for this job');
+      // non-root case else
+      parentId = parentId || job.folders.roots[_type];
+      let folder = new FolderElement(
+        '', // id
+        name,
+        description,
+        _type,
+        job.id,
+        [] // children
+      );
+      return Promise.all([
+        saveRecordAs(this.db, folder),
+        retrieveRecordAs(this.db, FolderElement, parentId)
+      ]).then(([folderId, par]:[string, any])=>{
+        folder.id = folderId;
+        par.children = par.children || [];
+        par.children.push(folderId);
+        return saveRecordAs(this.db, par);
+      }).then(parResult => {
+        return folder;
+      });
+    }
+  }
+
+  createExampleElements(job, n=3) {
+    let arr = [...Array(n).keys()];
+    let components, folders, children;
+
+    let createFolders = Promise.all(arr.map(i => {
+      let types = Object.keys(job.folders.roots);
+      let _type = types[i%types.length]
+      let name = ['Example Folder ', i, ' (', _type, ')'].join('');
+      return this.createFolder(
+        job,
+        _type,
+        name,
+        'description',
+      );
+    })).then(_folders=>folders=_folders);
+
+    let createComponents = Promise.all(arr.map(i => {
+      return this.createComponent(
+        job,
+        'Example Component ' + (i+1),
+        'description'
+      );
+    })).then(_components => components = _components);
+
+    return this.createLocation(job, job.folders.roots).then(_location => {
+      let createChildren = createComponents.then(components => {
+        // create example children
+        return Promise.all(components.map(component => arr.map(i => this.createChild(
+          job,
+          component.id,
+          undefined, // loc
+          undefined, // name
+          undefined, // description
+          1+Math.floor(Math.random()*4), // qty
+        ))).reduce((a,b)=>a.concat(b))).then(_children => children = _children)
+      });
+
+      return Promise.all([createFolders, createChildren]).then(() => {
+        return {
+          folders: folders,
+          components: components,
+          children: children
+        };
+      });
+
+    });
+  }
+
   createJob(owner: User, shortname: string, name='New Job', description='(no description)', folderNames=['phase', 'building']):BehaviorSubject<Collection> {
-    shortname = shortname || name.replace(' ', '_').replace(/[^\w-]/gi, '').substring(0, 50);
+    shortname = shortname || name.replace(' ', '_').replace(/[^\w-]/gi, '').substring(0, 50); // by default remove non-alphanumerics and shorten to < 50
     let folderDefinition = { order: folderNames }
 
     let job = new Collection(
@@ -569,142 +723,22 @@ export class ElementService {
       job.id = jobId;
 
       job.folders.roots = {};
-      return Promise.all(job.folders.order.map(folderName => {
-        // create root folders
-        let folder = new FolderElement(
-          '',
-          'root',
-          ['root', folderName, 'folder'].join(' '),
-          folderName,
-          job.id,
-          []
-        );
-        return saveRecordAs(this.db, folder).then(folderId => {
-          folder.id = folderId;
-          console.log('job', job);
-          job.folders.roots[folder.type] = folder.id;
-          return folder;
-        });
-      })).then(folders => {
-        let rootTypes = folders.map(f=>f.type);
-        return Promise.all([0, 1, 2, 3, 4, 5, 6].map(i => {
-          let t = rootTypes[i%rootTypes.length] ;
-          let folder = new FolderElement(
-            '',
-            ['Example Folder ', i, ' (', t, ')'].join(''),
-            'description',
-            t,
-            job.id,
-            []
-          );
-          return saveRecordAs(this.db, folder).then(folderId => {
-            folder.id = folderId;
-            folders.find(f=>f.type==t).children.push(folder.id);
-            return folder;
-          });
-        })).then(newFolders => {
-          return Promise.all(folders.map(folder => saveRecordAs(this.db, folder))).then(()=>{
-            return folders.concat(newFolders);
-          });
-        });
+      return Promise.all(job.folders.order.map(_type => {
+        return this.createFolder(job, _type, 'root');
 
-      }).then(folders => {
-        // create example components
-        return Promise.all([0, 1, 2].map(i => {
-          let component = new ComponentElement(
-            '',
-            'Example Component ' + (i+1),
-            'description',
-            job.id, // job id
-            [] // children
-          );
-          return saveRecordAs(this.db, component).then(componentId => {
-            component.id = componentId;
-            return component;
-          });
-        })).then(components => {
-          // create example children
-          let children = [0, 1, 2].map(i => {
-            let component = components[i];
-            return new Child(
-              '', // id
-              component.id, // 'ref' comp id
-              1+Math.floor(Math.random()*4), // qty
-              null, // _id
-              component // data
-            );
-          });
-          let folderObj = {};
-          folders.filter(f=>f.name == 'root').forEach(f=>{
-            folderObj[f.type] = f.id;
-          });
-          let loc = new Location(
-            '',
-            job.id,
-            children,
-            folderObj,
-            null
-          );
-          return saveRecordAs(this.db, loc).then(locId => {
-            loc.id = locId;
-            return loc;
-          });
-        });
+      })).then(rootFolders => {
+        return this.createExampleElements(job);
+
       }).then(() => {
-        return saveRecordAs(this.db, job).then(() => {
-          job.saveState = 'saved:uncommitted';
-          bs.next(job);
-    
-          this.jobsSubject.next(this.jobsSubject.getValue().concat(bs))
-
-        });
+        job.saveState = 'saved:uncommitted';
+        bs.next(job);
+        this.jobsSubject.next(this.jobsSubject.getValue().concat(bs))
       });
     }).catch(err => {
       bs.error(err);
     });
 
     return bs;
-
-    /*
-    let components = [0, 1, 2].map(i=>{
-      return new ComponentElement(
-        random(),
-        'Example Component ' + (i+1),
-        'description',
-        job.id, // job id
-        [] // children
-      );
-    });
-    let children = [0, 1, 2].map(i=>{
-      let c = components[i];
-      return new Child(
-        random(), // id
-        c.id, // 'ref' comp id
-        1+Math.floor(Math.random()*4), // qty
-        null, // _id
-        c // data
-      );
-    });
-    let folders = [0, 1, 2].map(i=>{
-      let folderType = job.folders.types[i%2];
-      return new FolderElement(
-        random(), // id
-        'Folder ' + (i+1) + ' (' + folderType + ')',   // name
-        ['folder', i, 'description'].join(' '), // description
-        folderType, // type
-        job.id, // job id
-        []
-      );
-    })
-
-    return Observable.create(sub => {
-      sub.next(job);
-      this.saveNewJob(job, children, components, folders).then((res)=>{
-        sub.next(res.jobs[0]);
-        sub.complete();
-      });
-    });
-    */
   }
 
   /*
@@ -755,39 +789,7 @@ export class ElementService {
       return hash;
     });
   }
-  */
   
-  baseJob(obj):BehaviorSubject<Collection> {
-    if(obj.name == null) throw new Error('name required');
-    let job = new Collection(
-      random(),
-      obj.name,
-      obj.description,
-      obj.owner,
-      obj.shortname || obj.name.split(' ').join('_').toLowerCase(),
-      { order: ['phase', 'building'] },
-      'job'
-    );
-    let bs = new BehaviorSubject(job);
-    let sub = bs.subscribe(_job=>{
-      console.log('saving', _job);
-      this.saveRecord(this.db, JOB_STORE_NAME, _job).then(res=>{
-        console.log('successful', res);
-        //_job.id = res;
-        //bs.next(_job);
-
-      }, err=>{
-        console.log('caught error', err);
-        bs.error(err);
-      })
-    }, (err) => {
-      // ignore errors
-      //console.log('second error', err);
-    });
-    return bs;
-  }
-
-  /*
   saveNewJob(job: Collection, children?:Child[], components?:ComponentElement[], folders?:FolderElement[]): Promise<any> {
     let tree = {};
     folders = folders || [];
@@ -991,4 +993,36 @@ export class ElementService {
     });
   };
   */
+  readRefs(db: any): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      if(db == null) throw new Error('db undefined, run init');
+      if(!db.objectStoreNames.contains('refs')) {
+        return reject(new Error('refs uninitialized, run init'));
+      }
+      let trans = db.transaction(['refs']);
+      let store = trans.objectStore('refs');
+      let req = store.getAllKeys();
+      req.onsuccess = (e) => {
+        resolve(e.target.result);
+      };
+      req.onerror = (e) => {
+        reject(e.target.error);
+      }
+    }).then((arr: string[]) => {
+      // filter out different prefixes
+      return arr.filter((str) => {
+        return str.startsWith(this.repo.refPrefix) && str.split('/')[0] == this.repo.refPrefix;
+      }).map((str)=>{
+        return str.substring(this.repo.refPrefix.length + 1);
+      });
+    });
+  }
+
+  readRef(ref: string):Promise<any> {
+    return promisify(this.repo.readRef.bind(this.repo), ref).then((res)=>{
+      return res[0];
+    });
+  }
+
+
 }
