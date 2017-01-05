@@ -33,8 +33,7 @@ let cnt = 0;
   selector: 'app-tree',
   animations: [],
   templateUrl: './tree.component.html',
-  styleUrls: ['./tree.component.less'],
-  entryComponents: [TreeElementComponent]
+  styleUrls: ['./tree.component.less']
 })
 export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private host;

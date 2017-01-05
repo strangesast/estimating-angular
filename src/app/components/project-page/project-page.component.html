@@ -77,7 +77,8 @@
       <div class="search tree-search">
         <input type="text" placeholder="filter">
       </div>
-      <app-tree class="arrows" [tree]="elements"></app-tree>
+      <!--<app-tree class="arrows" [tree]="elements"></app-tree>-->
+      <app-simple-tree [rootNode]="testNode"></app-simple-tree>
       <div>
         <button (click)="newComponentActiveJob()">New Component</button>
         <button>New Folder</button>

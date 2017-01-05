@@ -16,6 +16,12 @@ import {
 
 import { BehaviorSubject, Observable } from 'rxjs';
 
+import { HierarchyNode } from 'd3';
+import { hierarchy } from 'd3-hierarchy';
+
+import { TreeComponent } from '../tree/tree.component';
+import { SimpleTreeComponent } from '../simple-tree/simple-tree.component';
+
 import {
   ComponentElement,
   FolderElement,
@@ -28,7 +34,8 @@ import { JobService }     from '../../services/job.service';
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
-  styleUrls: ['./project-page.component.less', '../app.component.less']
+  styleUrls: ['./project-page.component.less', '../app.component.less'],
+  providers: [ SimpleTreeComponent, TreeComponent ]
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private sub: any;
@@ -37,6 +44,8 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   tree: BehaviorSubject<any[]>;
   treeConfig: BehaviorSubject<TreeConfig>;
   job: Collection;
+
+  testNode: HierarchyNode<any> = hierarchy({name: 'toast', children: [ { name: 'butter', children: [] } ]});
 
   elements: any[] = [];
   //private data: any[];

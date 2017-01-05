@@ -1,16 +1,16 @@
 import { NgModule }             from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { JobListPageComponent }       from '../components/job-list-page/job-list-page.component';
-import { UserListPageComponent }      from '../components/user-list-page/user-list-page.component';
-import { ProjectPageComponent }       from '../components/project-page/project-page.component';
-import { BuildPageComponent }         from '../components/build-page/build-page.component';
-import { EditPageComponent }          from '../components/edit-page/edit-page.component';
-import { DetailsPageComponent }       from '../components/details-page/details-page.component';
-import { EstimatingPageComponent }    from '../components/estimating-page/estimating-page.component';
+import { JobListPageComponent }    from './components/job-list-page/job-list-page.component';
+import { UserListPageComponent }   from './components/user-list-page/user-list-page.component';
+import { ProjectPageComponent }    from './components/project-page/project-page.component';
+import { BuildPageComponent }      from './components/build-page/build-page.component';
+import { EditPageComponent }       from './components/edit-page/edit-page.component';
+import { DetailsPageComponent }    from './components/details-page/details-page.component';
+import { EstimatingPageComponent } from './components/estimating-page/estimating-page.component';
 
-import { ElementService }     from '../services/element.service';
-import { JobService }         from '../services/job.service';
+import { ElementService } from './services/element.service';
+import { JobService }     from './services/job.service';
 
 const routes: Routes = [
   {
