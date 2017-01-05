@@ -51,8 +51,7 @@ export class JobListPageComponent implements OnInit {
        return Observable.combineLatest(...forJob);
 
      }).subscribe((jobs:Collection[]) => {
-       console.log(this.aboutJob);
-       this.jobs = jobs
+       this.jobs = jobs;
      });
    });
   }
@@ -85,6 +84,6 @@ export class JobListPageComponent implements OnInit {
   }
 
   deleteJob(job:Collection) {
-    this.elementService.removeJob(job);
+    this.elementService.removeJob(job.id);
   }
 }

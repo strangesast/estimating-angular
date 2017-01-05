@@ -44,33 +44,24 @@ import {
 } from '../models/classes';
 
 import {
-  COMPONENT_STORE_NAME,
   INVALID_FOLDER_TYPES,
-  LOCATION_STORE_NAME,
-  FOLDER_STORE_NAME,
   USER_COLLECTION,
-  JOB_STORE_NAME,
-  STORE_VERSION,
-  STORE_NAME,
+  DB_VERSION,
+  DB_NAME,
   STORES,
   retrieveAllRecordsAs,
   retrieveRecordAs,
   saveRecordAs,
   countRecords,
   retrieveRecordArray,
-  retrieveUniqueId
+  retrieveUniqueId,
+  removeRecord,
+  removeRecordAs
 } from '../resources/indexedDB';
 
 
 // useful
 //indexedDB.webkitGetDatabaseNames().onsuccess = (res) => {console.log([].slice.call(res.target.result).forEach((e)=>{indexedDB.deleteDatabase(e)}))}
-
-const classToStoreName = {
-  Collection:       JOB_STORE_NAME,
-  FolderElement:    FOLDER_STORE_NAME,
-  Location:  LOCATION_STORE_NAME,
-  Component: COMPONENT_STORE_NAME
-};
 
 @Injectable()
 export class ElementService {
@@ -82,6 +73,7 @@ export class ElementService {
   public users: Observable<User[]> = this._users.asObservable();
 
   public jobMap: any;
+  public loaded: any = {};
 
   public _jobs: BehaviorSubject<Collection[]> = new BehaviorSubject([]);
   public jobs: Observable<Collection[]> = this._jobs.asObservable();
@@ -93,7 +85,7 @@ export class ElementService {
   resolve(): Promise<any>|boolean {
     if(this.db == null || this.gitdb == null) {
       return Promise.all([
-        <any>initObjectStore(STORE_NAME, STORE_VERSION, STORES), // w/ <any> hack
+        <any>initObjectStore(DB_NAME, DB_VERSION, STORES), // w/ <any> hack
         createGitRepo()
       ]).then(([store, {repo, gitdb}]) => {
         this.db = store;
@@ -154,85 +146,7 @@ export class ElementService {
   }
   */
 
-  removeJob(job: Collection): Promise<any> {
-    return this.removeRecordFrom('jobs', job.id).then(res=> {
-      return res;
-    });
-  }
-
-  load(_class, id:string, key?:string) {
-    if(typeof _class.fromObject !== "function") throw new Error('need create method on class'); 
-    let storeName = classToStoreName[_class];
-    this.retrieveRecordFrom(storeName, id, key).then(record=>{
-      let inst = _class.fromObject(record);
-      let bs = new BehaviorSubject(inst);
-      bs.subscribe(val=>{
-        console.log('val');
-      });
-    });
-  }
-
-  // should return observable
-  loadJob(shortname: string): Promise<BehaviorSubject<Collection>> {
-    return retrieveRecordAs(this.db, Collection, shortname, 'shortname').then((job:Collection) => {
-      if(job == null || job.kind != 'job') throw new Error('invalid/nonexistant job');
-      let arr = [];
-      if(this.jobsSubject) {
-        arr = this.jobsSubject.getValue();
-        for (let i=0; i<arr.length; i++) {
-          if(arr[i].getValue().id == job.id) {
-            return arr[i];
-          }
-        }
-      }
-      let bs = new BehaviorSubject(job);
-      if(this.jobsSubject) this.jobsSubject.next(arr.concat(bs));
-      return bs;
-    });
-  }
-
-  loadElement(_class, id) {
-    // use loaded instance instead
-    return retrieveRecordAs(this.db, _class, id);
-  }
-
-  // should return observable
-  loadFolder(id: string): Promise<FolderElement> {
-    return this.retrieveRecordFrom(FOLDER_STORE_NAME, id).then(record => {
-      if(record == null) throw new Error('folder with that id "'+id+'" does not exist');
-      return FolderElement.fromObject(record);
-    });
-  }
-
-  loadLocation(id: string): Promise<Location> {
-    return this.retrieveRecordFrom(LOCATION_STORE_NAME, id).then(record => {
-      if(record == null) throw new Error('location with that id"'+id+'" does not exist');
-      return Location.fromObject(record);
-    });
-  }
-
-  loadComponent(id: string): Promise<ComponentElement> {
-    return this.retrieveRecordFrom(COMPONENT_STORE_NAME, id).then(record => {
-      if(record == null) throw new Error('component with that id"'+id+'" does not exist');
-      return ComponentElement.fromObject(record);
-    });
-  }
-
-  loadComponentInChild(child: Child): Promise<Child> {
-    return this.loadComponent(child.ref).then(comp=>{
-      child.data = comp;
-      return child;
-    });
-  }
-
   /*
-  getJob(username: string, shortname: string): Promise<any> {
-    return this.retrieveJob(username, shortname).then(({saved, current}:{saved: Collection, current: Collection}) => {
-      if(saved == null) throw new Error('job with that username/shortname does not exist ("'+[username, shortname].join('/')+'")');
-      return {saved: saved, current: current};
-    });
-  }
-
   getJobs(): Promise<Collection[]> {
     return this.readRefs(this.gitdb).then((refs) => {
       // read all refs -> many may point to same job
@@ -261,267 +175,39 @@ export class ElementService {
 
   getJobs(): Promise<BehaviorSubject<BehaviorSubject<Collection>[]>> {
     return retrieveAllRecordsAs(this.db, Collection).then(collections => {
-      let arr = collections.map(collection => new BehaviorSubject(collection));
+      let arr = collections.map(collection => this.loaded[collection.id] || (this.loaded[collection.id] = new BehaviorSubject(collection)));
       if(this.jobsSubject) this.jobsSubject.next(arr);
       return this.jobsSubject || (this.jobsSubject = new BehaviorSubject(arr));
     });
   }
 
-  aboutJob(job: Collection): Observable<any> {
-    // count components / children / folders
-    // get git save state
-    let about = {};
-
-    return Observable.create(subscriber => {
-      // should also search history
-      let ref = [job.owner.username, job.shortname].join('/');
-      let isHeadCommit = this.readRef(ref).then(commitHash => commitHash == job.commit).then(val => {
-        about['isHead'] = val;
-        subscriber.next(about);
-      });
-      let componentCount = countRecords(this.db, ComponentElement.storeName, job.id, 'job').then(val => {
-        about['components'] = val
-        subscriber.next(about);
-      });
-      let folderCount = countRecords(this.db, FolderElement.storeName, job.id, 'job').then(val => {
-        about['folders'] = val;
-        subscriber.next(about);
-      });
-      Promise.all([isHeadCommit, componentCount, folderCount]).then(() => {
-        subscriber.complete();
-      }).catch(err => {
-        subscriber.error(err);
-      });
-    }).debounceTime(100);
-  }
-
-  getAllOfJob(jobid):Promise<any> {
-    let db = this.db;
-    let storeNames = ['components', 'folders', 'locations'];
-    return Promise.all(storeNames.map((store)=>{
-      return new Promise((resolve, reject)=> {
-        let r = IDBKeyRange.only(jobid);
-        let req = db.transaction([store], 'readonly')
-          .objectStore(store)
-          .index('job')
-          .openCursor(r);
-        let res = [];
-        req.onsuccess = (e:any) => {
-          let cursor = e.target.result;
-          if(cursor) {
-            res.push(cursor.value);
-            cursor.continue();
-          } else {
-            resolve(res);
-          }
-        }
-        req.onerror = (e:any) => reject(e.target.error);
-      });
-    })).then((arr:any)=>{
-      arr[0] = arr[0].map(ComponentElement.fromObject);
-      arr[1] = arr[1].map(FolderElement.fromObject);
-      arr[2] = arr[2].map(Location.fromObject);
-      let ob = {};
-      storeNames.forEach((s, i)=>ob[s] = arr[i]);
-      return ob;
+  loadElement(_class, id:string): Promise<BehaviorSubject<any>> {
+    if(id in this.loaded) return Promise.resolve(this.loaded[id]);
+    return retrieveRecordAs(this.db, _class, id).then(result => {
+      if (result == null) throw new Error('element with that id ('+id+') does not exist');
+      return this.loaded[id] = new BehaviorSubject(result);
     });
   }
 
-  /*
-  resolveTree(hash:string) {
-    return this.loadAs('tree', hash).then(tree=>{
-      return this.fn2(tree);
+  loadJob(id:string): Promise<BehaviorSubject<Collection>> {
+    if(id in this.loaded) return Promise.resolve(this.loaded[id]);
+    return this.retrieveJob(id).then(job => {
+      if(job == null) throw Error('there is no job with that id');
+      return this.loaded[job.id] = new BehaviorSubject(job);
     });
   }
 
-  fn2(tree) {
-    let ob = {};
-    let proms = [];
-    for(let name in tree) {
-      let mode = gitModesInv[tree[name].mode];
-      proms.push(this.loadAs(mode, tree[name].hash).then(res => {
-        if(mode == 'text') {
-          ob[name] = JSON.parse(res);
-        } else if (mode == 'tree') {
-          this.fn2(res).then(res2 => {
-            ob[name] = res2;
-          });
-        }
-      }));
-    }
-    return Promise.all(proms).then(() => {
-      return ob;
-    });
-  }
-
-  compareTrees(newTree, oldTree) {
-    let p1 = this.resolveTree(newTree);
-    let p2 = this.resolveTree(oldTree);
-    return Promise.all([p1, p2]).then(trees => {
-      return diff.diff(trees[1], trees[0]);
-    });
-  }
-
-  findChanges(job:Collection) {
-    return this.getAllOfJob(job.id).then(res => {
-      return Promise.all([
-        this.buildTree(job, res.components, res.folders, res.locations),
-        this.loadAs('commit', job.commit)
-      ]).then(both => {
-        let newTree = both[0];
-        let commit = both[1];
-
-        return this.compareTrees(newTree, commit.tree);
-      });
-    });
-  }
-
-  retrieveComponentCommitHistory(inpt: ComponentElement|string): Promise<any[]> {
-    let id = inpt instanceof ComponentElement ? inpt.id : inpt
-    return this.retrieveComponent(id).then(comp => {
-      if(comp == null) throw new Error('that component with id "" does not exist');
-      let hash = comp.hash;
-      if(hash == null) return [];
-      return this.retrieveJobById(comp.job).then(job => {
-        let recurse = (commit, arr?) => {
-          arr = arr || [];
-          return this.loadAs('commit', commit).then(c=>{
-            return this.loadAs('tree', c.tree).then(t=>{
-              return this.loadAs('tree', t['component'].hash).then(t2=>{
-                let name = comp.id + '.json';
-                let obj = {
-                  commit: c,
-                  present: name in t2,
-                  same: (name in t2) ? t2[name].hash == comp.hash : false
-                };
-                if(c.parents && c.parents.length) {
-                  return recurse(commit.parents[0], arr.concat(obj));
-                } else {
-                  return arr.concat(obj);
-                }
-              });
-            });
-          });
-        }
-        return recurse(job.commit)
-      });
-    });
-  }
-  */
-
-  retrieveComponent(id: string): Promise<ComponentElement|null> {
-    return this.retrieveRecordFrom('components', id).then((res)=>{
-      if(res != null) {
-        return ComponentElement.fromObject(res);
+  retrieveJob(id:string): Promise<Collection> {
+    return retrieveRecordAs(this.db, Collection, id).then(job => {
+      if(job == null) { // check shortname too.  perhaps ugly
+        return retrieveRecordAs(this.db, Collection, id, 'shortname');
       }
-      return null;
+      return job;
     });
   }
 
-  retrieveFolder(id: string): Promise<FolderElement|null> {
-    return this.retrieveRecordFrom('folders', id).then((res)=>{
-      if(res != null) {
-        return FolderElement.fromObject(res);
-      }
-      return null;
-    });
-  }
-
-  retrieveUser(username: string): Promise<User|null> {
-    return this.retrieveRecordFrom('users', username).then(res => {
-      if(res != null) {
-        return User.fromObject(res);
-      } else {
-        return null;
-      }
-    });
-  }
-
-  retrieveJobById(id: string): Promise<Collection|null> {
-    return this.retrieveRecordFrom('jobs', id).then(obj => {
-      if(obj == null) throw new Error('job with that id ("'+id+'") does not exist');
-      return Collection.fromObject(obj);
-    });
-  }
-
-  /*
-  retrieveJob(username:string, shortname:string): Promise<any> {
-    let ref = [username, shortname].join('/');
-    return this.readRef(ref).then(commitHash => {
-      if(commitHash == null) return null;
-      return this.loadAs('commit', commitHash).then(commit => {
-        if(commit == null) throw new Error('ref read error!');
-        return this.loadAs('tree', commit.tree);
-      }).then(tree =>{
-        let jobRef = tree['job.json'];
-        if(jobRef == null) throw new Error('malformed tree');
-        return this.loadAs('text', jobRef.hash);
-      }).then(text => {
-        let job = Collection.fromObject(JSON.parse(text), commitHash);
-        return job;
-      });
-    }).then(saved => {
-      return this.retrieveJobById(saved.id).then(current => {
-        return {saved: saved, current: current};
-      });
-    });
-  }
-  */
-
-  /*
-  retrieveLocation(id: string) {
-    return this.retrieveRecordFrom('locations', id);
-  }
-  */
-
-  removeRecordFrom(storeName: string, id: string, index?:string) {
-    return this.removeRecord(this.db, storeName, id, index);
-  };
-
-  retrieveRecordFrom(storeName: string, id: string, key?: string) {
-    return this.retrieveRecord(this.db, storeName, id, key);
-  }
-
-  retrieveRecordFromAs(what:FolderElement|ComponentElement|Child|Collection, storeName: string, id: string, key?: string) {
-  }
-
-  retrieveRecord(db: IDBDatabase, storeName: string, id: string, key?: string) {
-    return new Promise((resolve, reject)=> {
-      let trans = this.db.transaction([storeName]);
-      let req:any = trans.objectStore(storeName);
-      if(key!=null) req = req.index(key);
-      req = req.get(id);
-      req.onsuccess = (e) => resolve(e.target.result);
-      req.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  removeRecord(db: any, storeName: string, id: string, index?:string) {
-    return new Promise((resolve, reject) => {
-      let trans = db.transaction(storeName, 'readwrite');
-      let store = trans.objectStore(storeName);
-      let req = store.delete(id);
-      req.onsuccess = (e) => {
-        resolve(e.target.result);
-      }
-      req.onerror = (e) => {
-        reject(e.target.error);
-      }
-    });
-  } 
-
-  saveRecord(db: any, storeName: string, obj: any): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let trans = db.transaction(storeName, 'readwrite');
-      let store = trans.objectStore(storeName);
-      let req = store.put(obj);
-      req.onsuccess = (e) => {
-        resolve(e.target.result)
-      };
-      req.onerror = (e) => {
-        reject(e.target.error);
-      }
-    });
+  retrieveComponent(id:string): Promise<ComponentElement> {
+    return retrieveRecordAs(this.db, ComponentElement, id);
   }
 
   retrieveLocation(id:string|string[]): Promise<Location> {
@@ -551,8 +237,6 @@ export class ElementService {
     });
   }
 
-  // TODO: Allow passing of component instead of id
-  //                                               { 'phase': 123123 ... }
   createChild(job:Collection, componentId:string|ComponentElement, loc={}, name?:string, description?:string, qty=1): Promise<Child> {
     return (typeof componentId === 'string' ? this.retrieveComponent(componentId) : Promise.resolve(componentId)).then(component => {
       if(component == null) throw new Error('cannot create child if component does not exist');
@@ -721,6 +405,7 @@ export class ElementService {
 
     saveRecordAs(this.db, job).then(jobId => {
       job.id = jobId;
+      this.loaded[jobId] = bs;
 
       job.folders.roots = {};
       return Promise.all(job.folders.order.map(_type => {
@@ -739,6 +424,51 @@ export class ElementService {
     });
 
     return bs;
+  }
+
+  removeJob(id:string): Promise<any> {
+    if(id in this.loaded) {
+      return removeRecordAs(this.db, this.loaded[id].getValue()).then(res=> {
+        let arr = this.jobsSubject.getValue();
+        let i = arr.indexOf(this.loaded[id]); 
+        if(i > -1) {
+          arr.splice(i, 1);
+          this.jobsSubject.next(arr);
+        }
+        delete this.loaded[id];
+        return res;
+      });
+    }
+    // this should almost never happen
+    return removeRecord(this.db, Collection.storeName, id);
+  }
+
+  aboutJob(job: Collection): Observable<any> {
+    // count components / children / folders
+    // get git save state
+    let about = {};
+
+    return Observable.create(subscriber => {
+      // should also search history
+      let ref = [job.owner.username, job.shortname].join('/');
+      let isHeadCommit = this.readRef(ref).then(commitHash => commitHash == job.commit).then(val => {
+        about['isHead'] = val;
+        subscriber.next(about);
+      });
+      let componentCount = countRecords(this.db, ComponentElement.storeName, job.id, 'job').then(val => {
+        about['components'] = val
+        subscriber.next(about);
+      });
+      let folderCount = countRecords(this.db, FolderElement.storeName, job.id, 'job').then(val => {
+        about['folders'] = val;
+        subscriber.next(about);
+      });
+      Promise.all([isHeadCommit, componentCount, folderCount]).then(() => {
+        subscriber.complete();
+      }).catch(err => {
+        subscriber.error(err);
+      });
+    }).debounceTime(100);
   }
 
   /*
@@ -790,171 +520,6 @@ export class ElementService {
     });
   }
   
-  saveNewJob(job: Collection, children?:Child[], components?:ComponentElement[], folders?:FolderElement[]): Promise<any> {
-    let tree = {};
-    folders = folders || [];
-    children = children || [];
-    components = components || [];
-    let locObj = {};
-    job.folders.roots = job.folders.roots || [];
-
-    // create root folder for each type. add children from 'folders' of similar type
-    job.folders.order.forEach(folderType => {
-      if(INVALID_FOLDER_TYPES.indexOf(folderType) != -1)
-        throw new Error('invalid folder type');
-      let folder = new FolderElement(
-        random(), // id
-        'root',   // name
-        'root "'+folderType+'" folder', // description
-        folderType, // type
-        job.id, // job id
-        folders.filter(f=>f['type']==folderType).map(f=>f.id) // child folders
-      );
-      folders.push(folder);
-      job.folders.roots.push(folder.id);
-    });
-
-    folders.forEach(folder => {
-      let obj = folder.toJSON();
-      // like 'phase/ba8dad.json':'{ ... }'
-      let path = [folder['type'], folder.id + '.json'].join('/');
-      tree[path] = {
-        mode: gitModes.file,
-        content: JSON.stringify(obj)
-      };
-    });
-
-    // extract components from children that arent in 'components'
-    let componentIds = components.map(c=>c.id);
-    children.forEach(child => {
-      let folders = child.folders;
-      let comp = child.data;
-      if(comp == null || !(comp instanceof ComponentElement))
-        throw new Error('unexpected child data format (or null)');
-
-      if(componentIds.indexOf(comp.id) == -1) {
-        components.push(child.data);
-      }
-
-      // use child-specified folder or job-root-specified
-      child.folders = child.folders || [];
-      let locId = Location.createId(child.folders, job);
-      locObj[locId] = locObj[locId] || [];
-      locObj[locId].push(child);
-    });
-
-    let locations:Location[] = Object.keys(locObj).map(locId => {
-      return new Location(
-        locId,
-        job.id,
-        locObj[locId],
-        locId.split('-')
-      );
-    });
-
-    locations.forEach(loc => {
-      let obj = loc.toJSON();
-      let path = ['location', loc.id + '.json'].join('/');
-      tree[path] = {
-        mode: gitModes.file,
-        content: JSON.stringify(obj)
-      };
-    });
-
-    components.forEach(comp => {
-      let obj = comp.toJSON();
-      let path = ['component', comp.id + '.json'].join('/');
-      tree[path] = {
-        mode: gitModes.file,
-        content: JSON.stringify(obj)
-      };
-    });
-
-    tree['job.json'] = {
-      mode: gitModes.file,
-      content: JSON.stringify(job.toJSON())
-    };
-
-    let jobs = [job];
-
-    return promisify(this.repo.createTree.bind(this.repo), tree).then((both)=>{
-      let hash = both[0], tree = both[1];
-
-      let updateHashesPromise = this.loadAs('tree', hash).then(tree => {
-        job.hash = tree['job.json'].hash
-        let p1 = Promise.all(job.folders.order.map(t=>{
-          return this.loadAs('tree', tree[t].hash).then(t2 => {
-            folders.filter(f=>f['type']==t).forEach(f=>{
-              let obj = t2[f.id + '.json'];
-              if(obj == null) throw new Error('folder save error, id "'+f.id+'" type "'+f['type']+'" not found');
-              f.hash = obj.hash;
-            });
-          });
-        }));
-        let p2 = this.loadAs('tree', tree['component'].hash).then(t2 => {
-          components.forEach(c=>{
-            let obj = t2[c.id + '.json'];
-            if(obj == null) throw new Error('component save error, id "'+c.id+'" not found');
-            c.hash = obj.hash;
-          });
-        });
-        let p3 = this.loadAs('tree', tree['location'].hash).then(t2 => {
-          locations.forEach(l=>{
-            let obj = t2[l.id + '.json'];
-            if(obj == null) throw new Error('location save error, id "'+l.id+'" not found');
-            l.hash = obj.hash;
-          });
-        });
-        return Promise.all([p1, p2, p3]);
-      });
-
-      let saveCommitRefPromise = this.saveToHash('commit', {
-        author: {
-          name: job.owner.username,
-          email: job.owner.email
-        },
-        tree: hash,
-        message: 'first'
-      }).then(commit => {
-        let ref = [job.owner.username, job.shortname].join('/');
-        job.commit = commit;
-        return this.updateRef(ref, commit);
-      });
-
-      return Promise.all([updateHashesPromise, saveCommitRefPromise]).then(()=>{
-        return Promise.all([].concat(jobs, folders, locations, components).map(this.updateRecord.bind(this)));
-      }).then(()=>{
-        return {
-          jobs: jobs,
-          folders: folders,
-          components: components,
-          locations: locations
-        };
-      });
-    });
-  };
-  */
-  updateRecord(obj) {
-    let storeName;
-    if(obj instanceof Collection) {
-      storeName = 'jobs';
-    } else if (obj instanceof FolderElement) {
-      storeName = 'folders';
-    } else if (obj instanceof ComponentElement) {
-      storeName = 'components';
-    } else if (obj instanceof Location) {
-      storeName = 'locations';
-    } else {
-      throw new Error('unknown obj type');
-    }
-    return this.saveRecord(this.db, storeName, obj.toJSON(false));
-  }
-
-  updateJob(job: Collection): Promise<string> {
-    return this.updateRecord(job);
-  }
-
-  /*
   saveJob(job: Collection, message: string): Promise<Collection> {
     return this.loadAs('commit', job.commit).then((commit) => {
       let jobText = JSON.stringify(job.toJSON());

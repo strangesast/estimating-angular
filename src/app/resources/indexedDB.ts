@@ -8,12 +8,8 @@ import {
   Collection
 } from '../models/classes';
 import { random } from './util';
-export const JOB_STORE_NAME = 'jobs';
-export const FOLDER_STORE_NAME = 'folders';
-export const LOCATION_STORE_NAME = 'locations';
-export const COMPONENT_STORE_NAME = 'components';
-export const STORE_NAME = 'estimating';
-export const STORE_VERSION = 1;
+export const DB_NAME = 'estimating';
+export const DB_VERSION = 1;
 export const USER_COLLECTION = 'users';
 export const INVALID_FOLDER_TYPES = ['component', 'location'];
 export const STORES = [
@@ -119,6 +115,14 @@ export function removeRecord(db, storeName: string, id: string, key?: string) {
     req.onsuccess = (e) => resolve(e.target.result);
     req.onerror = (e) => reject(e.target.error);
   });
+}
+
+export function removeRecordAs(db, obj: Location|Child|ComponentElement|FolderElement|Collection) {
+  let storeName = (<any>obj.constructor).storeName;
+  if (typeof storeName !== 'string') {
+    throw new Error('improper class or class definition');
+  }
+  return removeRecord(db, storeName, obj.id);
 }
 
 export function countRecords(db, storeName, id?:string, key?: string) {

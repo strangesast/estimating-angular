@@ -284,7 +284,7 @@ export class JobService implements Resolve<Promise<any>> {
     let folderIds = Object.keys(config.enabled).filter(n=>(n in config.roots) && config.enabled[n]).map(n=>config.roots[n]);
     let foldersPromise = Promise.all(folderIds.map(folderId =>
       this.loadElement(FolderElement, folderId).then(folder =>
-      this.buildBranch(folder)))).then(nodes => {
+      this.buildBranch(folder.getValue())))).then(nodes => {
         console.log(nodes);
         if(nodes.length > 1) {
           let nodea = nodes[0];
@@ -341,11 +341,11 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   occupyChildren(root, maxDepth=3) {
-    if(maxDepth < 1) return root;
+    if(maxDepth < 1 || !root.children) return root;
     return Promise.all(root.children.map((childId, i) => {
       if(typeof childId === 'string') {
         return this.loadElement(root.constructor, childId).then(child => {
-          root.children[i] = child;
+          root.children[i] = child.getValue();
           return this.occupyChildren(child, maxDepth - 1);
         });
       }
