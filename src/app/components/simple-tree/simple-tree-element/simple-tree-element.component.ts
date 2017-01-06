@@ -14,16 +14,22 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
   templateUrl: './simple-tree-element.component.html',
   styleUrls: ['./simple-tree-element.component.less']
 })
-export class SimpleTreeElementComponent implements OnInit {
-  @Input() data: any = {};
+export class SimpleTreeElementComponent implements OnInit, OnChanges {
+  @Input() public data: any = {};
 
   constructor(
     private injector: Injector,
     public elementRef: ElementRef
   ) {
     this.data = this.injector.get('data');
+
   }
 
-  ngOnInit() { }
+  ngOnInit() { 
+  }
+
+  ngOnChanges(changes) {
+    console.log('changes', changes);
+  }
 
 }

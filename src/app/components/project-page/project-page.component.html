@@ -1,89 +1,26 @@
-<div class="header">
-  <div class="container">
-    <div class="left">
-      <span class="name">{{job.name}}</span><span class="shortname">({{job.shortname}})</span>
-      <a class="save hoverunderline" *ngIf="lastSave" [title]="lastSave.author.date + ' by ' + lastSave.author.name" [routerLink]="['saves', { commit: job.commit }]"><q>{{ lastSave.message }}</q></a>
-      <span class="details" (click)="changeSubTab('balance')">
-        <span class="hoverunderline fa fa-balance-scale"></span>
-        <span *ngIf="activeSubTab=='balance'" class="arrow"></span>
-      </span>
-      <span class="details" (click)="changeSubTab('save')">
-        <span class="hoverunderline fa fa-floppy-o"></span>
-        <span *ngIf="activeSubTab=='save'" class="arrow"></span>
-      </span>
-    </div>
-    <div class="right">
-      <div>
-        <a [routerLink]="['./details']" routerLinkActive="active" class="tab hoverunderline">Details</a>
-        <a [routerLink]="['./build']" routerLinkActive="active" class="tab hoverunderline">Build</a>
-        <a [routerLink]="['./edit']" routerLinkActive="active" class="tab hoverunderline">Edit</a>
-        <a [routerLink]="['./estimate']" routerLinkActive="active" class="tab hoverunderline">Estimate</a>
-      </div>
-      <div>
-        <div class="search">
-          <input type="text" placeholder="search">
-          <span class="icon fa fa-search hoverlink"></span>
-        </div>
-      </div>
-    </div>
+<div class="main">
+  <div class="detail">
+    <span class="title">{{ job.name }}</span>
+    <span class="description">{{ job.description }}</span>
+  </div>
+  <div class="links">
+    <a class="hoverunderline" routerLinkActive="active" routerLink="./build">Build</a>
+    <a class="hoverunderline" routerLinkActive="active" routerLink="./edit">Edit</a>
+    <a class="hoverunderline" routerLinkActive="active" routerLink="./estimate">Estimate</a>
+    <a class="hoverunderline" routerLinkActive="active" routerLink="./details">Details</a>
   </div>
 </div>
-<div class="bar">
-  <div *ngIf="activeSubTab=='balance'" class="container">
-    <div class="piece">
-      <span>Avg. Price</span>
-      <span class="val">$132.18</span>
-    </div>
-    <span class="spacer"></span>
-    <div class="piece">
-      <span>Cost</span>
-      <span class="val">$20,100</span>
-    </div>
-    <div class="piece">
-      <span>Sell</span>
-      <span class="val">$30,100</span>
-    </div>
-    <div class="piece">
-      <span>Margin</span>
-      <span class="val">$10,100</span>
-    </div>
-  </div>
-  <div *ngIf="activeSubTab=='save'" class="container">
-    <div class="piece">
-      <span>Last Save</span>
-      <a class="hoverunderline val" [routerLink]="['./details']" fragment="history">"toast" at {{ testDate | date }}</a>
-    </div>
-    <div class="piece">
-      <span><a href="#" class="hoverunderline">Changed 3 Objects</a> since</span>
-    </div>
-    <span class="spacer"></span>
-    <div class="piece">
-      <span>Components</span>
-      <span class="val">1,100</span>
-    </div>
-    <div class="piece">
-      <span>Folders</span>
-      <span class="val">300</span>
-    </div>
-  </div>
+<ul class="info">
+  <li>
+    <span style="font-style:italic">Buy</span>
+    <span>$3.50</span>
+    <span style="font-style:italic">Sell</span>
+    <span>$400</span>
 
-</div>
-<div class="container main">
-  <div class="body">
-    <div class="page">
-      <router-outlet></router-outlet>
-    </div>
-    <div class="mini-tree">
-      <div class="search tree-search">
-        <input type="text" placeholder="filter">
-      </div>
-      <!--<app-tree class="arrows" [tree]="elements"></app-tree>-->
-      <app-simple-tree [rootNode]="testNode"></app-simple-tree>
-      <div>
-        <button (click)="newComponentActiveJob()">New Component</button>
-        <button>New Folder</button>
-        <button (click)="shuffle()">Shuffle Components</button>
-      </div>
-    </div>
-  </div>
-</div>
+  </li>
+  <li>
+    <span class="fa fa-folder-o"></span><span>20</span>
+    <span class="fa fa-cubes"></span><span>10</span>
+  </li>
+</ul>
+<router-outlet></router-outlet>

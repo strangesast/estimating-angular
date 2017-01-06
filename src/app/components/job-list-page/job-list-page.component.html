@@ -1,32 +1,27 @@
-<div class="small-container">
-  <div class="job-list list shadow">
-    <div class="header-item">Jobs</div>
-    <div *ngFor="let job of jobs" class="list-item job" [ngClass]="jobStatus[job.id]" [attr.tabindex]="jobStatus[job.id]=='ready' ? 1 : null">
-      <div>
-        <!--<span (click)="deleteJob(job)" class="hoverlink icon fa fa-close fa-lg"></span>-->
-      </div>
-      <div class="details">
-        <span [attr.title]="job.name" class="name hoverunderline" [routerLink]="job.id ? [ './', job.owner.username, job.shortname ] : null">{{ job.name }}</span>
-        <span [attr.title]="job.description" class="description">{{ job.description }}</span>
-      </div>
-      <div class="cnts">
-        <span class="cnt">{{ job.about ? job.about.folders : 0 }}</span><span class="cnt fa fa-folder-o"></span>
-        <span class="cnt">{{ job.about ? job.about.components : 0 }}</span><span class="cnt fa fa-cubes"></span>
-        <span class="fa fa-floppy-o" *ngIf="job.about && job.about.isHead"></span>
-        <span class="fa-stack" *ngIf="!job.about || !job.about.isHead">
-          <span class="fa fa-floppy-o fa-stack-1x"></span>
-          <span class="fa fa-ban fa-stack-2x"></span>
-        </span>
-      </div>
-      <div class="statusBox">
-        <span>
-          <i class="fa fa-cog fa-spin fa-fw"></i>
-          <span class="sr-only">Loading...</span>
-        </span>
-      </div>
-    </div>
-    <div class="last-item">
-      <span (click)="createNewJob()" class="hoverunderline">Create New Job</span>
-    </div>
-  </div>
+<span class="title">Local Jobs</span>
+<div class="table">
+  <ul class="header">
+    <li class="name"><a class="hoverunderline">Name</a></li>
+    <li class="description"><a class="hoverunderline">Description</a></li>
+    <li class="owner"><a class="hoverunderline">Owner</a></li>
+    <li class="type"><a class="hoverunderline">Type</a></li>
+    <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
+    <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
+  </ul>
+  <ul class="jobs">
+    <li *ngFor="let job of jobs" class="list-item" tabindex="0">
+      <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
+      <span class="description">{{ job.description }}</span>
+      <span class="owner">{{ job.owner.name }}</span>
+      <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
+      <span class="folders-cnt">{{ 0 }}</span>
+      <span class="components-cnt">{{ 0 }}</span>
+    </li>
+    <li *ngIf="!jobs || !jobs.length">
+      <span class="name">None</span>
+    </li>
+  </ul>
+</div>
+<div>
+  <button (click)="createNewJob()">Create New</button>
 </div>

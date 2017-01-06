@@ -47,6 +47,8 @@ import {
   removeRecordAs
 } from '../resources/indexedDB';
 
+import { HierarchyNode, Nest } from 'd3';
+import * as D3 from 'd3';
 
 /* useful
 indexedDB.webkitGetDatabaseNames().onsuccess = (res) =>\
@@ -101,38 +103,6 @@ export class ElementService {
   // save job
   //   add hash property to job/folder/location/child/component
   // load save
-
-  /*
-  // returns [componentRecordId, locationRecordId]
-
-  /*
-  getJobs(): Promise<Collection[]> {
-    return this.readRefs(this.gitdb).then((refs) => {
-      // read all refs -> many may point to same job
-      return Promise.all(refs.map((ref) => this.readRef(ref)));
-
-    }).then((jobs) => {
-      return Promise.all(jobs.map((commitHash) => {
-        return this.loadHashAs('commit', commitHash).then((commit) => {
-          return this.loadHashAs('tree', commit.tree);
-        }).then((tree) => {
-          if (tree['job.json'] == null) throw new Error('malformed job tree');
-          return this.loadHashAs('text', tree['job.json'].hash).then((text) => {
-            let data = JSON.parse(text);
-            data.commit = commitHash;
-            // load the most recent (perhaps unsaved) version of the job
-            return this.retrieveJobById(data.id).then(job => {
-              if (job != null) {
-                return job;
-              }
-              return Collection.fromObject(data); 
-            });
-          });
-        });
-      }));
-    });
-  };
-  */
 
   getJobs(): Promise<BehaviorSubject<BehaviorSubject<Collection>[]>> {
     return retrieveAllRecordsAs(this.db, Collection).then(collections => {
@@ -355,12 +325,16 @@ export class ElementService {
         // create example children
         return Promise.all(_components.map(component => arr.map(i => this.createChild(
           job,
-          component.id,
+          component,
           undefined, // loc
           undefined, // name
           undefined, // description
           1 + Math.floor(Math.random() * 4), // qty
-        ))).reduce((a, b) => a.concat(b))).then(_children => children = _children);
+        ))).reduce((a, b) => a.concat(b))).then(_children => {
+          _location.children = _children;
+          children = _children
+          return saveRecordAs(this.db, _location);
+        });
       });
 
       return Promise.all([createFolders, createChildren]).then(() => {
@@ -415,7 +389,8 @@ export class ElementService {
       })).then(rootFolders => {
         return this.createExampleElements(job);
 
-      }).then(() => {
+      }).then((elements) => {
+        console.log('created', elements);
         job.saveState = 'saved:uncommitted';
         bs.next(job);
         this.jobsSubject.next(this.jobsSubject.getValue().concat(bs));
@@ -444,7 +419,7 @@ export class ElementService {
   compareTree(a, b?) {
   }
 
-  saveTree(collection: Collection) {
+  saveGitTree(collection: Collection) {
     let baseObj = {};
 
     // toJSON may be extraneous when using stringify
@@ -502,7 +477,7 @@ export class ElementService {
   }
 
   saveJob(collection: Collection, message) {
-    return this.saveTree(collection).then(tree => {
+    return this.saveGitTree(collection).then(tree => {
       // save commit
       let commitObj = {
         author: collection.owner,
@@ -564,7 +539,7 @@ export class ElementService {
       let isSaved = Promise.all([
         // will break when no commit exists
         readRef(this.repo, job.shortname).then(commit => commit ? loadHashAs(this.repo, 'commit', commit) : Promise.resolve({tree: null})),
-        this.saveTree(job)
+        this.saveGitTree(job)
       ]).then(([commit, treeHash]) => commit.tree == treeHash).then(val => {
         about['isSaved'] = val;
         subscriber.next(about);
@@ -593,93 +568,89 @@ export class ElementService {
     }).debounceTime(100);
   }
 
-  /*
-  buildTree(job, components, folders, locations) {
-    let tree = {};
-    folders = folders || [];
-    components = components || [];
-    let locObj = {};
-    job.folders.roots = job.folders.roots || [];
-
-    folders.forEach(folder => {
-      let obj = folder.toJSON();
-      // like 'phase/ba8dad.json':'{ ... }'
-      let path = [folder['type'], folder.id + '.json'].join('/');
-      tree[path] = {
-        mode: gitModes.file,
-        content: JSON.stringify(obj)
-      };
-    });
-
-    locations.forEach(loc => {
-      let obj = loc.toJSON();
-      let path = ['location', loc.id + '.json'].join('/');
-      tree[path] = {
-        mode: gitModes.file,
-        content: JSON.stringify(obj)
-      };
-    });
-
-    components.forEach(comp => {
-      let obj = comp.toJSON();
-      let path = ['component', comp.id + '.json'].join('/');
-      tree[path] = {
-        mode: gitModes.file,
-        content: JSON.stringify(obj)
-      };
-    });
-
-    tree['job.json'] = {
-      mode: gitModes.file,
-      content: JSON.stringify(job.toJSON())
-    };
-
-    let jobs = [job];
-
-    return promisify(this.repo.createTree.bind(this.repo), tree).then((both) => {
-      let hash = both[0], tree = both[1];
-      return hash;
+  resolveChildren(root) {
+    if (!Array.isArray(root.children) || root.children.length === 0) {
+      return root;
+    }
+    return Promise.all(root.children.filter(child=>typeof child === 'string').map(childId => this.loadElement(FolderElement, childId).then(child => {
+      let val = child.getValue();
+      let i = root.children.indexOf(val.id);
+      root.children.splice(i, 1, val);
+      return this.resolveChildren(val);
+    }))).then(() => {
+      return root;
     });
   }
-  
-  saveJob(job: Collection, message: string): Promise<Collection> {
-    return this.loadHashAs('commit', job.commit).then((commit) => {
-      let jobText = JSON.stringify(job.toJSON());
-      let changes: any = [{
-        path: 'job.json',
-        mode: gitModes.file,
-        content: jobText
-      }];
-      changes.base = commit.tree;
 
-      return promisify(this.repo.createTree.bind(this.repo), changes).then((res) => {
-        return res[0];
-      }).then((treeHash) => {
-        // if tree hasn't changed _nothing_ has changed
-        if (treeHash == commit.tree) {
-          throw new Error('nothing has changed');
-        }
+  buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
+    return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
+      let folder = folderSubject.getValue();
+      if(!(folder instanceof FolderElement)) throw new Error('invalid folder');
+      if(folder.job != job.id) throw new Error('incompatible job/folder');
+      return this.resolveChildren(folder);
 
-        return this.saveToHash('commit', {
-          author: {
-            name: job.owner.username,
-            email: job.owner.email
-          },
-          tree: treeHash,
-          message: message,
-          parents: [job.commit]
-        });
-      }).then((commitHash) => {
-        let ref = [job.owner.username, job.shortname].join('/');
+    }).then(folder => {
+      let node = D3.hierarchy(folder);
+      return Promise.resolve(new BehaviorSubject(node));
+    });
+  }
 
-        return this.updateRef(ref, commitHash).then(() => {
-          job.commit = commitHash;
-          return this.updateRecord(job);
-        }).then((key) => {
-          return job;
+  loadComponentsFromRoot(job, folderNodes) {
+  };
+
+
+  //                                                        should be NestConfig
+  buildNest(job: Collection, configSubject: BehaviorSubject<any>): Promise<BehaviorSubject<Nest<any, any>>> {
+    let config = configSubject.getValue();
+    let componentMap = {};
+
+    return Promise.all(config.folders.order.filter(name =>
+      config.folders.enabled[name]).map(name =>
+        this.buildTree(job, config.folders.roots[name] || job.folders.roots[name]))
+    ).then((folders:any[]) => {
+      return retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(job.id), 'job').then(locations => {
+        let componentIds = [];
+        let components = {};
+
+        let children = locations.map(loc => {
+          loc.children.forEach(child => {
+            if(componentIds.indexOf(child.ref) === -1) componentIds.push(child.ref);
+            child.folders = {};
+            job.folders.order.forEach((name, i) => {
+              child.folders[name] = [loc.folder1, loc.folder2][i];
+            });
+          });
+          return loc.children;
+        }).reduce((a, b) => a.concat(b), []);
+
+        return Promise.all(componentIds.map(id=>this.loadElement(ComponentElement, id).then(component => {
+          let val = component.getValue();
+          components[val.id] = val;
+        }))).then(() => {
+
+          children.forEach(child => {
+            child.data = components[child.ref];
+          });
+          let nest = D3.nest();
+          folders.map(f=>f.getValue()).forEach(folder => {
+            nest = nest.key((d:any) => d.folders[folder.data.type]);
+          });
+          return new BehaviorSubject(nest.entries(children))
         });
       });
-    });
-  };
-  */
+    })
+    /*
+    let getFolders = Promise.all(config.folders.order.map(name =>
+      this.loadElement(FolderElement, config.folders.roots[name]).then(folder =>
+        this.resolveChildren(folder))));
+
+
+
+    let nest = D3.nest();
+
+
+
+    return Promise.resolve(new BehaviorSubject(nest));
+    */
+  }
 }

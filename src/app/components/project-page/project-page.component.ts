@@ -14,7 +14,7 @@ import {
   Params
 } from '@angular/router';
 
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Subscription, BehaviorSubject, Observable } from 'rxjs';
 
 import { HierarchyNode } from 'd3';
 import { hierarchy } from 'd3-hierarchy';
@@ -38,76 +38,30 @@ import { JobService }     from '../../services/job.service';
   providers: [ SimpleTreeComponent, TreeComponent ]
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
-  private sub: any;
-  private sub2: any;
-  jobSubject: BehaviorSubject<Collection>;
-  tree: BehaviorSubject<any[]>;
-  treeConfig: BehaviorSubject<TreeConfig>;
-  job: Collection;
-
-  testNode: HierarchyNode<any> = hierarchy({name: 'toast', children: [ { name: 'butter', children: [] } ]});
-
-  elements: any[] = [];
-  //private data: any[];
-  private config: any = {};
-
-  private activeSubTab: string = 'balance';
-  testDate = new Date();
-
-  private htmlElement: HTMLElement;
-  private host;
+  private job: Collection;
+  private jobSubject: BehaviorSubject<Collection>;
+  private jobSubscription: Subscription;
 
   constructor(
     private elementService: ElementService,
     private jobService: JobService,
-    private route: ActivatedRoute,
-    private element: ElementRef
+    private route: ActivatedRoute
   ) { }
 
-  changeSubTab(tabName: string) {
-    this.activeSubTab = tabName;
-  }
-
   ngOnInit() {
-    this.route.data.subscribe(({jobData: {job, tree, treeConfig}})=>{
-      console.log('once');
-      this.jobSubject = job;
-      this.jobSubject.subscribe(job => {
-        this.job = job;
-      });
-      /*
-      this.treeSubject = tree;
-
-      this.treeSubject.subscribe(tree => {
-        console.log('got tree!', tree);
-        //this.tree = tree;
-      });
-      elements.subscribe(elements => {
-        this.elements = elements;
-      });
-      */
-
+    this.route.data.subscribe(({job: { job: jobSubject }}) => {
+      this.jobSubject = jobSubject;
+      this.jobSubscription = this.jobSubject.subscribe(job => this.job = job);
     });
-  }
-
-  newComponentActiveJob() {
-    let job = this.job;
-    this.jobService.createComponent(Math.round(Math.random()*10) + ' new component', 'test component');
-  }
-
-  shuffle() {
-    //this.jobService.shuffleComponents();
   }
 
   ngAfterViewInit() {
   }
 
   ngOnChanges() {
-
   }
 
   ngOnDestroy() {
-    //if(this.sub2) this.sub2.unsubscribe();
-    //this.sub.unsubscribe();
+    this.jobSubscription.unsubscribe();
   }
 }

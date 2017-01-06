@@ -15,33 +15,38 @@ import {
   BehaviorSubject
 } from 'rxjs';
 
+import { Nest } from 'd3';
+
 import { JobService } from '../../services/job.service';
 import { TreeComponent } from '../tree/tree.component';
 import { Collection, TreeConfig } from '../../models/classes';
 
+interface NestConfig {
+  folders: {
+    order: string[];
+    roots: any;
+    enabled: any;
+  };
+  component: {
+    enabled: boolean;
+  }
+}
+
 @Component({
   selector: 'app-build-page',
   templateUrl: './build-page.component.html',
-  styleUrls: ['./build-page.component.less', '../app.component.less'],
+  styleUrls: ['./build-page.component.less'],
   providers: [TreeComponent]
 })
-export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
-  private treeBuildSub: Subscription;
-  private elSub: Subscription;
-  private elements: any[] = [];
-
-  private config: any = {};
-  private sort: string = '';
-
-  private enabled: any;
-  private enabledSubject: BehaviorSubject<any>;
-
-  private tree: any[];
-  private treeSubject: BehaviorSubject<any[]>;
-  private treeConfig: TreeConfig;
-  private treeConfigSubject: BehaviorSubject<TreeConfig>;
-
+export class BuildPageComponent implements OnInit, OnDestroy {
   private job: Collection;
+  private jobSubject: BehaviorSubject<Collection>;
+  private jobSubscription: Subscription;
+
+  private nestConfig: NestConfig;
+  private nestConfigSubject: BehaviorSubject<NestConfig>;
+  private nestSubject: BehaviorSubject<Nest<any, any>>;
+  private nest: Nest<any, any>;
 
   public FOLDER_ICONS = {
     phase: 'fa fa-bookmark-o fa-lg',
@@ -49,59 +54,27 @@ export class BuildPageComponent implements OnInit, OnDestroy, OnChanges {
     component: 'fa fa-cubes fa-lg'
   };
 
-  objToArray(obj) {
-    return Object.keys(obj);
-  }
-
   constructor(
     private jobService: JobService,
     private route: ActivatedRoute
   ) { }
 
   ngOnInit() {
-    this.route.parent.data.subscribe(({jobData:{job, tree, treeConfig}})=>{
-      this.treeConfigSubject = treeConfig;
-      this.treeSubject = tree;
-      this.treeBuildSub = this.treeConfigSubject.switchMap(this.jobService.buildTree.bind(this.jobService)).subscribe(this.treeSubject);
-      this.treeSubject.subscribe(tree => {
-        console.log('tree', tree);
-        this.tree = tree;
-      })
-      this.treeConfigSubject.subscribe(treeConfig => {
-        this.treeConfig = treeConfig;
+    this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig }}) =>{
+      this.nestConfigSubject = nestConfig;
+      this.nestConfigSubject.subscribe(config => this.nestConfig = config);
+      this.nestSubject = nestSubject;
+      this.nestSubject.subscribe(nest => {
+        this.nest = nest;
+      });
+      this.jobSubject = jobSubject;
+      this.jobSubscription = this.jobSubject.subscribe(job => {
+        this.job = job;
       });
     });
   }
 
-  changeSort(sort: string) {
-    this.jobService.changeSort(sort);
-    this.sort = sort;
-  }
-
-  buildTree() {
-    //return this.jobService.buildTree();
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    console.log('changes', changes);
-  }
-
-  toggleEnabled(name:string) {
-    let config = this.treeConfigSubject.getValue();
-    if(name in config.roots || name == 'component') {
-      let val = !config.enabled[name];
-      if(val || Object.keys(config.enabled).map(n=>config.enabled[n]).filter(n=>!!n).length > 1) {
-        config.enabled[name] = val;
-        this.treeConfigSubject.next(config);
-      }
-    }
-  }
-
-  treeChanges(evt) {
-    console.log('changes', evt);
-  }
-
   ngOnDestroy() {
-    this.treeBuildSub.unsubscribe();
+    this.jobSubscription.unsubscribe();
   }
 }

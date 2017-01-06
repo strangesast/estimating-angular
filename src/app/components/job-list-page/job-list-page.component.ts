@@ -8,11 +8,10 @@ import { User, Collection } from '../../models/classes';
 @Component({
   selector: 'app-job-list-page',
   templateUrl: './job-list-page.component.html',
-  styleUrls: ['../app.component.less', './job-list-page.component.less']
+  styleUrls: ['./job-list-page.component.less']
 })
 export class JobListPageComponent implements OnInit {
   jobs: Collection[] = [];
-  jobStatus: any = {};
   users: User[] = [];
 
   aboutJob: any = {}; // { job: about }
@@ -21,21 +20,6 @@ export class JobListPageComponent implements OnInit {
   constructor(private elementService: ElementService) { }
 
   ngOnInit() {
-    // get list of jobs from db
-    // get save state from git
-    /*
-    return Promise.all([
-      this.elementService.getJobs().then((jobs: Collection[])=> {
-        this.jobs = jobs;
-        let ob = {};
-        jobs.forEach(j=>ob[j.id] = 'ready');
-        this.jobStatus = ob;
-      }),
-      this.elementService.getUsers().then((users: User[])=>{
-        this.users = users;
-      })
-    ]);
-    */
    let handleAbout = (job) => {
      let getAbout = this.elementService.aboutJob(job).map(about => {
        console.log(about);
@@ -48,7 +32,9 @@ export class JobListPageComponent implements OnInit {
 
      let first = this.jobsSubject.take(1).flatMap(jobs => {
        return Observable.combineLatest(...jobs.map(_bs => _bs.flatMap(handleAbout.bind(this))));
-     }).subscribe((jobs:Collection[]) => this.jobs = jobs);
+     }).subscribe((jobs:Collection[]) => {
+       this.jobs = jobs;
+     });
      
      this.jobsSubject.pairwise().flatMap(([a, b]) => {
        let forJob = b.map(_bs=> {
@@ -82,14 +68,12 @@ export class JobListPageComponent implements OnInit {
         if(job) {
           this.jobs.splice(this.jobs.indexOf(job), 1, res);
         } else {
-          this.jobStatus[res.id] = 'loading';
           this.jobs.push(res);
         }
         job = res;
       }, (e)=>{
         console.error(e);
       }, () => {
-        if(job) this.jobStatus[job.id] = 'ready';
         this.elementService.saveJob(job, 'first').then(saveResult => {
           console.log('saveResult', saveResult);
           this.elementService.compareTree(saveResult.commit.tree);

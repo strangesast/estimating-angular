@@ -64,9 +64,6 @@ import { Collection } from '../../models/classes';
         this.job = job;
       });
     });
-    this.jobService.status.subscribe(s=>{
-      this.status = s;
-    });
   }
   ngOnDestroy() {
     this.sub2.unsubscribe();

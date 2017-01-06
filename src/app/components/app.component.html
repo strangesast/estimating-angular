@@ -1,9 +1,27 @@
 <nav>
-  <div class="container">
-    <a routerLink="/" class="title">Estimating</a>
-    <span class="spacer"></span>
-    <a class="link hoverunderline" routerLinkActive="active" routerLink="jobs">Jobs</a>
-    <a class="link hoverunderline" routerLinkActive="active" routerLink="users">User</a>
+  <div>
+    <a class="nostyle title" routerLink="/">{{ title }}</a>
+    <div class="links">
+      <a class="nostyle" routerLink="/jobs" routerLinkActive="active">Jobs</a>
+      <a class="nostyle" routerLink="/users" routerLinkActive="active">Users</a>
+      <a class="nostyle" routerLink="/settings" routerLinkActive="active">Settings</a>
+    </div>
   </div>
 </nav>
-<router-outlet></router-outlet>
+<div class="body">
+  <div class="side">
+    <div class="search">
+      <input type="text" placeholder="search">
+    </div>
+    <app-simple-tree class="default-margin" [rootNode]="searchNode"></app-simple-tree>
+    <!--
+    <ul class="search-results">
+      <li class="search-result" tabindex="0">Item 1</li>
+      <li class="search-result" tabindex="0">Item 2</li>
+    </ul>
+    -->
+  </div>
+  <div class="main">
+    <router-outlet></router-outlet>
+  </div>
+</div>

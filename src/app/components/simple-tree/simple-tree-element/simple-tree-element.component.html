@@ -1,3 +1,4 @@
-<p>
-  {{ data.data.name }}
-</p>
+<li *ngIf="data && data.data" class="node">
+  <span class="name">{{ data.data.name }}</span>
+  <p class="description">{{ data.data.description }}</p>
+</li>

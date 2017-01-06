@@ -28,7 +28,7 @@ const routes: Routes = [
         path: ':shortname',
         component: ProjectPageComponent,
         resolve: {
-          jobData: JobService
+          job: JobService
         },
         children: [
           {

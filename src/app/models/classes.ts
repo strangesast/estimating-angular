@@ -50,7 +50,7 @@ export class BaseElement {
 export class Child { // needs 'name', 'description'
   static excluded: string[] = ['data', 'folders', 'saveState'];
   static fromObject(obj) {
-    return new Child(obj.id, obj.ref, obj.qty, obj._ref, obj.data);
+    return new Child(obj.id, obj.name, obj.description, obj.ref, obj.qty, obj._ref, obj.data);
   }
 
   constructor(
@@ -61,7 +61,7 @@ export class Child { // needs 'name', 'description'
     public qty: number,
     public _ref?: string,
     public data?: any,
-    public folders?: any, // location
+    public folders?: string[], // location
     public saveState: SaveState = 'unsaved'
   ) { }
 
@@ -153,7 +153,7 @@ export class Location {
   static fromObject(obj) {
     let children = obj.children;
     obj.folders = [obj.folder1, obj.folder2]; // bit hacky
-    return new Location(obj.id, obj.job, children.map(Child.fromObject), obj.folders, obj.hash);
+    return new Location(obj.id, obj.job, children.map(Child.fromObject.bind(Child)), obj.folders, obj.hash);
   }
 
 

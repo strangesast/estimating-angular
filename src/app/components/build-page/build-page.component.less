@@ -1,7 +1,47 @@
-@import '../../styles/basic';
+@navigation-height: 40px;
+.navigation {
+  display: flex;
+  justify-content: space-between;
+}
 
-@tree-element-height: 40px;
+ul.toggle {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  & > li {
+    display: inline-block;
+    padding: 8px;
+    &.active {
+      color: white;
+      background: black;
+    }
+  }
+}
 
-.main {
-  padding-top: 10px;
+@off-white: #D5D8DD;
+.search {
+  padding: 0 4px;
+  position: relative;
+  input {
+    box-sizing: border-box;
+    padding: 4px;
+    font-size: 1.1em;
+    border-radius: 4px;
+    -webkit-appearance: none;
+    border: 1px solid @off-white;
+    width: 100%;
+    &::-webkit-input-placeholder {
+      font-style: italic;
+    }
+    &::-moz-placeholder {
+      font-style: italic;
+    }
+    &:-ms-input-placeholder {
+      font-style: italic;
+    }
+    &:-moz-placeholder {
+      font-style: italic;
+    }
+  }
 }

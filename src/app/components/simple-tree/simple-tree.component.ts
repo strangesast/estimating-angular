@@ -23,6 +23,20 @@ import { hierarchy } from 'd3-hierarchy';
 
 let cnt = 0;
 
+const TEST_DATA = [
+  {
+    data: {
+      name: 'test',
+      description: 'testtttttttttttttttt'
+    },
+    depth: 0,
+    height: 1,
+    parent: null,
+    children: [],
+    value: null
+  }
+]
+
 @Component({
   selector: 'app-simple-tree',
   templateUrl: './simple-tree.component.html',
@@ -63,15 +77,15 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.htmlElement = this.element.nativeElement.querySelector('div');
+    this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = select(this.htmlElement);
     console.log('host', this.host);
     this.update(this.rootNode);
   }
 
   update(node:HierarchyNode<any>) {
-    if(!this.host) return;
-    let arr = node.descendants();
+    if(!this.host || !node) return;
+    let arr:any = node ? node.descendants() : [];
     let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR);
     console.log('arr', arr);
 
