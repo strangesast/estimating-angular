@@ -8,6 +8,7 @@ import * as gitReadCombiner from 'js-git/mixins/read-combiner';
 import * as gitFormats      from 'js-git/mixins/formats';
 
 
+import { Observable } from 'rxjs/Rx';
 import { promisify } from './util';
 
 const gitModesInv = {
@@ -25,8 +26,16 @@ export interface Repo {
   logWalk(ref: string, callback): void;
   readRef(ref: string, callback): void;
   saveAs(type: GitObjectType, body: any, callback): void;
-  treeWalk(hash: string, callback): void;
+  treeWalk(hash: string, callback?): any;
   updateRef(ref: string, hash: string, callback): void;
+}
+
+export interface Commit {
+  author: { date: Date, email: string, name: string };
+  committer: { date: Date, email: string, name: string };
+  message: string;
+  parents: string[];
+  tree: string;
 }
 
 const GIT_STORE_NAME = 'estimating-git';
@@ -62,35 +71,28 @@ export function logWalk(repo, hash: string): Promise<any> {
   });
 }
 
-export function treeWalk(repo, hash: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    repo.treeWalk(hash, (err, stream) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(stream);
-    });
-  });
+export function* treeWalk(repo: Repo, treeHash: string) {
+  // Observable.from((function* () { ... })())
 }
 
-export function loadHashAs(repo, kind: 'blob'|'tree'|'commit'|'text', hash: string): Promise<any> {
+export function loadHashAs(repo: Repo, kind: 'blob'|'tree'|'commit'|'text', hash: string): Promise<any> {
   return promisify(repo.loadAs.bind(repo), kind, hash).then((res) => {
     return res[0];
   });
 }
 
-export function saveToHash(repo, kind: 'blob'|'tree'|'commit', body: any): Promise<string> {
+export function saveToHash(repo: Repo, kind: 'blob'|'tree'|'commit', body: any): Promise<string> {
   return promisify(repo.saveAs.bind(repo), kind, body).then((res) => {
     return res[0];
   });
 }
 
-export function updateRef(repo, ref: string, hash: string): Promise<void> {
+export function updateRef(repo: Repo, ref: string, hash: string): Promise<void> {
   // repo.updateRef doesn't return anything
   return promisify(repo.updateRef.bind(repo), ref, hash);
 }
 
-export function folderHashFromArray(repo, array: any[]): Promise<string> {
+export function folderHashFromArray(repo: Repo, array: any[]): Promise<string> {
   let folder = {};
   return Promise.all(array.map(element => {
     let text = JSON.stringify(element.toJSON());
@@ -126,15 +128,11 @@ export function readRefs(db: any): Promise<string[]> {
   });
 }
 
-export function readRef(repo, ref: string): Promise<any> {
+export function readRef(repo: Repo, ref: string): Promise<any> {
   return promisify(repo.readRef.bind(repo), ref).then((res) => {
     return res[0];
   });
 }
-
-
-
-
 
 export {
   gitModes,

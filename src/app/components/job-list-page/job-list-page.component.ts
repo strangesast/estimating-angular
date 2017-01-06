@@ -45,9 +45,18 @@ export class JobListPageComponent implements OnInit {
    };
    this.elementService.getJobs().then(bs => {
      this.jobsSubject = bs;
-     this.jobsSubject.flatMap(jobs => {
-       let forJob = jobs.map(_bs => {
-         return _bs.flatMap(handleAbout.bind(this))
+
+     let first = this.jobsSubject.take(1).flatMap(jobs => {
+       return Observable.combineLatest(...jobs.map(_bs => _bs.flatMap(handleAbout.bind(this))));
+     }).subscribe((jobs:Collection[]) => this.jobs = jobs);
+     
+     this.jobsSubject.pairwise().flatMap(([a, b]) => {
+       let forJob = b.map(_bs=> {
+         if (a.indexOf(_bs)==-1) {
+           return _bs.flatMap(handleAbout.bind(this))
+         } else {
+           return _bs;
+         }
        });
        return Observable.combineLatest(...forJob);
 
@@ -83,6 +92,7 @@ export class JobListPageComponent implements OnInit {
         if(job) this.jobStatus[job.id] = 'ready';
         this.elementService.saveJob(job, 'first').then(saveResult => {
           console.log('saveResult', saveResult);
+          this.elementService.compareTree(saveResult.commit.tree);
         });
       }
     );

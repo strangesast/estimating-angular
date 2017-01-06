@@ -7,13 +7,15 @@ import {
 
 import {
   Repo,
+  Commit,
   gitModes,
   createGitRepo,
   saveToHash,
   updateRef,
   loadHashAs,
   folderHashFromArray,
-  readRef
+  readRef,
+  treeWalk
 } from '../resources/git';
 
 import {
@@ -439,6 +441,9 @@ export class ElementService {
     });
   }
 
+  compareTree(a, b?) {
+  }
+
   saveTree(collection: Collection) {
     let baseObj = {};
 
@@ -517,7 +522,7 @@ export class ElementService {
         loadHashAs(this.repo, 'commit', hash),
         saveRecordAs(this.db, collection),
         updateRef(this.repo, collection.shortname, hash)
-      ]).then(([commit]) => {
+      ]).then(([commit]:[Commit]) => {
         return {
           commit,
           job: collection
