@@ -10,6 +10,7 @@ import { DetailsPageComponent }    from './components/details-page/details-page.
 import { EstimatingPageComponent } from './components/estimating-page/estimating-page.component';
 
 import { ElementService } from './services/element.service';
+import { SearchService }  from './services/search.service';
 import { JobService }     from './services/job.service';
 
 const routes: Routes = [
@@ -21,7 +22,8 @@ const routes: Routes = [
   {
     path: 'jobs/:username',
     resolve: {
-      elementService: ElementService
+      elementService: ElementService,
+      search: SearchService
     },
     children: [
       {
@@ -64,13 +66,15 @@ const routes: Routes = [
     path: 'jobs',
     component: JobListPageComponent,
     resolve: {
-      elements: ElementService
+      elements: ElementService,
+      search: SearchService
     }
   },
   {
     path: 'users',
     resolve: {
       elements: ElementService,
+      search: SearchService
     },
     children: [{
       path: '',

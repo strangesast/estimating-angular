@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable }        from 'rxjs/Observable';
-import { SortablejsOptions } from 'angular-sortablejs';
 
 import { SearchService } from '../../services/search.service';
 

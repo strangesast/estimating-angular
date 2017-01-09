@@ -43,7 +43,7 @@ const TEST_DATA = [
   styleUrls: ['./simple-tree.component.less']
 })
 export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
-  @Input() rootNode: HierarchyNode<any>;
+  @Input() rootNode: HierarchyNode<any>|HierarchyNode<any>[];
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
 
   private host: Selection<any, any, any, any>;
@@ -83,9 +83,10 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.update(this.rootNode);
   }
 
-  update(node:HierarchyNode<any>) {
-    if(!this.host || !node) return;
-    let arr:any = node ? node.descendants() : [];
+  update(nodes:HierarchyNode<any>|HierarchyNode<any>[]) {
+    if(!Array.isArray(nodes)) nodes = [nodes];
+    if(!this.host || !nodes) return;
+    let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
     let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR);
     console.log('arr', arr);
 

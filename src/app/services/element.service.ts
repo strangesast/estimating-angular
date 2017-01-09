@@ -109,8 +109,9 @@ export class ElementService {
       let arr = collections.map(collection => this.loaded[collection.id] || (this.loaded[collection.id] = new BehaviorSubject(collection)));
       if (this.jobsSubject) {
         this.jobsSubject.next(arr);
+        return this.jobsSubject;
       }
-      return this.jobsSubject || (this.jobsSubject = new BehaviorSubject(arr));
+      return this.jobsSubject = new BehaviorSubject(arr);
     });
   }
 
@@ -164,6 +165,10 @@ export class ElementService {
     } else {
       throw new Error('invalid type');
     }
+  }
+
+  retrieveCollectionComponents(collection: Collection, limit?:number): Promise<ComponentElement[]> {
+    return retrieveAllRecordsAs(this.db, ComponentElement, IDBKeyRange.only(collection.id), 'job', limit);
   }
 
   createLocation(job, loc, children = []): Promise<Location> {
@@ -458,7 +463,7 @@ export class ElementService {
 
     // gets complicated when multiple commits (different version, same id) are in db
     // should only grab objects without commits.  modifying objects should remove commit attribute
-    let createComponentsTree = retrieveAllRecordsAs(this.db, ComponentElement, IDBKeyRange.only(collection.id), 'job').then(components => {
+    let createComponentsTree = this.retrieveCollectionComponents(collection).then(components => {
       return folderHashFromArray(this.repo, components).then(hash => {
         baseObj[ComponentElement.storeName] = { mode: gitModes.tree, hash: hash };
       });
