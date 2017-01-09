@@ -64,7 +64,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
-    this.nodesSubject.debounceTime(100).switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
+    this.nodesSubject.switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
   }
 
   createChildComponent(data, index) {
@@ -97,12 +97,12 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   update(nodes) {
-    this.nodesSubject.next(nodes);
+    this.nodesSubject.next(nodes || []);
   }
 
   subjectUpdate(nodes:HierarchyNode<any>|HierarchyNode<any>[]) {
     if(!Array.isArray(nodes)) nodes = [nodes];
-    if(!this.host || !nodes) return;
+    if(!this.host || !nodes) return Observable.never();
     let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
     let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR);
 

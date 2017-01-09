@@ -31,6 +31,8 @@ export const STORES = [
   { name: Location.storeName,         keypath: 'id', indexes: [
     { on: 'children',  name: 'children',  unique: false, multiEntry: true },
     { on: ['folder1', 'folder2'], name: 'folders', unique: true },
+    { on: 'folder1',   name: 'folder1',   unique: false },
+    { on: 'folder2',   name: 'folder2',   unique: false },
     { on: 'job',       name: 'job',       unique: false }
   ] },
   { name: Collection.storeName,       keypath: 'id', indexes: [

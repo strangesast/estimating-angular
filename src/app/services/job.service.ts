@@ -43,23 +43,28 @@ export class JobService implements Resolve<Promise<any>> {
     // let username = route.params['username'];
     let shortname = route.params['shortname'];
 
-    return this.elementService.loadJob(shortname).then(job => {
+    return this.elementService.loadJob(shortname).then(jobSubject => {
       // build trees
       // build nest
+      let job = jobSubject.getValue();
+      console.log('job', job);
       let nestConfig = new BehaviorSubject({
         folders: {
           order: ['phase', 'building'],
           roots: {},
-          enabled: { phase: false, building: true }
+          enabled: { phase: false, building: true },
+          filters: []
         },
         component: {
-          enabled: true
+          enabled: true,
+          filters: []
         }
       });
-      let buildNest = this.elementService.buildNest(job.getValue(), nestConfig);
+      let buildNest = this.elementService.buildNest(job, nestConfig);
+      this.elementService.buildNest2(jobSubject, nestConfig);
       return buildNest.then(nest =>  {
         return {
-          job,
+          job: jobSubject,
           nest,
           nestConfig,
           //trees: this.trees,

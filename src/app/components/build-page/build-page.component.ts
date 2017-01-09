@@ -19,18 +19,7 @@ import { Nest } from 'd3';
 
 import { JobService } from '../../services/job.service';
 import { TreeComponent } from '../tree/tree.component';
-import { Collection, TreeConfig } from '../../models/classes';
-
-interface NestConfig {
-  folders: {
-    order: string[];
-    roots: any;
-    enabled: any;
-  };
-  component: {
-    enabled: boolean;
-  }
-}
+import { NestConfig, Collection, TreeConfig } from '../../models/classes';
 
 @Component({
   selector: 'app-build-page',

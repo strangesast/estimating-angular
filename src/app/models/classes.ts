@@ -304,3 +304,14 @@ export interface TreeConfig {
   order: string[];
   roots: any; // { 'phase' : '123', 'building':  '456' }
 }
+
+export interface NestConfig {
+  folders: {
+    order: string[];
+    roots: any;
+    enabled: any;
+  };
+  component: {
+    enabled: boolean;
+  }
+}

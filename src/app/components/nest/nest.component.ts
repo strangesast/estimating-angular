@@ -13,6 +13,7 @@ import {
   Input
 } from '@angular/core';
 
+import { BehaviorSubject } from 'rxjs';
 import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
@@ -25,6 +26,11 @@ let cnt = 0;
 })
 export class NestComponent implements OnInit {
   @Input() nest: any;
+  @Input() roots: any;
+  @Input() data: any[];
+
+  // should be replaysubject
+  private nestSubject: BehaviorSubject<any>;
 
   //@ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
   private host: Selection<any, any, any, any>;
@@ -39,11 +45,9 @@ export class NestComponent implements OnInit {
 
   ngOnInit() {
     this.elementComponentRefMap = new Map();
-    /*
-    this.childComponentFactory = this.componentFactoryResolver
-      .resolveComponentFactory(SimpleTreeElementComponent);
-    */
+    //this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
   }
+
   /*
   createChildComponent(data, index) {
     let inputProviders = [{
@@ -72,6 +76,19 @@ export class NestComponent implements OnInit {
     let arr:any = [];
 
     let selection = this.host.selectAll('div');
+
+    console.log('nest', this.nest)
+
+    let outer = (ob) => {
+      let values = ob.values;
+      values.map(sub => {
+        if('key' in sub) {
+          return sub.values.map(el => outer(el));
+        } else {
+          sub
+        }
+      });
+    }
 
     /*
     console.log('nest', this.nest);
