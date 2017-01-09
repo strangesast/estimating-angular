@@ -73,6 +73,7 @@ export class NestComponent implements OnInit {
 
     let selection = this.host.selectAll('div');
 
+    /*
     console.log('nest', this.nest);
     this.nest.map(el => {
       console.log('el', el);
@@ -87,6 +88,7 @@ export class NestComponent implements OnInit {
 
       }
     });
+    */
 
     selection
       .order()

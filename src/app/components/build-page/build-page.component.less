@@ -1,16 +1,48 @@
 @navigation-height: 40px;
+
 .navigation {
   display: flex;
   justify-content: space-between;
 }
+.navigation:not(:first-child) {
+  margin-top: 6px;
+}
 
-ul.toggle {
+ul.filters, ul.toggle {
   list-style-type: none;
   padding-left: 0;
   margin-top: 0;
   margin-bottom: 0;
   & > li {
     display: inline-block;
+    span + span {
+      margin-left: 4px;
+    }
+  }
+}
+
+ul.filters {
+  & > li {
+    font-size: 14px;
+    padding: 4px;
+    background: @off-white;
+    border-radius: 8px;
+    .remove {
+      .hoverlink;
+    }
+    margin-bottom: 6px;
+    &:not(:first-child) {
+      margin-left: 4px;
+    }
+    opacity: 0.5;
+    &.active {
+      opacity: 1.0;
+    }
+  }
+}
+
+ul.toggle {
+  & > li {
     padding: 8px;
     &.active {
       color: white;
@@ -44,4 +76,14 @@ ul.toggle {
       font-style: italic;
     }
   }
+}
+
+.hoverlink {
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.noselect {
+
 }

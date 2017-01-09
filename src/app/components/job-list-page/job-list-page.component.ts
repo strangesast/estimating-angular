@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Observable, BehaviorSubject } from 'rxjs';
 
 import { ElementService } from '../../services/element.service';
+import { SearchService } from '../../services/search.service';
 
 import { User, Collection } from '../../models/classes';
 
@@ -17,12 +18,11 @@ export class JobListPageComponent implements OnInit {
   aboutJob: any = {}; // { job: about }
 
   jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
-  constructor(private elementService: ElementService) { }
+  constructor(private elementService: ElementService, private searchService: SearchService) { }
 
   ngOnInit() {
    let handleAbout = (job) => {
      let getAbout = this.elementService.aboutJob(job).map(about => {
-       console.log(about);
        job.about = about;
      });
      return Observable.of(job).concat(getAbout.ignoreElements().map(()=>job));
@@ -50,6 +50,7 @@ export class JobListPageComponent implements OnInit {
        this.jobs = jobs;
      });
    });
+   this.searchService.setJob(null);
   }
 
   createNewJob():void {
@@ -84,5 +85,10 @@ export class JobListPageComponent implements OnInit {
 
   deleteJob(job:Collection) {
     this.elementService.removeJob(job.id);
+  }
+
+  filter(jobs: Collection[], filter?) {
+    if(filter) return [];
+    return jobs;
   }
 }

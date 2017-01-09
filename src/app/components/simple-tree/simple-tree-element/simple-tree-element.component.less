@@ -5,7 +5,15 @@
 :host:first-child > li {
   border-top: 1px solid @off-white;
 }
-li {
+:host > li {
   padding: 8px;
   border-bottom: 1px solid @off-white;
+  .generate-levels(@n, @i: 0) when(@i =< @n) {
+    &[depth='@{i}'] {
+      margin-left: @i * 20px;
+    }
+    .generate-levels(@n, (@i+1));
+  }
+  .generate-levels(10);
 }
+

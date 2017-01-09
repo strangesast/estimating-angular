@@ -29,6 +29,7 @@ import {
   Collection
 } from '../../models/classes';
 import { ElementService } from '../../services/element.service';
+import { SearchService } from '../../services/search.service';
 import { JobService }     from '../../services/job.service';
 
 @Component({
@@ -44,6 +45,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
   constructor(
     private elementService: ElementService,
+    private searchService: SearchService,
     private jobService: JobService,
     private route: ActivatedRoute
   ) { }
@@ -51,7 +53,10 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ngOnInit() {
     this.route.data.subscribe(({job: { job: jobSubject }}) => {
       this.jobSubject = jobSubject;
-      this.jobSubscription = this.jobSubject.subscribe(job => this.job = job);
+      this.jobSubscription = this.jobSubject.subscribe(job => {
+        this.searchService.setJob(job);
+        this.job = job;
+      });
     });
   }
 

@@ -13,12 +13,16 @@ import {
   Input
 } from '@angular/core';
 
+import { Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
+
 import {
   SIMPLE_TREE_ELEMENT_SELECTOR,
   SimpleTreeElementComponent
 } from './simple-tree-element/simple-tree-element.component';
 
-import { select, Selection, HierarchyNode } from 'd3';
+import { waitForTransition } from '../../resources/util';
+
+import { interpolate, transition, select, Selection, HierarchyNode } from 'd3';
 import { hierarchy } from 'd3-hierarchy';
 
 let cnt = 0;
@@ -46,6 +50,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() rootNode: HierarchyNode<any>|HierarchyNode<any>[];
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
 
+  private nodesSubject: ReplaySubject<HierarchyNode<any>[]> = new ReplaySubject(1);
   private host: Selection<any, any, any, any>;
   private htmlElement: HTMLElement;
   private childComponentFactory: ComponentFactory<any>;
@@ -59,6 +64,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
+    this.nodesSubject.debounceTime(100).switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
   }
 
   createChildComponent(data, index) {
@@ -76,26 +82,53 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     return element;
   }
 
+  removeChildComponent(element: HTMLElement) {
+    let component = this.elementComponentRefMap.get(element);
+    let res = this.elementComponentRefMap.delete(element);
+    component.destroy();
+    return res;
+  }
+
+
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = select(this.htmlElement);
-    console.log('host', this.host);
     this.update(this.rootNode);
   }
 
-  update(nodes:HierarchyNode<any>|HierarchyNode<any>[]) {
+  update(nodes) {
+    this.nodesSubject.next(nodes);
+  }
+
+  subjectUpdate(nodes:HierarchyNode<any>|HierarchyNode<any>[]) {
     if(!Array.isArray(nodes)) nodes = [nodes];
     if(!this.host || !nodes) return;
     let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
     let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR);
-    console.log('arr', arr);
 
-    selection
+    let t = transition(null).duration(100);
+
+    let withData = selection.data(arr, (d:any) => d.temp || (d.temp = ++cnt))
+
+    let toRemove = withData
+      .exit()
+      .transition(t)
+      .styleTween('opacity', interpolate.bind(null, 1,0))
+      .remove();
+
+    let toAdd = withData
       .order()
-      .data(arr, (d:any) => d.temp || (d.temp = ++cnt))
       .enter()
       .append(this.createChildComponent.bind(this))
-      .style('top', (el, i) => (i*40) + 'px');
+      .transition(t)
+      .styleTween('opacity', interpolate.bind(null, 0,1))
+
+    return Observable.forkJoin(...[toRemove, toAdd].map(waitForTransition)).map(([removed]:[any[]]) => {
+      removed.forEach(el => {
+        return this.removeChildComponent(el.element);
+      });
+    });
+
   }
 
   ngOnChanges(changes: any) {

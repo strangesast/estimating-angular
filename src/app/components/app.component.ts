@@ -32,6 +32,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.searchService.results.subscribe(results => {
+      console.log('results called', results);
       this.results = results;
     });
   }

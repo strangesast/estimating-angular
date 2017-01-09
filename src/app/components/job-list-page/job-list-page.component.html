@@ -1,5 +1,5 @@
-<span class="title">Local Jobs</span>
 <div class="table">
+  <span class="title">Local Jobs</span>
   <ul class="header">
     <li class="name"><a class="hoverunderline">Name</a></li>
     <li class="description"><a class="hoverunderline">Description</a></li>
@@ -9,7 +9,7 @@
     <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
   </ul>
   <ul class="jobs">
-    <li *ngFor="let job of jobs" class="list-item" tabindex="0">
+    <li *ngFor="let job of filter(jobs)" class="list-item" tabindex="0">
       <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
       <span class="description">{{ job.description }}</span>
       <span class="owner">{{ job.owner.name }}</span>
@@ -21,7 +21,36 @@
       <span class="name">None</span>
     </li>
   </ul>
+  <div>
+    <button (click)="createNewJob()">Create New</button>
+  </div>
 </div>
-<div>
-  <button (click)="createNewJob()">Create New</button>
+<div class="table">
+  <span class="title">Remote Jobs</span>
+  <ul class="header">
+    <li class="name"><a class="hoverunderline">Name</a></li>
+    <li class="description"><a class="hoverunderline">Description</a></li>
+    <li class="owner"><a class="hoverunderline">Owner</a></li>
+    <li class="type"><a class="hoverunderline">Type</a></li>
+    <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
+    <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
+  </ul>
+  <ul class="jobs">
+    <li *ngFor="let job of filter(jobs, true)" class="list-item" tabindex="0">
+      <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
+      <span class="description">{{ job.description }}</span>
+      <span class="owner">{{ job.owner.name }}</span>
+      <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
+      <span class="folders-cnt">{{ 0 }}</span>
+      <span class="components-cnt">{{ 0 }}</span>
+    </li>
+    <li *ngIf="!jobs || !filter(jobs, true).length">
+      <span class="name">None</span>
+    </li>
+  </ul>
+  <!--
+  <div>
+    <button (click)="createNewJob()">Create New</button>
+  </div>
+  -->
 </div>

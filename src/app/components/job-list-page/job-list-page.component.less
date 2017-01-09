@@ -27,10 +27,8 @@
     li.owner, li > .owner {
       width: 15%;
     }
-    li.type, li > .type {
-      width: 5%;
-    }
-    li.folders-cnt, li > .folders-cnt, li.components-cnt, li > .components-cnt {
+    li.type, li > .type, li.folders-cnt, li > .folders-cnt, li.components-cnt, li > .components-cnt {
+      justify-content: center;
       text-align: center;
       width: 5%;
     }
@@ -42,8 +40,17 @@
   ul.header {
     white-space: nowrap;
   }
+  /*
   ul.header > li, li > * {
     display: inline-block;
+  }
+  */
+  ul.header, li {
+    display: flex;
+    flex-direction: row;
+  }
+  &:not(:first-child) {
+    margin-top: 20px;
   }
 }
 
@@ -54,10 +61,6 @@
     cursor: pointer;
     text-decoration: underline;
   }
-}
-
-.table {
-  margin-top: 20px;
 }
 
 @off-white: #D5D8DD;

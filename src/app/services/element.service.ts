@@ -63,6 +63,7 @@ export class ElementService {
 
   public _users: BehaviorSubject<User[]> = new BehaviorSubject([]);
   public users: Observable<User[]> = this._users.asObservable();
+  public isReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   public jobMap: any;
   public loaded: any = {};
@@ -83,6 +84,7 @@ export class ElementService {
         this.db = store;
         this.repo = repo;
         this.gitdb = gitdb;
+        this.isReady.next(true);
         return { store, repo };
       });
     } else {

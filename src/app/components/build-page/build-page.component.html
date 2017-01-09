@@ -1,9 +1,9 @@
 <div class="navigation">
   <ul class="toggle" *ngIf="nestConfig">
-    <li *ngFor="let folderName of nestConfig.folders.order" [class.active]="nestConfig.folders.enabled[folderName]">
+    <li *ngFor="let folderName of nestConfig.folders.order" [class.active]="nestConfig.folders.enabled[folderName]" (click)="toggleFolderVisibility(folderName, $event.ctrlKey)" class="hoverlink noselect">
       <span [ngClass]="FOLDER_ICONS[folderName]"></span>
       <span>{{ folderName[0].toUpperCase() + folderName.slice(1) }}</span>
-    <li [class.active]="nestConfig.component.enabled">
+    <li [class.active]="nestConfig.component.enabled" (click)="toggleComponentVisibility($event.ctrlKey)" class="hoverlink noselect">
       <span [ngClass]="FOLDER_ICONS['component']"></span>
       <span>Component</span>
     <!-- fucking weird - no closing tags -->
@@ -11,5 +11,10 @@
   <div class="search">
     <input type="text" placeholder="add filter">
   </div>
+</div>
+<div class="navigation">
+  <ul class="filters">
+    <li *ngFor="let filter of filters" [class.active]="filterActive(filter.affects)"><span class="fa fa-remove remove"></span><span>{{ filter.name }}</span></li>
+  </ul>
 </div>
 <app-nest [nest]="nest"></app-nest>

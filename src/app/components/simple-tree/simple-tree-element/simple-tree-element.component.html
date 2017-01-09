@@ -1,4 +1,5 @@
-<li *ngIf="data && data.data" class="node">
+<li [attr.depth]="data.depth" *ngIf="data && data.data" class="node">
+  <span class="fa" [ngClass]="typeToClass(data.data.type)"></span>
   <span class="name">{{ data.data.name }}</span>
   <p class="description">{{ data.data.description }}</p>
 </li>

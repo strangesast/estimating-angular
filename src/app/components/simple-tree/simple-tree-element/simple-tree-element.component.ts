@@ -32,4 +32,18 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
     console.log('changes', changes);
   }
 
+  typeToClass(type: string) {
+    switch (type) {
+      case 'component':
+        return 'fa-cubes';
+      case 'filter':
+        return 'fa-filter';
+      case 'job':
+        return 'fa-truck';
+      case 'folder':
+        return 'fa-folder-o';
+      default:
+        return 'fa-question';
+    }
+  }
 }
