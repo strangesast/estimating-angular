@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 
 import {
   Observable,
-  BehaviorSubject
+  BehaviorSubject,
+  ReplaySubject
 } from 'rxjs';
 
 import {
@@ -791,17 +792,16 @@ export class ElementService {
   }
 
   buildTrees(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
+    let subject = new ReplaySubject(1);
     let roots = {};
-    return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
+    configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
       // detect root prop add/remove
       let n = Object.keys(Object.assign({}, job.folders.roots, config.folders.roots));
       let m = Object.keys(roots);
       let rootPropsChanged = n.some(el=>m.indexOf(el) === -1) || m.some(el=>n.indexOf(el) === -1);
-      console.log('rootPropsChanged', rootPropsChanged, n, m);
       if(rootPropsChanged) {
         n.forEach(name => {
           let idSubject = configSubject.map(_config => _config.folders.roots[name]||job.folders.roots[name]).startWith('').distinctUntilChanged().pairwise().map(([a, b]) => {
-            console.log('a "'+a+'" changed to b "'+b+'"');
             return b;
           });
           roots[name] = this.buildTreeSubject(jobSubject, idSubject);
@@ -816,6 +816,7 @@ export class ElementService {
       } else {
         return Observable.never();
       }
-    });
+    }).subscribe(subject);
+    return subject;
   }
 }

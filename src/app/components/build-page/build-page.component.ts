@@ -32,6 +32,9 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private jobSubject: BehaviorSubject<Collection>;
   private jobSubscription: Subscription;
 
+  private nestEnabled: boolean = false;
+  private folderEnabled: string = '';
+
   private trees: any[];
   private treesSubject: BehaviorSubject<any>;
 
@@ -79,14 +82,16 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       this.nestConfigSubject.subscribe(config => {
         this.nestConfig = config
 
-        if(config.component.enabled && Object.keys(config.folders.enabled).filter(n=>config.folders.enabled[n]).length) {
+        if(config.component.enabled) {
           // enable nest, disable tree
-          console.log('nest')
+          this.nestEnabled = true;
+          this.folderEnabled = '';
 
         } else {
           // disable nest, enable tree
-          let name = Object.keys(config.folders.enabled).find(n=>config.folders.enabled[n]) || 'component';
-          console.log('tree: name', name);
+          let name = Object.keys(config.folders.enabled).find(n=>config.folders.enabled[n]);
+          this.folderEnabled = name;
+          this.nestEnabled = false;
         }
       });
       this.nestSubject = nestSubject;
@@ -96,7 +101,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       });
       this.treesSubject = trees;
       this.treesSubject.subscribe((trees) => {
-        console.log('trees updated');
         this.trees = trees;
       });
     });

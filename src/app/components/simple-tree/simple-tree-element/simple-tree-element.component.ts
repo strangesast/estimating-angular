@@ -32,7 +32,6 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes) {
-    console.log('changes', changes);
   }
 
   onEdit() {

@@ -76,7 +76,6 @@ export class JobListPageComponent implements OnInit {
         console.error(e);
       }, () => {
         this.elementService.saveJob(job, 'first').then(saveResult => {
-          console.log('saveResult', saveResult);
           this.elementService.compareTree(saveResult.commit.tree);
         });
       }

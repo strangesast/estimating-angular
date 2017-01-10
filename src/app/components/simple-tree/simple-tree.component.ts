@@ -147,7 +147,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnChanges(changes: any) {
     if('rootNode' in changes) {
       if(this.nodeSub) this.nodeSub.unsubscribe();
-      this.nodeSub = this.rootNode.do(x=>console.log('root node changed', x)).switchMap(this.subjectUpdate.bind(this)).subscribe(this.subjectUpdate);
+      this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.subjectUpdate);
     }
   }
 }

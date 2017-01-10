@@ -17,7 +17,7 @@
     <li *ngFor="let filter of filters" [class.active]="filterActive(filter.affects)"><span class="fa fa-remove remove"></span><span>{{ filter.name }}</span></li>
   </ul>
 </div>
-<div *ngIf="trees">
-  <app-simple-tree *ngFor="let folderName of job.folders.order" [rootNode]="trees[folderName]" (componentEdit)="componentEdit($event)"></app-simple-tree>
+<div *ngFor="let folderName of job.folders.order">
+  <app-simple-tree *ngIf="folderEnabled === folderName" [rootNode]="trees[folderName]" (componentEdit)="componentEdit($event)"></app-simple-tree>
 </div>
-<app-nest [nest]="nestSubject"></app-nest>
+<app-nest *ngIf="nestEnabled" [nest]="nestSubject"></app-nest>
