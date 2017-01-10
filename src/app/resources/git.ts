@@ -71,9 +71,11 @@ export function logWalk(repo, hash: string): Promise<any> {
   });
 }
 
+/*
 export function* treeWalk(repo: Repo, treeHash: string) {
   // Observable.from((function* () { ... })())
 }
+*/
 
 export function loadHashAs(repo: Repo, kind: 'blob'|'tree'|'commit'|'text', hash: string): Promise<any> {
   return promisify(repo.loadAs.bind(repo), kind, hash).then((res) => {

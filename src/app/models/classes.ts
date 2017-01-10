@@ -1,4 +1,4 @@
-// account of the user editing / saving job / components
+/* account of the user editing / saving job / components */
 export class User {
   static storeName = 'users';
 

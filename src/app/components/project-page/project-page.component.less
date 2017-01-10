@@ -48,6 +48,16 @@
     display: inline-block;
     line-height: @info-height - 16px;
     padding: 8px;
+
+    &.counts {
+      span > span {
+        margin-left: 4px;
+      }
+      
+      span + span {
+        margin-left: 8px;
+      }
+    }
   }
 }
 

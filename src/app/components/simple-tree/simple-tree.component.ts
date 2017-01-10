@@ -100,10 +100,12 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = select(this.htmlElement);
+    if(this.nodeSub) this.nodeSub.unsubscribe();
     this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
   }
 
   subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
+    console.log('subject update');
     if(!Array.isArray(nodes)) nodes = [nodes];
     if(!this.host || !nodes) return Observable.never();
 

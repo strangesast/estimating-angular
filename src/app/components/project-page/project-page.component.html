@@ -12,18 +12,16 @@
 </div>
 <ul class="info">
   <li>
-    <span style="font-style:italic">Buy</span>
-    <span>$3.50</span>
-    <span style="font-style:italic">Sell</span>
-    <span>$400</span>
-
+    <span>Total</span>
+    <span style="font-style:italic">$0.00</span>
   </li>
-  <li>
-    <span class="fa fa-folder-o"></span><span>20</span>
-    <span class="fa fa-cubes"></span><span>10</span>
+  <li class="counts">
+    <span title="number of folders">{{stats.folderCnt}}<span class="fa fa-folder-o"></span></span>
+    <span title="number of unique components">{{stats.componentCnt}}<span class="fa fa-cube"></span></span>
+    <span title="number of children">{{stats.childCnt}}<span class="fa fa-cubes"></span></span>
   </li>
 </ul>
 <router-outlet></router-outlet>
-<div class="edit-windows">
+<div class="edit-windows" *ngIf="editWindowsEnabled">
   <app-edit-window *ngFor="let id of openElementIds" [config]="openElements[id].config" [element]="openElements[id].element" (close)="closeOpenElement(openElements[id])"></app-edit-window>
 </div>

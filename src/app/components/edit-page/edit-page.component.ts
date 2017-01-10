@@ -1,14 +1,10 @@
-import { ActivatedRoute, Params, Router }   from '@angular/router';
-import { Location }                 from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { 
-  Component,
-  OnInit,
-} from '@angular/core';
 
+import { Observable, BehaviorSubject } from 'rxjs'
 
 import { JobService } from '../../services/job.service';
-
 import { Child, ComponentElement, FolderElement } from '../../models/classes';
 
 @Component({
@@ -18,6 +14,10 @@ import { Child, ComponentElement, FolderElement } from '../../models/classes';
 })
 
 export class EditPageComponent implements OnInit {
+  public selectedElement: any = null;
+  public openElements: any[];
+  public openElementIds: string[];
+  private openElementsSubject: BehaviorSubject<any[]>;
 
   constructor(
     private jobService: JobService,
@@ -27,7 +27,16 @@ export class EditPageComponent implements OnInit {
   ) { }
 
   ngOnInit():void{
-    this.route.data.subscribe((data:any) => {
+    this.route.parent.data.subscribe(({ job: { openElements }}) => {
+      this.openElementsSubject = openElements;
+      this.openElementsSubject.switchMap(elements => {
+        let ids = Object.keys(elements);
+        let arr = ids.map(id => elements[id].element)
+        console.log('arr', arr);
+        return Observable.combineLatest(...arr);
+      }).subscribe(elements => {
+        this.openElements = elements;
+      });
     });
   }
 
@@ -36,5 +45,9 @@ export class EditPageComponent implements OnInit {
   }
 
   ngOnDestroy() {
+  }
+
+  typeOf(element) {
+    return element instanceof FolderElement ? element.type : element instanceof ComponentElement ? 'component' : element instanceof Child ? 'child' : 'unknown';
   }
 }

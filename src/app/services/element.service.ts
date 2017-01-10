@@ -15,8 +15,7 @@ import {
   updateRef,
   loadHashAs,
   folderHashFromArray,
-  readRef,
-  treeWalk
+  readRef
 } from '../resources/git';
 
 import {
@@ -317,7 +316,8 @@ export class ElementService {
   }
 
   createExampleElements(job, n = 3) {
-    let arr = [...Array(n).keys()];
+    //let arr = [...Array(n).keys()];
+    let arr = Array.from(Array(n).keys());
     let components, folders, children;
 
     let createFolders = Promise.all(arr.map(i => {

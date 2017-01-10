@@ -3,11 +3,14 @@
   display: block;
 }
 :host:first-child > li {
-  border-top: 1px solid @off-white;
+  //border-top: 1px solid @off-white;
+  border-top: none;
 }
 :host > li {
   padding: 8px;
+  display: flex;
   border-bottom: 1px solid @off-white;
+
   .generate-levels(@n, @i: 0) when(@i =< @n) {
     &[depth='@{i}'] {
       margin-left: @i * 20px;
@@ -15,9 +18,16 @@
     .generate-levels(@n, (@i+1));
   }
   .generate-levels(10);
+
+  & > span:not(:first-child) {
+    margin-left: 8px;
+  }
 }
 .hoverlink {
   &:hover {
     cursor: pointer;
   }
+}
+.spacer {
+  flex-grow: 1;
 }

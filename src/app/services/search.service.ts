@@ -38,8 +38,8 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
 
   constructor(private elementService: ElementService) { }
 
-  startListening(): void{
-    this.jobSub = this.elementService.isReady.distinct().switchMap(isReady => isReady ? this.currentJob.switchMap(job => {
+  startListening(): void {
+    let jobPageSwitch:Observable<any> = this.currentJob.switchMap((job:Collection) => {
       if(job) {
         let prom = this.elementService.retrieveCollectionComponents(job, 10).then(components => {
           let root = {
@@ -59,7 +59,8 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
           { name: 'Create New Component', type: 'component' },
           { name: 'Create New Folder', type: 'folder' }
         ].map(n=>D3.hierarchy(n)));
-        return Observable.fromPromise(Promise.all([prom, prom2]).then(results => results.reduce((a, b)=>a.concat(b))));
+        return <any>Observable.fromPromise(<any>Promise.all([prom, prom2]).then((results:any) => results.reduce((a, b)=>a.concat(b))));
+
       } else {
         let getJobs = this.elementService.getJobs();
         return Observable.fromPromise(getJobs).flatMap(subject => {
@@ -87,7 +88,8 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
           });
         });
       }
-    }) : Observable.never()).subscribe((results:any) => {
+    });
+    this.jobSub = this.elementService.isReady.distinct().switchMap(isReady => isReady ? jobPageSwitch : Observable.never()).subscribe((results:any) => {
       //console.log('results', results);
       this.results.next(results);
     });

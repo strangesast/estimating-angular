@@ -17,6 +17,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
+import { TypeToClassPipe } from '../../pipes/type-to-class.pipe'
 import { Child } from '../../models/classes';
 
 let cnt = 0;
@@ -24,7 +25,8 @@ let cnt = 0;
 @Component({
   selector: 'app-nest',
   templateUrl: './nest.component.html',
-  styleUrls: ['./nest.component.less']
+  styleUrls: ['./nest.component.less'],
+  providers: [ TypeToClassPipe ]
 })
 export class NestComponent implements OnInit {
   @Input() nest: any;
@@ -42,7 +44,8 @@ export class NestComponent implements OnInit {
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
-    private element: ElementRef
+    private element: ElementRef,
+    private typeToClassPipe: TypeToClassPipe
   ) { }
 
   ngOnInit() {
@@ -68,33 +71,39 @@ export class NestComponent implements OnInit {
 
   */
   ngAfterViewInit() {
-    this.htmlElement = this.element.nativeElement.querySelector('div');
+    this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = D3.select(this.htmlElement);
-    this.nest.startWith({ entries: null, keys: null }).pairwise().switchMap(this.subjectUpdate.bind(this)).subscribe(result => console.log('nest update result', result)); 
+    this.nest.switchMap(this.subjectUpdate.bind(this)).subscribe();
     //this.update(this.nest);
   }
 
-  subjectUpdate([{entries: entriesA, keys: keysA }, { entries: entriesB, keys: keysB }]) {
+  subjectUpdate({ entries, keys }) {
     let arr:any = [];
 
     let nest = D3.nest()
-    keysB.forEach(key => {
-      nest = nest.key(d => d.folders[key.data.type]);
+    keys.forEach(key => {
+      nest = nest.key((d:any) => d.folders[key.data.type]);
     })
 
-    let data = nest.entries(entriesB);
+    let data = nest.entries(entries);
 
     let selection = this.host;
 
-    keysB.forEach(key => {
-      selection.text(key.data.name)
+    keys.forEach(key => {
+      /*
+      let title = selection.select('span').enter().append('span').attr('class', 'title');
+      title.append('span').attr('class', ['fa', this.typeToClassPipe.transform(key.data.type)].join(' '));
+      title.append('span').text(key.data.name);
+      */
+      selection.text(key.data.name);
       selection.selectAll('li').data([]).exit().remove();
       selection = selection.selectAll('ul').data(d => d ? d.values : data).enter().append('ul');
     });
 
     if(selection == this.host) selection.text('');
     selection.selectAll('ul').data([]).exit().remove();
-    selection.selectAll('li').data(d => d ? d.values : data).enter().append('li').text(d => d instanceof Child ? d.name : d.key)
+    selection.selectAll('span').data([]).exit().remove();
+    selection.selectAll('li').data((d:any) => d ? d.values : data).enter().append('li').text((d:any) => d instanceof Child ? d.name : d.key)
     
     return Observable.never();
   }

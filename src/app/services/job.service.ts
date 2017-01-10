@@ -88,7 +88,10 @@ export class JobService implements Resolve<Promise<any>> {
 
   openElement(element: Child|ComponentElement|FolderElement) {
     let elements = this.openElements.getValue();
-    if(element.id in elements) return Promise.resolve(elements[element.id]);
+    if (element.id in elements) {
+      elements[element.id].config.open = true;
+      return Promise.resolve(elements[element.id]);
+    }
     return this.elementService.loadElement(element.constructor, element.id).then(bs => {
       Object.keys(elements).forEach(id => {
         elements[id].config.open = false;

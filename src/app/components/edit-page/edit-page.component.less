@@ -1,0 +1,21 @@
+ul.tabs {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  & > li {
+    display: inline-block;
+    padding: 8px;
+    span + span {
+      margin-left: 4px;
+    }
+    &:not(:first-child) {
+      border-left: 1px solid @off-white;
+    }
+  }
+}
+@off-white: #D5D8DD;
+:host {
+  display: block;
+  margin-left: 10px;
+}
