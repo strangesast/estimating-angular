@@ -13,7 +13,7 @@ import {
   Input
 } from '@angular/core';
 
-import { Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
+import { Subscription, Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
 
 import {
   SIMPLE_TREE_ELEMENT_SELECTOR,
@@ -47,14 +47,15 @@ const TEST_DATA = [
   styleUrls: ['./simple-tree.component.less']
 })
 export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
-  @Input() rootNode: HierarchyNode<any>|HierarchyNode<any>[];
+  @Input() rootNode: ReplaySubject<HierarchyNode<any>|HierarchyNode<any>[]>;
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
 
-  private nodesSubject: ReplaySubject<HierarchyNode<any>[]> = new ReplaySubject(1);
+  //private nodesSubject: ReplaySubject<HierarchyNode<any>[]> = new ReplaySubject(1);
   private host: Selection<any, any, any, any>;
   private htmlElement: HTMLElement;
   private childComponentFactory: ComponentFactory<any>;
   private elementComponentRefMap: Map<HTMLElement, ComponentRef<any>>;
+  private nodeSub: Subscription;
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
@@ -64,7 +65,6 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
-    this.nodesSubject.switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
   }
 
   createChildComponent(data, index) {
@@ -93,16 +93,15 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = select(this.htmlElement);
-    this.update(this.rootNode);
-  }
-
-  update(nodes) {
-    this.nodesSubject.next(nodes || []);
+    this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
   }
 
   subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
+    console.log('nodes', nodes);
+
     if(!Array.isArray(nodes)) nodes = [nodes];
     if(!this.host || !nodes) return Observable.never();
+
     let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
     let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR);
 
@@ -133,7 +132,8 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   ngOnChanges(changes: any) {
     if('rootNode' in changes) {
-      this.update(this.rootNode);
+      if(this.nodeSub) this.nodeSub.unsubscribe();
+      this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
     }
   }
 }

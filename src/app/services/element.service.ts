@@ -603,6 +603,7 @@ export class ElementService {
 
   buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
+      console.log('root', root, 'folderSubject', folderSubject);
       let folder = folderSubject.getValue();
       if(!(folder instanceof FolderElement)) throw new Error('invalid folder');
       if(folder.job != job.id) throw new Error('incompatible job/folder');
@@ -614,55 +615,109 @@ export class ElementService {
     });
   }
 
+  buildComponentTree(job: Collection, root?) {
+  }
+
   loadComponentsFromRoot(job, folderNodes) {
   };
 
+  loadChildrenAtRoot2(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
+    return Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]) => {
+      let rootFolderNames = job.folders.order;
+      let rootFolderIds = rootFolderNames.map(n => config.folders.roots[n]||job.folders.roots[n]);
+      let getRootFolders = Promise.all(rootFolderIds.map(id => this.buildTree(job, id).then(bs=>bs.getValue())));
 
-  //                                                        should be NestConfig
-  buildNest(job: Collection, configSubject: BehaviorSubject<any>): Promise<BehaviorSubject<Nest<any, any>>> {
-    let config = configSubject.getValue();
-    let componentMap = {};
+      let rootFolders;
+      let getPairs = getRootFolders.then(folders => {
+        rootFolders = folders;
+        let descendants = folders.map((folder:any)=>folder.descendants());
 
-    return Promise.all(config.folders.order.filter(name =>
-      config.folders.enabled[name]).map(name =>
-        this.buildTree(job, config.folders.roots[name] || job.folders.roots[name]))
-    ).then((folders:any[]) => {
-      return retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(job.id), 'job').then(locations => {
-        let componentIds = [];
-        let components = {};
+        let recurse = (arr, curr=[]) => {
+          if (!arr.length) {
+            return [curr];
+          }
+          let a = arr[0];
+          let next = arr.slice(1);
+          return a.map(x => recurse(next, curr.concat(x))).reduce((a,b)=>a.concat(b));
+        }
+        return recurse(descendants);
+      });
 
-        let children = locations.map(loc => {
-          loc.children.forEach(child => {
-            if(componentIds.indexOf(child.ref) === -1) componentIds.push(child.ref);
-            child.folders = {};
-            job.folders.order.forEach((name, i) => {
-              child.folders[name] = [loc.folder1, loc.folder2][i];
+      let combine = getPairs.then(pairs => {
+
+        let getLocations = rootFolders.length ? Promise.all(pairs.map(pair => {
+          if(pair.length == 1) return this.retrieveLocationsWith(job, rootFolderNames[0], pair[0].data.id);
+          return this.retrieveLocation(pair.map(x=>x.data.id));
+        })).then((locations:any[]) => locations.reduce((a, b) => Array.isArray(a) ? a.concat(b) : [a].concat(b)).filter((x,i,arr)=>x != null && arr.indexOf(x) === i)) : this.retrieveAllLocations(job);
+
+        let getChildren = getLocations.then(locations => {
+          return locations.map(loc => loc.children ? loc.children.map(child => {
+            let folders = {};
+            job.folders.order.map((name, i) => {
+              folders[name] = loc['folder' + (i+1)];
             });
-          });
-          return loc.children;
-        }).reduce((a, b) => a.concat(b), []);
+            child.folders = folders;
+            return child;
+          }) : []).reduce((a,b) => a.concat(b));
+        });
 
-        return Promise.all(componentIds.map(id=>this.loadElement(ComponentElement, id).then(component => {
-          let val = component.getValue();
-          components[val.id] = val;
-        }))).then(() => {
-
-          children.forEach(child => {
-            child.data = components[child.ref];
+        return getChildren.then(children => {
+          return D3.hierarchy({
+            name: 'Components',
+            children: children
           });
-          let nest = D3.nest();
-          folders.map(f=>f.getValue()).forEach(folder => {
-            nest = nest.key((d:any) => d.folders[folder.data.type]);
-          });
-          return new BehaviorSubject(nest.entries(children))
         });
       });
+      return Observable.fromPromise(combine);
     });
   }
 
+  loadChildrenAtRoot(job: Collection, roots) {
+    let rootFolderNames = Object.keys(roots);
+    let rootFolderIds = rootFolderNames.map(n => roots[n]);
 
+    let getRootFolders = Promise.all(rootFolderIds.map(id => this.buildTree(job, id).then(bs=>bs.getValue())));
 
-  buildNest2(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
+    let rootFolders;
+    let getPairs = getRootFolders.then(folders => {
+      rootFolders = folders;
+      let descendants = folders.map((folder:any)=>folder.descendants());
+
+      let recurse = (arr, curr=[]) => {
+        if (!arr.length) {
+          return [curr];
+        }
+        let a = arr[0];
+        let next = arr.slice(1);
+        return a.map(x => recurse(next, curr.concat(x))).reduce((a,b)=>a.concat(b));
+      }
+      return recurse(descendants);
+    });
+
+    let combine = getPairs.then(pairs => {
+
+      let getLocations = rootFolders.length ? Promise.all(pairs.map(pair => {
+        if(pair.length == 1) return this.retrieveLocationsWith(job, rootFolderNames[0], pair[0].data.id);
+        return this.retrieveLocation(pair.map(x=>x.data.id));
+      })).then((locations:any[]) => locations.reduce((a, b) => Array.isArray(a) ? a.concat(b) : [a].concat(b)).filter((x,i,arr)=>x != null && arr.indexOf(x) === i)) : this.retrieveAllLocations(job);
+
+      let getChildren = getLocations.then(locations => {
+        return locations.map(loc => loc.children ? loc.children.map(child => {
+          let folders = {};
+          job.folders.order.map((name, i) => {
+            folders[name] = loc['folder' + (i+1)];
+          });
+          child.folders = folders;
+          return child;
+        }) : []).reduce((a,b) => a.concat(b));
+      });
+
+      return getChildren;
+    });
+    return combine;
+  }
+
+  buildNest(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
     // find root folders
     // build folder trees based on roots / each folder filters
     // get locations for folder intersection
@@ -722,6 +777,31 @@ export class ElementService {
 
       return Observable.fromPromise(combine);
 
+    });
+  }
+
+  buildTrees(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
+    // return trees { name: treeSubject }
+
+    return Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]) => {
+      console.log('config', config);
+
+      let folderNames = config.folders.order;
+      let folderIds = folderNames.map(n=>config.folders.roots[n]||job.folders.roots[n]);
+
+      let root = {};
+      folderNames.forEach((n, i) => {
+        root[n] = folderIds[i];
+      });
+
+      let loadChildren = this.loadChildrenAtRoot2(jobSubject, configSubject);
+
+      return Observable.fromPromise(Promise.all(folderIds.map(n => this.buildTree(job, n)))).map(treeNodes => {
+        let trees = {};
+        folderNames.forEach((name, i) => trees[name] = treeNodes[i]);
+        trees['components'] = loadChildren;
+        return trees;
+      });
     });
   }
 }

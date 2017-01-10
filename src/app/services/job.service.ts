@@ -60,11 +60,13 @@ export class JobService implements Resolve<Promise<any>> {
           filters: []
         }
       });
-      let buildNest = this.elementService.buildNest2(jobSubject, nestConfig);
+      let buildNest = this.elementService.buildNest(jobSubject, nestConfig);
+      let buildTrees = this.elementService.buildTrees(jobSubject, nestConfig);
       return {
         job: jobSubject,
         nest: buildNest,
         nestConfig,
+        trees: buildTrees
       };
 
     }).catch(err => {

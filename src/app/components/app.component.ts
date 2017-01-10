@@ -3,6 +3,8 @@ import { OnInit, Component } from '@angular/core';
 import { HierarchyNode } from 'd3';
 import { hierarchy } from 'd3-hierarchy';
 
+import { ReplaySubject } from 'rxjs';
+
 import { SearchService } from '../services/search.service';
 
 const TEST_DATA = {
@@ -25,16 +27,11 @@ const TEST_DATA = {
 export class AppComponent implements OnInit {
   title = 'Estimating';
 
-  results: any[] = [];
-  searchNode: HierarchyNode<any> = hierarchy(TEST_DATA);
+  results: ReplaySubject<any[]>;
 
   constructor(private searchService: SearchService) { }
 
   ngOnInit() {
-    this.searchService.results.subscribe(results => {
-      console.log('results called', results);
-      this.results = results;
-    });
+    this.results = this.searchService.results;
   }
-
 }

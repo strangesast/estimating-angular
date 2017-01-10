@@ -32,6 +32,9 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private jobSubject: BehaviorSubject<Collection>;
   private jobSubscription: Subscription;
 
+  private trees: any[];
+  private treesSubject: BehaviorSubject<any>;
+
   private filters = [
     {
       name: 'All',
@@ -71,7 +74,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig }}) =>{
+    this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig, trees }}) =>{
       this.nestConfigSubject = nestConfig;
       this.nestConfigSubject.subscribe(config => {
         this.nestConfig = config
@@ -96,6 +99,10 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.job = job;
+      });
+      this.treesSubject = trees;
+      this.treesSubject.withLatestFrom(this.jobSubject).subscribe(([trees, job]) => {
+        this.trees = trees;
       });
     });
   }
