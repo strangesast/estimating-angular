@@ -50,14 +50,18 @@ export class EditPageComponent implements OnInit {
       description: ''
     });
 
+    /*
     this.jobService.getEditElements().subscribe(elements => {
       this.editElements = elements;
       if(elements.map(el=>el.id).indexOf(this.activeElementId) == -1) this.activeElementId = elements[0] ? elements[0].id : null;
     });
+    */
 
     this.route.data.subscribe((data:any) => {
       if(data.editService != null) {
+        /*
         this.jobService.addEditElement(data.editService);
+        */
         this.activeElementId = data.editService.id;
       } else {
         this.activeElementId = null;
@@ -65,9 +69,11 @@ export class EditPageComponent implements OnInit {
     });
   }
 
+  /*
   remove(el) {
     this.jobService.removeEditElement(el);
   }
+  */
 
   removeElement(el): void {
     //this.elementEditService.removeElement(el);

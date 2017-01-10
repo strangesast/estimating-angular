@@ -495,7 +495,7 @@ export class ElementService {
     });
   }
 
-  saveJob(collection: Collection, message) {
+  saveJob(collection: Collection, message): Promise<{ job: Collection, commit: Commit }> {
     return this.saveGitTree(collection).then(tree => {
       // save commit
       let commitObj = {
@@ -657,35 +657,20 @@ export class ElementService {
           return new BehaviorSubject(nest.entries(children))
         });
       });
-    })
+    });
+  }
 
-    
 
+
+  buildNest2(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
     // find root folders
     // build folder trees based on roots / each folder filters
     // get locations for folder intersection
     // get components based on locations + component filters
 
     // return { entries: entries, keys: keys }
-    /*
-    let getFolders = Promise.all(config.folders.order.map(name =>
-      this.loadElement(FolderElement, config.folders.roots[name]).then(folder =>
-        this.resolveChildren(folder))));
 
-
-
-    let nest = D3.nest();
-
-
-
-    return Promise.resolve(new BehaviorSubject(nest));
-    */
-  }
-
-
-
-  buildNest2(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
-    Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]) => {
+    return Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]) => {
       let rootFolderNames = config.folders.order
         .filter(name=>config.folders.enabled[name])
       let rootFolderIds = rootFolderNames
@@ -693,8 +678,9 @@ export class ElementService {
 
       let getRootFolders = Promise.all(rootFolderIds.map(id => this.buildTree(job, id).then(bs=>bs.getValue())));
 
-      let getLocations = getRootFolders.then(folders => {
-        console.log(folders);
+      let rootFolders;
+      let getPairs = getRootFolders.then(folders => {
+        rootFolders = folders;
         let descendants = folders.map((folder:any)=>folder.descendants());
 
         let recurse = (arr, curr=[]) => {
@@ -705,12 +691,15 @@ export class ElementService {
           let next = arr.slice(1);
           return a.map(x => recurse(next, curr.concat(x))).reduce((a,b)=>a.concat(b));
         }
-        let pairs = recurse(descendants);
+        return recurse(descendants);
+      });
 
-        let getLocations = folders.length ? Promise.all(pairs.map(pair => {
+      let combine = getPairs.then(pairs => {
+
+        let getLocations = rootFolders.length ? Promise.all(pairs.map(pair => {
           if(pair.length == 1) return this.retrieveLocationsWith(job, rootFolderNames[0], pair[0].data.id);
           return this.retrieveLocation(pair.map(x=>x.data.id));
-        })).then(locations => locations.reduce((a, b) => Array.isArray(a) ? a.concat(b) : [a].concat(b)).filter((x,i,arr)=>x != null && arr.indexOf(x) === i)) : this.retrieveAllLocations(job);
+        })).then((locations:any[]) => locations.reduce((a, b) => Array.isArray(a) ? a.concat(b) : [a].concat(b)).filter((x,i,arr)=>x != null && arr.indexOf(x) === i)) : this.retrieveAllLocations(job);
 
         let getChildren = getLocations.then(locations => {
           return locations.map(loc => loc.children ? loc.children.map(child => {
@@ -723,50 +712,16 @@ export class ElementService {
           }) : []).reduce((a,b) => a.concat(b));
         });
 
-
-        /*
-        if(descendants.length) {
-
-          let curr = [];
-          if(descendants.length) {
-            let a = descendants[0]
-            descendants = descendants.slice(1);
-            a.forEach(x => {
-              curr[0] = x;
-              if(descendants.length) {
-                let b = descendants[0];
-                descendants = descendants.slice(1);
-                b.forEach(y => {
-                  curr[1] = y;
-                  if(descendants.length) {
-                    let c = descendants[0];
-                    descendants = descendants.slice(1)
-                    c.forEach(z => {
-                      curr[2] = z;
-                      if(descendants.length) {
-                      } else {
-                        console.log('curr', curr.map(x=>x.data.name))
-                      }
-                    });
-                  } else {
-                    console.log('curr', curr.map(x=>x.data.name));
-                  }
-                });
-              } else {
-                console.log('curr', curr.map(x=>x.data.name));
-              }
-            });
-          } else {
-            console.log('curr', curr.map(x=>x.data.name));
+        return getChildren.then(children => {
+          return {
+            entries: children,
+            keys: rootFolders
           }
-
-        } else {
-          retrieveAllRecordsAs(this.db, Child)
-        }
-        */
+        });
       });
 
-      return Observable.never();
-    }).subscribe();
+      return Observable.fromPromise(combine);
+
+    });
   }
 }

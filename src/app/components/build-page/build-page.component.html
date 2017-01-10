@@ -17,4 +17,4 @@
     <li *ngFor="let filter of filters" [class.active]="filterActive(filter.affects)"><span class="fa fa-remove remove"></span><span>{{ filter.name }}</span></li>
   </ul>
 </div>
-<app-nest [nest]="nest"></app-nest>
+<app-nest [nest]="nestSubject"></app-nest>

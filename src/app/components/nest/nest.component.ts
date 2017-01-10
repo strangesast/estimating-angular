@@ -13,7 +13,7 @@ import {
   Input
 } from '@angular/core';
 
-import { BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
@@ -68,30 +68,39 @@ export class NestComponent implements OnInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('div');
     this.host = D3.select(this.htmlElement);
-    this.update(this.nest);
+    this.nest.switchMap(this.subjectUpdate.bind(this)).subscribe(result => console.log('nest update result', result)); 
+    //this.update(this.nest);
   }
 
-  update(nest) {
-    if(!this.host || !nest) return;
+  subjectUpdate({ entries, keys }) {
     let arr:any = [];
 
-    let selection = this.host.selectAll('div');
+    console.log('entries', entries, 'keys', keys);
 
-    console.log('nest', this.nest)
+    let nest = D3.nest()
+    keys.forEach(key => {
+      nest = nest.key((d:any) => d.folders[key.data.type]);
+    });
+    let data = nest.entries(entries);
+    console.log('data', data);
 
-    let outer = (ob) => {
-      let values = ob.values;
-      values.map(sub => {
-        if('key' in sub) {
-          return sub.values.map(el => outer(el));
-        } else {
-          sub
-        }
-      });
-    }
+    let s = this.host;
+
+    this.host.selectAll('ul').data(data).enter().append('ul').text((d)=>d.key).selectAll('li').data(d=>d.values).enter().append('li').text(d=>d.name);
+
+    keys.forEach(key => {
+      s = s.selectAll('ul').data(data).enter().append('ul').text(d => d.key)
+      data = data.map(d => d.values);
+    });
+
+    s.selectAll('li').data(d=>d.values).enter().append('li').text(d=>d.name);
+
+
+
+
+    return Observable.never();
 
     /*
-    console.log('nest', this.nest);
     this.nest.map(el => {
       console.log('el', el);
       if('key' in el) {
@@ -107,6 +116,7 @@ export class NestComponent implements OnInit {
     });
     */
 
+   /*
     selection
       .order()
       .data(this.nest[0])
@@ -114,11 +124,14 @@ export class NestComponent implements OnInit {
       .append('div')
       //.append(this.createChildComponent.bind(this))
       //.style('top', (el, i) => (i*40) + 'px');
+      */
   }
 
   ngOnChanges(changes: any) {
+    /*
     if('nest' in changes) {
       this.update(this.nest);
     }
+    */
   }
 }

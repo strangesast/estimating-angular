@@ -58,7 +58,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private nestConfig: NestConfig;
   private nestConfigSubject: BehaviorSubject<NestConfig>;
   private nestSubject: BehaviorSubject<Nest<any, any>>;
-  private nest: Nest<any, any>;
 
   public FOLDER_ICONS = {
     phase: 'fa fa-bookmark-o fa-lg',
@@ -88,9 +87,12 @@ export class BuildPageComponent implements OnInit, OnDestroy {
         }
       });
       this.nestSubject = nestSubject;
-      this.nestSubject.subscribe(nest => {
-        this.nest = nest;
+      /*
+      this.nestSubject.subscribe(({keys, entries}) => {
+        this.nestKeys = keys;
+        this.nestEntries = entries;
       });
+      */
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.job = job;

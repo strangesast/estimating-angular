@@ -60,17 +60,12 @@ export class JobService implements Resolve<Promise<any>> {
           filters: []
         }
       });
-      let buildNest = this.elementService.buildNest(job, nestConfig);
-      this.elementService.buildNest2(jobSubject, nestConfig);
-      return buildNest.then(nest =>  {
-        return {
-          job: jobSubject,
-          nest,
-          nestConfig,
-          //trees: this.trees,
-          //nest: this.nestSubject
-        }
-      });
+      let buildNest = this.elementService.buildNest2(jobSubject, nestConfig);
+      return {
+        job: jobSubject,
+        nest: buildNest,
+        nestConfig,
+      };
 
     }).catch(err => {
       if (err.message === 'invalid/nonexistant job') { // 404

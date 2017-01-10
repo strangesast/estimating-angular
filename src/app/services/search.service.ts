@@ -38,7 +38,7 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
 
   constructor(private elementService: ElementService) { }
 
-  startListening() {
+  startListening(): void{
     this.jobSub = this.elementService.isReady.distinct().switchMap(isReady => isReady ? this.currentJob.switchMap(job => {
       if(job) {
         let prom = this.elementService.retrieveCollectionComponents(job, 10).then(components => {

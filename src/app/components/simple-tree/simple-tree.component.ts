@@ -100,7 +100,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.nodesSubject.next(nodes || []);
   }
 
-  subjectUpdate(nodes:HierarchyNode<any>|HierarchyNode<any>[]) {
+  subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
     if(!Array.isArray(nodes)) nodes = [nodes];
     if(!this.host || !nodes) return Observable.never();
     let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
