@@ -17,6 +17,8 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
+import { Child } from '../../models/classes';
+
 let cnt = 0;
 
 @Component({
@@ -68,63 +70,35 @@ export class NestComponent implements OnInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('div');
     this.host = D3.select(this.htmlElement);
-    this.nest.switchMap(this.subjectUpdate.bind(this)).subscribe(result => console.log('nest update result', result)); 
+    this.nest.startWith({ entries: null, keys: null }).pairwise().switchMap(this.subjectUpdate.bind(this)).subscribe(result => console.log('nest update result', result)); 
     //this.update(this.nest);
   }
 
-  subjectUpdate({ entries, keys }) {
+  subjectUpdate([{entries: entriesA, keys: keysA }, { entries: entriesB, keys: keysB }]) {
     let arr:any = [];
 
-    console.log('entries', entries, 'keys', keys);
-
     let nest = D3.nest()
-    keys.forEach(key => {
-      nest = nest.key((d:any) => d.folders[key.data.type]);
-    });
-    let data = nest.entries(entries);
+    keysB.forEach(key => {
+      nest = nest.key(d => d.folders[key.data.type]);
+    })
+
+    let data = nest.entries(entriesB);
+
     console.log('data', data);
 
-    let s = this.host;
+    let selection = this.host;
 
-    this.host.selectAll('ul').data(data).enter().append('ul').text((d)=>d.key).selectAll('li').data(d=>d.values).enter().append('li').text(d=>d.name);
-
-    keys.forEach(key => {
-      s = s.selectAll('ul').data(data).enter().append('ul').text(d => d.key)
-      data = data.map(d => d.values);
+    keysB.forEach(key => {
+      selection.text(key.data.name)
+      selection.selectAll('li').data([]).exit().remove();
+      selection = selection.selectAll('ul').data(d => d ? d.values : data).enter().append('ul');
     });
 
-    s.selectAll('li').data(d=>d.values).enter().append('li').text(d=>d.name);
-
-
-
-
+    if(selection == this.host) selection.text('');
+    selection.selectAll('ul').data([]).exit().remove();
+    selection.selectAll('li').data(d => d ? d.values : data).enter().append('li').text(d => d instanceof Child ? d.name : d.key)
+    
     return Observable.never();
-
-    /*
-    this.nest.map(el => {
-      console.log('el', el);
-      if('key' in el) {
-        el.values.map(bel => {
-          console.log('bel', bel);
-          if('key' in el) {
-          } else {
-          }
-        });
-      } else {
-
-      }
-    });
-    */
-
-   /*
-    selection
-      .order()
-      .data(this.nest[0])
-      .enter()
-      .append('div')
-      //.append(this.createChildComponent.bind(this))
-      //.style('top', (el, i) => (i*40) + 'px');
-      */
   }
 
   ngOnChanges(changes: any) {

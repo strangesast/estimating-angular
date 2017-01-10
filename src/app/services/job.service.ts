@@ -52,7 +52,7 @@ export class JobService implements Resolve<Promise<any>> {
         folders: {
           order: ['phase', 'building'],
           roots: {},
-          enabled: { phase: false, building: true },
+          enabled: { phase: true, building: true },
           filters: []
         },
         component: {
