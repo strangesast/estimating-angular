@@ -90,18 +90,13 @@ export class BuildPageComponent implements OnInit, OnDestroy {
         }
       });
       this.nestSubject = nestSubject;
-      /*
-      this.nestSubject.subscribe(({keys, entries}) => {
-        this.nestKeys = keys;
-        this.nestEntries = entries;
-      });
-      */
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.job = job;
       });
       this.treesSubject = trees;
-      this.treesSubject.withLatestFrom(this.jobSubject).subscribe(([trees, job]) => {
+      this.treesSubject.subscribe((trees) => {
+        console.log('trees updated');
         this.trees = trees;
       });
     });
@@ -166,5 +161,9 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     let enabledFolders = Object.keys(config.folders.enabled).filter(n=>config.folders.enabled[n])
     let enabledComponent = config.component.enabled ? ['component'] : [];
     return types.some(type => type == 'all' || [].concat(enabledFolders, enabledComponent).indexOf(type) > -1);
+  }
+
+  componentEdit(evt) {
+    this.jobService.openElement(evt.data);
   }
 }

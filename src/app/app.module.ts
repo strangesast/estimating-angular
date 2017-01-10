@@ -26,6 +26,8 @@ import { ProjectPageComponent }       from './components/project-page/project-pa
 import { SimpleTreeComponent }        from './components/simple-tree/simple-tree.component';
 import { SimpleTreeElementComponent } from './components/simple-tree/simple-tree-element/simple-tree-element.component';
 
+import { TypeToClassPipe }            from './pipes/type-to-class.pipe';
+
 
 @NgModule({
   declarations: [
@@ -45,7 +47,8 @@ import { SimpleTreeElementComponent } from './components/simple-tree/simple-tree
     EditWindowComponent,
     NestComponent,
     SimpleTreeComponent,
-    SimpleTreeElementComponent
+    SimpleTreeElementComponent,
+    TypeToClassPipe
   ],
   imports: [
     BrowserModule,

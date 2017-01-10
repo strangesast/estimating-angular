@@ -1,42 +1,15 @@
-<div [@myAnimation]="active ? 'in' : 'out'">
-  <pre *ngIf="element">{{ element | json }}</pre>
-  <div *ngIf="isNew" class="form-group">
-    <label>Kind</label>
-    <select [ngModel]="kind" (ngModelChange)="newKindChanged($event)">
-      <option value="component">Component</option>
-      <option value="folder">Folder</option>
-      <option value="child">Child</option>
-    </select>
-    <div class="error"></div>
+<div>
+  <div class="header">
+    <div>
+      <span class="fa" [ngClass]="type | typeToClass"></span>
+      <span class="hoverlink" (click)="toggleOpen()">{{ _element.name }}</span>
+    </div>
+    <div>
+      <span class="hoverlink fa fa-remove" (click)="onClose()"></span>
+    </div>
   </div>
-  <form *ngIf="form!=null" (ngSubmit)="onSubmit(form)" [formGroup]="form">
-    <div *ngIf="['component', 'folder'].indexOf(kind) != -1" class="form-group">
-      <label>Name</label>
-      <input type="text" formControlName="name">
-      <small>A descriptive name for this element.</small>
-      <div [class.active]="form.get('name') ? (form.get('name').hasError('required') && form.get('name').touched) : false" class="error">Name required.</div>
-      <div [class.active]="form.get('name') ? (form.get('name').hasError('minlength') && form.get('name').touched) : false" class="error">Name must be at least 5 characters.</div>
-    </div>
-    <div *ngIf="['component', 'folder'].indexOf(kind) != -1" class="form-group">
-      <label>Description</label>
-      <input type="text" formControlName="description">
-      <small>Describe this element.</small>
-      <div class="error"></div>
-    </div>
-    <div *ngIf="kind == 'child'" class="form-group">
-      <label>Ref</label>
-      <input type="text" formControlName="ref">
-      <small></small>
-      <div [class.active]="form.get('ref') ? (form.get('ref').hasError('required') && form.get('ref').touched) : false" class="error">Ref required.</div>
-    </div>
-    <div *ngIf="kind == 'child'" class="form-group">
-      <label>Qty</label>
-      <input type="number" formControlName="qty">
-      <small>How many of this element.</small>
-      <div class="error"></div>
-    </div>
-
-    <button type="submit" [disabled]="form.invalid || !form.dirty">{{ isNew? 'Create' : 'Update'}}</button>
-    <button type="button" [disabled]="!form.dirty" (click)="reset()">Reset</button>
-  </form>
+  <div *ngIf="config.open" class="body">
+    <p>More about this object</p>
+    <pre>{{ _element | json }}</pre>
+  </div>
 </div>

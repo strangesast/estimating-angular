@@ -409,7 +409,6 @@ export class ElementService {
         return this.createExampleElements(job);
 
       }).then((elements) => {
-        console.log('created', elements);
         job.saveState = 'saved:uncommitted';
         bs.next(job);
         this.jobsSubject.next(this.jobsSubject.getValue().concat(bs));
@@ -603,7 +602,6 @@ export class ElementService {
 
   buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
-      console.log('root', root, 'folderSubject', folderSubject);
       let folder = folderSubject.getValue();
       if(!(folder instanceof FolderElement)) throw new Error('invalid folder');
       if(folder.job != job.id) throw new Error('incompatible job/folder');
@@ -612,6 +610,18 @@ export class ElementService {
     }).then(folder => {
       let node = D3.hierarchy(folder);
       return Promise.resolve(new BehaviorSubject(node));
+    });
+  }
+
+  buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
+    return rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
+      let folderSubject = this.loadElement(FolderElement, root);
+      return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
+        if(!(folder instanceof FolderElement)) {
+          throw new Error('invalid folder root"' + root + '"');
+        }
+        return Observable.fromPromise(this.resolveChildren(folder).then(()=>D3.hierarchy(folder)));
+      });
     });
   }
 
@@ -781,27 +791,31 @@ export class ElementService {
   }
 
   buildTrees(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
-    // return trees { name: treeSubject }
+    let roots = {};
+    return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
+      // detect root prop add/remove
+      let n = Object.keys(Object.assign({}, job.folders.roots, config.folders.roots));
+      let m = Object.keys(roots);
+      let rootPropsChanged = n.some(el=>m.indexOf(el) === -1) || m.some(el=>n.indexOf(el) === -1);
+      console.log('rootPropsChanged', rootPropsChanged, n, m);
+      if(rootPropsChanged) {
+        n.forEach(name => {
+          let idSubject = configSubject.map(_config => _config.folders.roots[name]||job.folders.roots[name]).startWith('').distinctUntilChanged().pairwise().map(([a, b]) => {
+            console.log('a "'+a+'" changed to b "'+b+'"');
+            return b;
+          });
+          roots[name] = this.buildTreeSubject(jobSubject, idSubject);
+        });
+        Object.keys(roots).forEach(_n => {
+          if(n.indexOf(_n) == -1) {
+            delete roots[_n];
+          }
+        });
+        return Observable.of(roots);
 
-    return Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]) => {
-      console.log('config', config);
-
-      let folderNames = config.folders.order;
-      let folderIds = folderNames.map(n=>config.folders.roots[n]||job.folders.roots[n]);
-
-      let root = {};
-      folderNames.forEach((n, i) => {
-        root[n] = folderIds[i];
-      });
-
-      let loadChildren = this.loadChildrenAtRoot2(jobSubject, configSubject);
-
-      return Observable.fromPromise(Promise.all(folderIds.map(n => this.buildTree(job, n)))).map(treeNodes => {
-        let trees = {};
-        folderNames.forEach((name, i) => trees[name] = treeNodes[i]);
-        trees['components'] = loadChildren;
-        return trees;
-      });
+      } else {
+        return Observable.never();
+      }
     });
   }
 }

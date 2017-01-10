@@ -84,8 +84,6 @@ export class NestComponent implements OnInit {
 
     let data = nest.entries(entriesB);
 
-    console.log('data', data);
-
     let selection = this.host;
 
     keysB.forEach(key => {

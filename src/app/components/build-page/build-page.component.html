@@ -18,6 +18,6 @@
   </ul>
 </div>
 <div *ngIf="trees">
-  <app-simple-tree *ngFor="let folderName of nestConfig.folders.order" [rootNode]="trees[folderName]"></app-simple-tree>
+  <app-simple-tree *ngFor="let folderName of job.folders.order" [rootNode]="trees[folderName]" (componentEdit)="componentEdit($event)"></app-simple-tree>
 </div>
 <app-nest [nest]="nestSubject"></app-nest>

@@ -10,10 +10,11 @@ import {
   Component,
   OnChanges,
   OnInit,
+  Output,
   Input
 } from '@angular/core';
 
-import { Subscription, Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
+import { Subscription, Subject, Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
 
 import {
   SIMPLE_TREE_ELEMENT_SELECTOR,
@@ -54,6 +55,9 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   private host: Selection<any, any, any, any>;
   private htmlElement: HTMLElement;
   private childComponentFactory: ComponentFactory<any>;
+  private childComponents: Subject<any[]> = new Subject();
+  @Output() componentEdit: Subject<any> = new Subject();
+
   private elementComponentRefMap: Map<HTMLElement, ComponentRef<any>>;
   private nodeSub: Subscription;
 
@@ -65,6 +69,9 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
+    this.childComponents.switchMap(components => {
+      return Observable.merge(...components.map(component => component.instance.edit));
+    }).subscribe(this.componentEdit);
   }
 
   createChildComponent(data, index) {
@@ -93,12 +100,10 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = select(this.htmlElement);
-    this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
+    this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
   }
 
   subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
-    console.log('nodes', nodes);
-
     if(!Array.isArray(nodes)) nodes = [nodes];
     if(!this.host || !nodes) return Observable.never();
 
@@ -115,6 +120,8 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
       .styleTween('opacity', interpolate.bind(null, 1,0))
       .remove();
 
+    let toAdjust = withData.transition(t).style('opacity', 1);
+
     let toAdd = withData
       .order()
       .enter()
@@ -122,9 +129,16 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
       .transition(t)
       .styleTween('opacity', interpolate.bind(null, 0,1))
 
-    return Observable.forkJoin(...[toRemove, toAdd].map(waitForTransition)).map(([removed]:[any[]]) => {
+    return Observable.forkJoin(...[toRemove, toAdjust, toAdd].map(waitForTransition)).map(([removed, adjusted, added]:[any[], any[], any[]]) => {
       removed.forEach(el => {
         return this.removeChildComponent(el.element);
+      });
+
+      let remaining = [].concat(adjusted, added)
+      return remaining.map(({element, data, index}) => {
+        let component = this.elementComponentRefMap.get(element);
+        component.instance.data = data;
+        return component;
       });
     });
 
@@ -133,7 +147,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnChanges(changes: any) {
     if('rootNode' in changes) {
       if(this.nodeSub) this.nodeSub.unsubscribe();
-      this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(x => console.log('nodes updated'));
+      this.nodeSub = this.rootNode.do(x=>console.log('root node changed', x)).switchMap(this.subjectUpdate.bind(this)).subscribe(this.subjectUpdate);
     }
   }
 }

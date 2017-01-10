@@ -13,6 +13,7 @@ import {
 } from 'rxjs';
 
 import {
+  Child,
   ComponentElement,
   FolderElement,
   Collection,
@@ -36,6 +37,8 @@ export class JobService implements Resolve<Promise<any>> {
   public trees; // { 'phase': BehaviorSubject, 'building': BehaviorSubject }
   public nestSubject: BehaviorSubject<Nest<any, any>>
 
+  private openElements: BehaviorSubject<any> = new BehaviorSubject({});
+
   constructor(private elementService: ElementService, private router: Router) { }
 
   resolve(route: ActivatedRouteSnapshot): Promise<{job, tree, treeConfig}> {
@@ -46,8 +49,7 @@ export class JobService implements Resolve<Promise<any>> {
     return this.elementService.loadJob(shortname).then(jobSubject => {
       // build trees
       // build nest
-      let job = jobSubject.getValue();
-      console.log('job', job);
+      this.jobSubject = jobSubject;
       let nestConfig = new BehaviorSubject({
         folders: {
           order: ['phase', 'building'],
@@ -66,7 +68,8 @@ export class JobService implements Resolve<Promise<any>> {
         job: jobSubject,
         nest: buildNest,
         nestConfig,
-        trees: buildTrees
+        trees: buildTrees,
+        openElements: this.openElements
       };
 
     }).catch(err => {
@@ -76,5 +79,35 @@ export class JobService implements Resolve<Promise<any>> {
       }
       throw err;
     });
+  }
+
+  updateJob(job: Collection) {
+    // should return observable that completes when observable is finished saving, errors if invalid
+    this.jobSubject.next(job);
+  }
+
+  openElement(element: Child|ComponentElement|FolderElement) {
+    let elements = this.openElements.getValue();
+    if(element.id in elements) return Promise.resolve(elements[element.id]);
+    return this.elementService.loadElement(element.constructor, element.id).then(bs => {
+      Object.keys(elements).forEach(id => {
+        elements[id].config.open = false;
+      });
+      elements[element.id] = {
+        config: { open: true },
+        element: bs
+      }
+      this.openElements.next(elements);
+      return bs;
+    });
+  }
+
+  closeOpenElement(both) {
+    let elements = this.openElements.getValue();
+    let id = both.element.getValue().id;
+    if(id in elements) {
+      delete elements[id];
+      this.openElements.next(elements);
+    }
   }
 }

@@ -3,6 +3,7 @@
   <ul class="header">
     <li class="name"><a class="hoverunderline">Name</a></li>
     <li class="description"><a class="hoverunderline">Description</a></li>
+    <li class="settings"></li>
     <li class="owner"><a class="hoverunderline">Owner</a></li>
     <li class="type"><a class="hoverunderline">Type</a></li>
     <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
@@ -12,6 +13,7 @@
     <li *ngFor="let job of filter(jobs)" class="list-item" tabindex="0">
       <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
       <span class="description">{{ job.description }}</span>
+      <span class="hoverlink settings fa fa-cog"></span>
       <span class="owner">{{ job.owner.name }}</span>
       <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
       <span class="folders-cnt">{{ 0 }}</span>
@@ -30,6 +32,7 @@
   <ul class="header">
     <li class="name"><a class="hoverunderline">Name</a></li>
     <li class="description"><a class="hoverunderline">Description</a></li>
+    <li class="settings"></li>
     <li class="owner"><a class="hoverunderline">Owner</a></li>
     <li class="type"><a class="hoverunderline">Type</a></li>
     <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
@@ -39,6 +42,7 @@
     <li *ngFor="let job of filter(jobs, true)" class="list-item" tabindex="0">
       <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
       <span class="description">{{ job.description }}</span>
+      <span class="hoverlink settings fa fa-cog"></span>
       <span class="owner">{{ job.owner.name }}</span>
       <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
       <span class="folders-cnt">{{ 0 }}</span>

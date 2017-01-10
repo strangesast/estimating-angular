@@ -18,11 +18,9 @@ import { Collection } from '../../models/classes';
   templateUrl: './details-page.component.html',
   styleUrls: ['./details-page.component.less']
 }) export class DetailsPageComponent implements OnInit {
-  private sub1: Subscription;
-  private sub2: Subscription;
-  private sub3: Subscription;
   private job: Collection;
   private jobForm: FormGroup;
+  private jobUpdateSub: Subscription;
   private status: any[] = [];
 
   private availableUsers = [
@@ -36,7 +34,7 @@ import { Collection } from '../../models/classes';
   ) { }
 
   ngOnInit() {
-    this.sub1 = this.route.parent.data.subscribe(({jobData: {job:jobSubject}})=>{
+    this.route.parent.data.subscribe(({ job: { job: jobSubject }}) => {
       jobSubject.first().subscribe(job => {
         this.job = job;
         this.jobForm = this.formBuilder.group({
@@ -57,20 +55,20 @@ import { Collection } from '../../models/classes';
           ]
         });
       });
-      // probably ugly way of doing this
-      this.sub2 = jobSubject.skip(1).subscribe(job => {
+      this.jobUpdateSub = jobSubject.skip(1).subscribe(job => {
         this.jobForm.patchValue(job)
         this.jobForm.markAsPristine();
         this.job = job;
       });
     });
   }
+
   ngOnDestroy() {
-    this.sub2.unsubscribe();
-    this.sub1.unsubscribe();
+    this.jobUpdateSub.unsubscribe();
   }
 
   reset() {
+    /*
     this.jobForm.reset();
     this.jobForm.setValue({
       name: this.job.name,
@@ -82,18 +80,14 @@ import { Collection } from '../../models/classes';
       },
       shortname: this.job.shortname
     })
+    */
   }
 
   onSubmit({ dirty, value, valid }: { dirty: boolean, value: Collection, valid: boolean}) {
     if(dirty && valid) {
       let j = Collection.fromObject(Object.assign({}, this.job.toJSON(0), value))
-      console.log('val!', value, j);
-      /*
-      this.jobService.updateJob(j).then((r)=>{
-        console.log('result', r);
+      this.jobService.updateJob(j);
 
-      });
-      */
     } else if (!valid) {
       alert('invalid');
     }

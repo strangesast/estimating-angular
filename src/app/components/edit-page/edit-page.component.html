@@ -1,18 +1,3 @@
-<div class="navigation-controls">
-  <div class="navigation-bar">
-    <label class="tab nostyle" *ngFor="let element of editElements" [class.active]="activeElementId == element.id" (click)="loadElement(element)" [attr.title]="element.name||element.data.name">
-      <span (click)="remove(element); $event.preventDefault()" class="hoverlink icon fa fa-remove"></span>
-      <span [class]="element.type == 'building' ? 'fa fa-building-o' : element.type == 'phase' ? 'fa fa-bookmark-o' : 'fa fa-cubes'"></span>
-      <span>{{element.name||element.data.name}}</span>
-    </label>
-  </div>
-  <div class="navigation-bar">
-    <span class="tab remove nostyle" (click)="loadElement(null)" [class.active]="activeElementId==null">
-      <span class="fa fa-plus"></span>
-    </span>
-  </div>
-</div>
-<div class="main">
-  <app-edit-window [active]="element.id==activeElementId" [element]="element" *ngFor="let element of editElements" class="page"></app-edit-window>
-  <app-edit-window [active]="activeElementId==null" [element]="null" class="page"></app-edit-window>
+<div>
+  Edit Page
 </div>

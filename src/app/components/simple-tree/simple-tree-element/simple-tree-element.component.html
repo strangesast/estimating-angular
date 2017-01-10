@@ -1,5 +1,5 @@
 <li [attr.depth]="data.depth" *ngIf="data && data.data" class="node">
-  <span class="fa" [ngClass]="typeToClass(data.data.type)"></span>
-  <span class="name">{{ data.data.name }}</span>
+  <span class="fa" [ngClass]="data.data.type | typeToClass"></span>
+  <span class="hoverlink name" (click)="onEdit()">{{ data.data.name }}</span>
   <p class="description">{{ data.data.description }}</p>
 </li>

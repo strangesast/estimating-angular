@@ -24,3 +24,6 @@
   </li>
 </ul>
 <router-outlet></router-outlet>
+<div class="edit-windows">
+  <app-edit-window *ngFor="let id of openElementIds" [config]="openElements[id].config" [element]="openElements[id].element" (close)="closeOpenElement(openElements[id])"></app-edit-window>
+</div>

@@ -4,7 +4,9 @@ import {
   OnChanges,
   Injector,
   OnInit,
-  Input
+  Input,
+  Output,
+  EventEmitter
 } from '@angular/core';
 
 export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
@@ -16,6 +18,7 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
 })
 export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Input() public data: any = {};
+  @Output() edit = new EventEmitter();
 
   constructor(
     private injector: Injector,
@@ -32,18 +35,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
     console.log('changes', changes);
   }
 
-  typeToClass(type: string) {
-    switch (type) {
-      case 'component':
-        return 'fa-cubes';
-      case 'filter':
-        return 'fa-filter';
-      case 'job':
-        return 'fa-truck';
-      case 'folder':
-        return 'fa-folder-o';
-      default:
-        return 'fa-question';
-    }
+  onEdit() {
+    this.edit.emit(this.data);
   }
 }
