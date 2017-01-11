@@ -76,6 +76,41 @@ ul.toggle {
       font-style: italic;
     }
   }
+
+  .suggestions {
+    position: absolute;
+    right: 0;
+    min-width: 100%;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    z-index: 10;
+    padding: 4px 0;
+
+    .suggestions-list {
+      padding-left: 0;
+      list-style-type: none;
+      margin-top: 0;
+      margin-bottom: 0;
+
+      & > li {
+        padding: 4px 8px;
+        &:hover {
+          background: fade(@off-white, 20%);
+          cursor: pointer;
+        }
+      }
+
+      .rounded {
+        padding: 4px;
+        font-size: 12px;
+        border-radius: 8px;
+        background: @off-white;
+      }
+    }
+    &[hidden] {
+      display: none;
+    }
+  }
 }
 
 .hoverlink {

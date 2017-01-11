@@ -17,7 +17,8 @@ import {
   ComponentElement,
   FolderElement,
   Collection,
-  TreeConfig
+  TreeConfig,
+  Filter
 } from '../models/classes';
 
 import { ElementService } from './element.service';
@@ -36,6 +37,7 @@ export class JobService implements Resolve<Promise<any>> {
 
   public trees; // { 'phase': BehaviorSubject, 'building': BehaviorSubject }
   public nestSubject: BehaviorSubject<Nest<any, any>>
+  public nestConfigSubject: BehaviorSubject<any>;
 
   private openElements: BehaviorSubject<any> = new BehaviorSubject({});
 
@@ -60,8 +62,10 @@ export class JobService implements Resolve<Promise<any>> {
         component: {
           enabled: true,
           filters: []
-        }
+        },
+        filters: []
       });
+      this.nestConfigSubject = nestConfig;
       let buildNest = this.elementService.buildNest(jobSubject, nestConfig);
       let buildTrees = this.elementService.buildTrees(jobSubject, nestConfig);
       return {
@@ -112,5 +116,40 @@ export class JobService implements Resolve<Promise<any>> {
       delete elements[id];
       this.openElements.next(elements);
     }
+  }
+
+  removeFilter(filter: Filter) {
+    let affects = filter.affects;
+    delete filter['affects'];
+    let config = this.nestConfigSubject.getValue();
+    if(affects.indexOf('all') != -1) {
+      let filters = config.filters;
+      let f = filters.find(f => f.property == filter.property);
+      if(f) {
+        filters.splice(filters.indexOf(f), 1);
+        this.nestConfigSubject.next(config);
+      }
+    }
+  }
+
+  addFilter(filter: Filter) {
+    let affects = filter.affects;
+    delete filter['affects'];
+    let config = this.nestConfigSubject.getValue();
+    if(affects.indexOf('all') !== -1) {
+      let filters = config.filters;
+      if(filter.type == 'property') {
+        let f = filters.find(f => f.property == filter.property);
+        if(f) {
+          filters.splice(filters.indexOf(f), 1, filter);
+        } else {
+          filters.push(filter);
+        }
+        this.nestConfigSubject.next(config);
+      }
+    }
+  }
+
+  search(query) {
   }
 }

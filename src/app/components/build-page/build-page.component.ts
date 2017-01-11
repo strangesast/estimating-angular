@@ -4,6 +4,7 @@ import {
   OnInit,
   OnDestroy,
 } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import {
@@ -17,7 +18,7 @@ import { Nest } from 'd3';
 
 import { JobService } from '../../services/job.service';
 import { TreeComponent } from '../tree/tree.component';
-import { NestConfig, Collection, TreeConfig } from '../../models/classes';
+import { NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
 
 @Component({
   selector: 'app-build-page',
@@ -30,12 +31,18 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private jobSubject: BehaviorSubject<Collection>;
   private jobSubscription: Subscription;
 
+  private filterSuggestions: any[] = [];
+  private filterSuggestionsSubject: BehaviorSubject<any[]> = new BehaviorSubject([]);
+  private filterFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);
+
   private nestEnabled: boolean = false;
   private folderEnabled: string = '';
 
   private trees: any[];
   private treesSubject: BehaviorSubject<any>;
 
+  public filters: Filter[];
+  /*
   private filters = [
     {
       name: 'All',
@@ -58,10 +65,13 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       affects: ['component']
     }
   ];
+  */
 
   private nestConfig: NestConfig;
   private nestConfigSubject: BehaviorSubject<NestConfig>;
   private nestSubject: BehaviorSubject<Nest<any, any>>;
+
+  private filterForm: FormGroup;
 
   public FOLDER_ICONS = {
     phase: 'fa fa-bookmark-o fa-lg',
@@ -71,13 +81,24 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private jobService: JobService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private formBuilder: FormBuilder
   ) { }
 
   ngOnInit() {
     this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig, trees }}) =>{
       this.nestConfigSubject = nestConfig;
       this.nestConfigSubject.subscribe(config => {
+        console.log('config', config);
+
+        this.filters = [].concat(
+          config.component.filters.map(f=>Object.assign(f, { affects: ['component']})),
+          config.folders.filters.map(f=>Object.assign(f, { affects: ['folders', 'building'] })),
+          config.filters.map(f=>Object.assign(f, { affects: ['all'] }))
+        );
+
+        console.log('filters', this.filters);
+
         this.nestConfig = config
 
         if(config.component.enabled) {
@@ -92,12 +113,24 @@ export class BuildPageComponent implements OnInit, OnDestroy {
           this.nestEnabled = false;
         }
       });
+
+      this.filterForm = this.formBuilder.group({
+        query: ''
+      });
+
+      Observable.combineLatest(
+        this.filterFocused.switchMap(b => b ? Observable.of(b) : Observable.of(b).delay(500)).distinctUntilChanged(), // delay a bit if unfocusing
+        this.filterForm.valueChanges.debounceTime(100),
+        this.nestConfigSubject
+      ).switchMap(this.queryFilter.bind(this)).subscribe(this.filterSuggestionsSubject)
+
+      this.filterSuggestionsSubject.subscribe(arr => this.filterSuggestions = arr);
+
       this.nestSubject = nestSubject;
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.job = job;
-      });
-      this.treesSubject = trees;
+      }); this.treesSubject = trees;
       this.treesSubject.subscribe((trees) => {
         this.trees = trees;
       });
@@ -168,5 +201,53 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   componentEdit(evt) {
     console.log('edit');
     this.jobService.openElement(evt.data);
+  }
+
+  queryFilter([focused, { query }, config]:[boolean, any, NestConfig]) {
+    if(!focused || !query) return Observable.of([]);
+    console.log('config', config);
+
+    let affects = ['all'];
+
+    let arr:Filter[] = [];
+    
+    arr.unshift(...['name', 'description'].map(prop => {
+      return { type: 'property', property: prop, method: 'startsWith', value: query, affects }
+    }));
+
+    if(config.component.enabled && !isNaN(query)) {
+      let n = Number(query);
+      arr.unshift(
+        { type: 'price', method: 'greaterThan', value: n, affects: ['component'] },
+        { type: 'price', method: 'lessThan', value: n, affects: ['component'] },
+        { type: 'price', method: 'equal', value: n, affects: ['component'] }
+      );
+      if(n % 1 === 0) { // is integer
+        arr.unshift(
+          { type: 'qty', method: 'greaterThan', value: n, affects: ['component'] },
+          { type: 'qty', method: 'lessThan', value: n, affects: ['component'] },
+          { type: 'qty', method: 'equal', value: n, affects: ['component'] }
+        );
+      }
+    }
+    return Observable.of(arr);
+  }
+
+  addFilter(filter: Filter) {
+    this.jobService.addFilter(filter);
+    this.filterForm.setValue({query: ''});
+  }
+
+  removeFilter(filter: Filter) {
+    let i = this.filters.indexOf(filter);
+    if(i == -1) return;
+    this.filters.splice(i, 1);
+    this.jobService.removeFilter(filter);
+  }
+
+  filterFormSubmit() {
+    if(this.filterSuggestions.length) {
+      this.addFilter(this.filterSuggestions[0]);
+    }
   }
 }
