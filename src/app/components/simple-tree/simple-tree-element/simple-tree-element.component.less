@@ -10,6 +10,8 @@
   padding: 8px;
   display: flex;
   border-bottom: 1px solid @off-white;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 
   .generate-levels(@n, @i: 0) when(@i =< @n) {
     &[depth='@{i}'] {
