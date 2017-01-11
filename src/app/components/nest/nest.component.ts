@@ -110,6 +110,7 @@ export class NestComponent implements OnInit {
     row.append('span').attr('class', 'description').text((d:any) => d.description);
     row.append('span').attr('class', 'spacer');
     row.append('span').attr('class', 'hoverlink fa fa-angle-up collapse');
+    row.attr('draggable', true);
     row.append('span').attr('class', 'fa fa-grip grip');
     
     return Observable.never();

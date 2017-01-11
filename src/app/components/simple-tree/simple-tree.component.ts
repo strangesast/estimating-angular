@@ -1,6 +1,7 @@
 import {
   ComponentFactoryResolver,
   ReflectiveInjector,
+  ChangeDetectorRef,
   ComponentFactory,
   ViewContainerRef,
   AfterViewInit,
@@ -33,20 +34,6 @@ function getNodeParent(node) {
 
 let cnt = 0;
 
-const TEST_DATA = [
-  {
-    data: {
-      name: 'test',
-      description: 'testtttttttttttttttt'
-    },
-    depth: 0,
-    height: 1,
-    parent: null,
-    children: [],
-    value: null
-  }
-]
-
 @Component({
   selector: 'app-simple-tree',
   templateUrl: './simple-tree.component.html',
@@ -72,7 +59,8 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
-    private element: ElementRef
+    private element: ElementRef,
+    private changeDetectionRef: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -115,6 +103,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     let componentRef = this.childComponentFactory.create(injector);
     this._parent.insert(componentRef.hostView);
     let element = componentRef.instance.elementRef.nativeElement;
+    componentRef.instance.dragEnabled = false;
     this.elementComponentRefMap.set(element, componentRef);
     return element;
   }
@@ -132,6 +121,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.host = select(this.htmlElement);
     if(this.nodeSub) this.nodeSub.unsubscribe();
     this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
+    this.changeDetectionRef.detectChanges();
   }
 
   subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
