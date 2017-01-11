@@ -18,23 +18,22 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
 })
 export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Input() public data: any = {};
-  @Output() edit = new EventEmitter();
+  @Output() nameClicked = new EventEmitter();
+  @Output() drag = new EventEmitter();
+  @Output() collapse = new EventEmitter();
+
+  draggable: boolean = true;
 
   constructor(
     private injector: Injector,
     public elementRef: ElementRef
   ) {
     this.data = this.injector.get('data');
-
   }
 
   ngOnInit() { 
   }
 
   ngOnChanges(changes) {
-  }
-
-  onEdit() {
-    this.edit.emit(this.data);
   }
 }

@@ -1,7 +1,6 @@
 @off-white: #D5D8DD;
 :host {
-  display: block;
-}
+  display: block; }
 :host:first-child > li {
   //border-top: 1px solid @off-white;
   border-top: none;
@@ -21,7 +20,7 @@
   }
   .generate-levels(10);
 
-  & > span:not(:first-child) {
+  & > span:not(:first-child):not(.spacer) {
     margin-left: 8px;
   }
 }
@@ -30,6 +29,28 @@
     cursor: pointer;
   }
 }
+.collapse {
+  transform: rotate(180deg);
+  &.open {
+    transform: rotate(0deg);
+  }
+}
 .spacer {
   flex-grow: 1;
+}
+.fa.fa-grip:before {
+  content: "\f142 \202F \f142 \202F \f142";
+}
+.fa.fa-grip-large:before {
+  content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142";
+}
+.grip {
+  color: @off-white;
+  &:hover {
+    color: black;
+    cursor: move;
+  }
+}
+[hidden] {
+  visibility: hidden;
 }

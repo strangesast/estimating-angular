@@ -1,3 +1,4 @@
+@off-white: #D5D8DD;
 :host /deep/ ul {
   list-style-type: none;
   margin-top: 8px;
@@ -8,7 +9,44 @@
   .title, li {
     padding: 8px;
   }
+
+  li {
+    padding: 8px;
+    display: flex;
+    border-bottom: 1px solid @off-white;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    .fa.fa-grip:before {
+      content: "\f142 \202F \f142 \202F \f142";
+    }
+    .collapse {
+      transform: rotate(180deg);
+      &.open {
+        transform: rotate(0deg);
+      }
+    }
+    .fa.fa-grip-large:before {
+      content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142";
+    }
+    .spacer {
+      flex-grow: 1;
+    }
+    .grip {
+      color: @off-white;
+      &:hover {
+        color: black;
+        cursor: move;
+      }
+    }
+    & > span:not(:first-child):not(.spacer) {
+      margin-left: 8px;
+    }
+
+  }
 }
 :host > ul {
+  margin-top: 4px;
+  margin-bottom: 4px;
   padding-left: 0;
 }

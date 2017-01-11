@@ -149,7 +149,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       this.nestConfigSubject.next(val);
       return;
     }
-    val.component.enabled = !isEnabled;
+    val.component.enabled = foldersEnabled ? !isEnabled : true;
     // if disabling components, exactly one folder must be enabled
     if (!val.component.enabled && !foldersEnabled) return;
     if (!val.component.enabled && foldersEnabled > 1) {
@@ -168,6 +168,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   componentEdit(evt) {
+    console.log('edit');
     this.jobService.openElement(evt.data);
   }
 }

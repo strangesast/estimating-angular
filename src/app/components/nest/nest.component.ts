@@ -13,8 +13,7 @@ import {
   Input
 } from '@angular/core';
 
-import { Observable, BehaviorSubject } from 'rxjs';
-import { Selection, HierarchyNode } from 'd3';
+import { Observable, BehaviorSubject } from 'rxjs'; import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
 import { TypeToClassPipe } from '../../pipes/type-to-class.pipe'
@@ -89,21 +88,29 @@ export class NestComponent implements OnInit {
 
     let selection = this.host;
 
-    keys.forEach(key => {
-      /*
-      let title = selection.select('span').enter().append('span').attr('class', 'title');
-      title.append('span').attr('class', ['fa', this.typeToClassPipe.transform(key.data.type)].join(' '));
-      title.append('span').text(key.data.name);
-      */
-      selection.text(key.data.name);
+    keys.forEach((key, i) => {
+      let _class = ['fa', this.typeToClassPipe.transform(key.data.type)].join(' ');
+      selection.text(''); // necessary... ? yes.
+      let title = selection.selectAll('span.title').data([key.data.name]);
+      let enter = title.enter().append('span').attr('class', 'title');
+      enter.append('span').attr('class', _class);
+      enter.append('span').text(d => d);
+
       selection.selectAll('li').data([]).exit().remove();
       selection = selection.selectAll('ul').data(d => d ? d.values : data).enter().append('ul');
     });
 
     if(selection == this.host) selection.text('');
+    //selection.selectAll('span.title').data([]).exit().remove();
     selection.selectAll('ul').data([]).exit().remove();
-    selection.selectAll('span').data([]).exit().remove();
-    selection.selectAll('li').data((d:any) => d ? d.values : data).enter().append('li').text((d:any) => d instanceof Child ? d.name : d.key)
+    let row = selection.selectAll('li').data((d:any) => d ? d.values : data).enter().append('li');
+
+    row.append('span').attr('class', 'icon fa fa-cubes')
+    row.append('span').attr('class', 'hoverlink name').text((d:any) => d.name)
+    row.append('span').attr('class', 'description').text((d:any) => d.description);
+    row.append('span').attr('class', 'spacer');
+    row.append('span').attr('class', 'hoverlink fa fa-angle-up collapse');
+    row.append('span').attr('class', 'fa fa-grip grip');
     
     return Observable.never();
   }

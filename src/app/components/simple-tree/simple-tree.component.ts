@@ -26,6 +26,11 @@ import { waitForTransition } from '../../resources/util';
 import { interpolate, transition, select, Selection, HierarchyNode } from 'd3';
 import { hierarchy } from 'd3-hierarchy';
 
+function getNodeParent(node) {
+  if(!node.parent) return node;
+  return getNodeParent(node.parent);
+};
+
 let cnt = 0;
 
 const TEST_DATA = [
@@ -57,6 +62,9 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   private childComponentFactory: ComponentFactory<any>;
   private childComponents: Subject<any[]> = new Subject();
   @Output() componentEdit: Subject<any> = new Subject();
+  componentCollapse: Subject<any> = new Subject();
+
+  @Input() draggable: boolean = true;
 
   private elementComponentRefMap: Map<HTMLElement, ComponentRef<any>>;
   private nodeSub: Subscription;
@@ -69,9 +77,32 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
-    this.childComponents.switchMap(components => {
-      return Observable.merge(...components.map(component => component.instance.edit));
-    }).subscribe(this.componentEdit);
+    this.childComponents.switchMap(components =>
+      Observable.merge(...components.map(component =>
+        component.instance.nameClicked))
+    ).subscribe(this.componentEdit);
+    this.childComponents.switchMap(components =>
+      Observable.merge(...components.map(component =>
+        component.instance.collapse))
+    ).subscribe(this.componentCollapse);
+    this.componentCollapse.withLatestFrom(this.rootNode).subscribe(([el, node]: [any, any]) => {
+      let par = getNodeParent(el);
+      if(Array.isArray(node)) {
+        let i = node.indexOf(par);
+        if(i!=-1 && par == el) {
+          node[i].open = !node[i].open;
+          this.rootNode.next(node)
+          return;
+        }
+      } else {
+        console.log('node', node, 'el', el, node == el);
+        if(node == el) {
+          node.open = !node.open;
+          this.rootNode.next(node);
+          return;
+        }
+      }
+    });
   }
 
   createChildComponent(data, index) {
@@ -105,16 +136,29 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
-    console.log('subject update');
     if(!Array.isArray(nodes)) nodes = [nodes];
     if(!this.host || !nodes) return Observable.never();
 
-    let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
+    //let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
+    let arr = [];
+    nodes.forEach((node:any) => {
+      arr.push(node)
+      node.each((n:any)=>{
+        if(n.children && n.open) {
+          let i = arr.indexOf(n);
+          if(i !== -1) {
+            arr.splice.apply(arr, [i+1, 0].concat(n.children));
+          } else {
+            arr.push.apply(arr, n.children);
+          }
+        }
+      });
+    });
     let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR);
 
-    let t = transition(null).duration(100);
+    let t = transition(null).duration(0);
 
-    let withData = selection.data(arr, (d:any) => d.temp || (d.temp = ++cnt))
+    let withData = selection.data(arr);//, (d:any) => d.temp || (d.temp = ++cnt))
 
     let toRemove = withData
       .exit()
@@ -122,7 +166,9 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
       .styleTween('opacity', interpolate.bind(null, 1,0))
       .remove();
 
-    let toAdjust = withData.transition(t).style('opacity', 1);
+    let toAdjust = withData
+      .transition(t)
+      .style('opacity', 1);
 
     let toAdd = withData
       .order()
@@ -143,7 +189,6 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
         return component;
       });
     });
-
   }
 
   ngOnChanges(changes: any) {
