@@ -21,7 +21,9 @@ import { Collection } from '../../models/classes';
   private job: Collection;
   private jobForm: FormGroup;
   private jobUpdateSub: Subscription;
+
   private status: any[] = [];
+  private exampleDate: Date = new Date();
 
   private availableUsers = [
     {name: 'Sam Zagrobelny', username: 'sazagrobelny', id: '1231231231231'}

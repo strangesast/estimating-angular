@@ -1,7 +1,41 @@
+@off-white: #D5D8DD;
 .header {
   font-size: 1.5em;
 }
 :host {
   display: block;
   margin-left: 10px;
+}
+form {
+  .form-group {
+    .form-group-title {
+      border-bottom: 1px solid @off-white;
+      font-size: 18px;
+    }
+    .form-control {
+      padding: 8px;
+    }
+    &:not(:first-child) {
+      margin-top: 20px;
+    }
+
+  }
+  .form-control {
+    label, .about {
+      display: block;
+    }
+  }
+}
+.history {
+  .history-title {
+    border-bottom: 1px solid @off-white;
+    font-size: 18px;
+  }
+
+  .history-item {
+    padding: 8px;
+  }
+}
+:host > * {
+  margin-bottom: 20px;
 }

@@ -1,55 +1,90 @@
 <form *ngIf="jobForm" novalidate (ngSubmit)="onSubmit(jobForm)" [formGroup]="jobForm">
-  <div>
-    <label>Name:</label>
-    <input formControlName="name" type="text">
-    <small>Speaks for itself.</small>
-    <div *ngIf="jobForm.get('name').hasError('required') && jobForm.get('name').touched">
-      Name is required.
+  <div class="form-group">
+    <div class="form-group-title">General</div>
+    <div class="form-control">
+      <label>Name:</label>
+      <input formControlName="name" type="text">
+      <small class="about">Speaks for itself.</small>
+      <div *ngIf="jobForm.get('name').hasError('required') && jobForm.get('name').touched">
+        Name is required.
+      </div>
+      <div *ngIf="jobForm.get('name').hasError('minLength') && jobForm.get('name').touched">
+        Name must be at least 5 characters in length..
+      </div>
     </div>
-    <div *ngIf="jobForm.get('name').hasError('minLength') && jobForm.get('name').touched">
-      Name must be at least 5 characters in length..
+
+    <div class="form-control">
+      <label>Description</label>
+      <textarea formControlName="description" type="text"></textarea>
     </div>
+
+    <div class="form-control">
+      <label>Short Name</label>
+      <input formControlName="shortname" type="text">
+      <small class="about">Used for url and easy identification.</small>
+      <div class="error" *ngIf="jobForm.get('shortname').hasError('required') && jobForm.get('shortname').touched">This is required.</div>
+      <div class="error" *ngIf="jobForm.get('shortname').hasError('minLength') && jobForm.get('shortname').touched">Must be at least 5 characters long.</div>
+      <div class="error" *ngIf="jobForm.get('shortname').hasError('pattern') && jobForm.get('shortname').touched">Invalid character used.  Only alphanumeric and "-"/"_" allowed.</div>
+    </div>
+    <button type="submit" [disabled]="jobForm.invalid || !jobForm.dirty">Update</button>
+    <button type="button" (click)="reset()" [disabled]="!jobForm.dirty">Reset</button>
+
   </div>
 
-  <div>
-    <label>Description</label>
-    <textarea formControlName="description" type="text"></textarea>
-  </div>
+  <div class="form-group">
+    <div class="form-group-title">Dates</div>
+    <div class="form-control">
+      <label>Start Date</label>
+      <input type="datetime-local">
+    </div>
+    <div class="form-control">
+      <label>Estimated Completion Date</label>
+      <input type="datetime-local">
+    </div>
+    <button type="submit" [disabled]="jobForm.invalid || !jobForm.dirty">Update</button>
+    <button type="button" (click)="reset()" [disabled]="!jobForm.dirty">Reset</button>
 
-  <div>
-    <label>Short Name</label>
-    <input formControlName="shortname" type="text">
-    <small>Used for url and easy identification.</small>
-    <div class="error" *ngIf="jobForm.get('shortname').hasError('required') && jobForm.get('shortname').touched">This is required.</div>
-    <div class="error" *ngIf="jobForm.get('shortname').hasError('minLength') && jobForm.get('shortname').touched">Must be at least 5 characters long.</div>
-    <div class="error" *ngIf="jobForm.get('shortname').hasError('pattern') && jobForm.get('shortname').touched">Invalid character used.  Only alphanumeric and "-"/"_" allowed.</div>
   </div>
+  <div class="form-group">
+    <div class="form-group-title">People</div>
+    <div class="form-control">
+      <label>Current Members</label>
+      <ul class="list">
+        <span>None</span>
+      </ul>
+    </div>
+    <div class="form-control">
+      <select>
+        <option disabled selected>Choose Person</option>
+      </select>
+      <button>Add</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="form-group-title">Ownership</div>
 
-  <div formGroupName="owner">
-    <label>Owner</label>
-    <div>
-      <label>Name</label>
-      <input type="text" formControlName="name">
+    <div formGroupName="owner">
+      <div class="form-control">
+        <label>Name</label>
+        <input type="text" formControlName="name">
+      </div>
+      <div class="form-control">
+        <label>Username</label>
+        <input type="text" formControlName="username">
+      </div>
+      <div class="form-control">
+        <label>Email</label>
+        <input type="email" formControlName="email">
+        <small class="about">Only one owner may modify this job.</small>
+      </div>
     </div>
-    <div>
-      <label>Username</label>
-      <input type="text" formControlName="username">
-    </div>
-    <div>
-      <label>Email</label>
-      <input type="email" formControlName="email">
-    </div>
-    <small>Only one owner may modify this job.</small>
   </div>
   <button type="submit" [disabled]="jobForm.invalid || !jobForm.dirty">Update</button>
   <button type="button" (click)="reset()" [disabled]="!jobForm.dirty">Reset</button>
 </form>
-
-
-<h2>Changes <small>(since last save)</small></h2>
-<div *ngFor="let s of status">
-  <span>{{s.path[0]}}</span>
-  <span *ngFor="let p of s.path.slice(1)">> {{p}}</span>
-  <span>Changed "{{s.lhs}}" to "{{s.rhs}}"</span>
+<div class="history">
+  <div class="history-title">Job Save History</div>
+  <div class="history-item">
+    You changed <span>{{ 1 }}</span> items on <span>{{ exampleDate | date }}</span>
+  </div>
 </div>
-<button>Save</button>
