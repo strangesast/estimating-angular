@@ -14,9 +14,9 @@
     list-style-type: none;
     margin: 0;
     li, li > * {
-      overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+      line-height: 30px;
     }
     li.name, li > .name {
       width: 35%;
@@ -95,4 +95,33 @@
   }
 }
 
+.dropdown {
+  display: inline-block;
+  position: relative;
 
+  .dropdown-button {
+    background-color: white;
+    color: black;
+    padding: 8px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 130px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    z-index: 10;
+
+    & > * {
+      text-decoration: none;
+      padding: 4px 8px;
+      display: block;
+    }
+  }
+  &:hover .dropdown-content {
+    display: block;
+  }
+}

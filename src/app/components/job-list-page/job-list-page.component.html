@@ -13,7 +13,15 @@
     <li *ngFor="let job of filter(jobs)" class="list-item" tabindex="0">
       <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
       <span class="description">{{ job.description }}</span>
-      <span class="hoverlink settings fa fa-cog"></span>
+      <div class="settings dropdown">
+        <button tabindex=0 class="dropdown-button"><span class="fa fa-cog"></span></button>
+        <div class="dropdown-content">
+          <a>Link 1</a>
+          <a>Link 2</a>
+          <a>Link 3</a>
+          <a>Link 4</a>
+        </div>
+      </div>
       <span class="owner">{{ job.owner.name }}</span>
       <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
       <span class="folders-cnt">{{ 0 }}</span>
