@@ -5,6 +5,7 @@ import { hierarchy } from 'd3-hierarchy';
 
 import { ReplaySubject } from 'rxjs';
 
+import { DragService } from '../services/drag.service';
 import { SearchService } from '../services/search.service';
 
 const TEST_DATA = {
@@ -29,9 +30,13 @@ export class AppComponent implements OnInit {
 
   results: ReplaySubject<any[]>;
 
-  constructor(private searchService: SearchService) { }
+  constructor(private searchService: SearchService, private dragService: DragService) { }
 
   ngOnInit() {
     this.results = this.searchService.results;
+  }
+
+  handleDrag(evt) {
+    this.dragService.handle(evt);
   }
 }

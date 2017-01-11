@@ -7,6 +7,7 @@ import { AppRoutingModule }           from './app-routing.module';
 
 import { SearchService }  from './services/search.service';
 import { ElementService } from './services/element.service';
+import { DragService } from './services/drag.service';
 
 import { AppComponent }               from './components/app.component';
 import { TreeComponent }              from './components/tree/tree.component';
@@ -59,7 +60,8 @@ import { TypeToClassPipe }            from './pipes/type-to-class.pipe';
   ],
   providers: [
     SearchService,
-    ElementService
+    ElementService,
+    DragService
   ],
   entryComponents: [ SimpleTreeElementComponent, TreeElementComponent ],
   bootstrap: [AppComponent]
