@@ -1,1 +1,1 @@
-export type SaveState = 'saved:uncommitted' | 'saved:local' | 'saved:remote' | 'unsaved';
+export type SaveState = 'saving' | 'saved:uncommitted' | 'saved:local' | 'saved:remote' | 'unsaved';

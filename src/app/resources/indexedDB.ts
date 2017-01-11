@@ -2,6 +2,7 @@
 indexedDB.webkitGetDatabaseNames().onsuccess = (res) =>\
 {console.log([].slice.call(res.target.result).forEach((e) => {indexedDB.deleteDatabase(e)}))}
 */
+import { Observable } from 'rxjs';
 import {
   Child,
   User,
@@ -57,12 +58,37 @@ export function saveRecord(db, storeName: string, obj: any) {
   });
 }
 
+export function saveRecordSubject(db, storeName: string, obj: any): Observable<any> {
+  return Observable.create(subscriber => {
+    let trans = db.transaction(storeName, 'readwrite');
+    let store = trans.objectStore(storeName);
+    let req;
+    if(obj.id === '') {
+      obj.id = random();
+      req = store.add(obj);
+    } else {
+      req = store.put(obj);
+    }
+    store.onsuccess = (e) => subscriber.next(e.target.result);
+    store.onerror = (e) => subscriber.error(e.target.error);
+    trans.oncomplete = (e) => subscriber.complete();
+  });
+}
+
 export function saveRecordAs(db, obj: Location|Child|ComponentElement|FolderElement|Collection): Promise<string> {
   if (typeof (<any>obj.constructor).storeName !== 'string' || typeof obj.toJSON !== 'function') {
     throw new Error('improper instance of class');
   }
   let storeName = (<any>obj.constructor).storeName;
   return saveRecord(db, storeName, obj.toJSON());
+}
+
+export function saveRecordAsSubject(db, obj: Location|Child|ComponentElement|FolderElement|Collection): Observable<any> {
+  if (typeof (<any>obj.constructor).storeName !== 'string' || typeof obj.toJSON !== 'function') {
+    return Observable.throw(new Error('improper instance of class'));
+  }
+  let storeName = (<any>obj.constructor).storeName;
+  return saveRecordSubject(db, storeName, obj.toJSON());
 }
 
 export function retrieveRecord(db, storeName: string, id: string, key?: string) {

@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 
 import {
+  Subject,
   Observable,
+  Subscription,
   BehaviorSubject,
   ReplaySubject
 } from 'rxjs';
@@ -41,6 +43,7 @@ import {
   retrieveAllRecordsAs,
   retrieveRecordAs,
   saveRecordAs,
+  saveRecordAsSubject,
   countRecords,
   retrieveRecordArray,
   retrieveUniqueId,
@@ -69,9 +72,12 @@ export class ElementService {
   public jobMap: any;
   public loaded: any = {};
 
-  public _jobs: BehaviorSubject<Collection[]> = new BehaviorSubject([]);
+  private _jobs: BehaviorSubject<Collection[]> = new BehaviorSubject([]);
   public jobs: Observable<Collection[]> = this._jobs.asObservable();
   public jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
+
+  private updateSubject: Subject<BehaviorSubject<any>[]> = new Subject(); // array of loaded elements
+  private updateSubjectSub: Subscription;
 
   constructor() { }
 
@@ -86,6 +92,7 @@ export class ElementService {
         this.repo = repo;
         this.gitdb = gitdb;
         this.isReady.next(true);
+        this.init();
         return { store, repo };
       });
     } else {
@@ -106,6 +113,17 @@ export class ElementService {
   // save job
   //   add hash property to job/folder/location/child/component
   // load save
+  init() {
+    if(this.updateSubjectSub) throw new Error('already initialized');
+    this.updateSubjectSub = this.updateSubject.switchMap(elements => {
+      // if updateSubjct updated before finishing save bad things happen
+      return Observable.merge(...elements).flatMap(element => {
+        // TODO: improve this.  should change save state, save, then reset to correct savestate
+        //return saveRecordAs(this.db, element);
+        return saveRecordAsSubject(this.db, element);
+      });
+    }).subscribe();
+  }
 
   getJobs(): Promise<BehaviorSubject<BehaviorSubject<Collection>[]>> {
     return retrieveAllRecordsAs(this.db, Collection).then(collections => {
@@ -126,7 +144,9 @@ export class ElementService {
       if (result == null) {
         throw new Error('element with that id (' + id + ') does not exist');
       }
-      return this.loaded[id] = new BehaviorSubject(result);
+      this.loaded[id] = new BehaviorSubject(result);
+      this.updateLoaded();
+      return this.loaded[id];
     });
   }
 
@@ -138,8 +158,14 @@ export class ElementService {
       if (job == null) {
         throw Error('there is no job with that id');
       }
-      return this.loaded[job.id] = new BehaviorSubject(job);
+      this.loaded[job.id] = new BehaviorSubject(job);
+      this.updateLoaded();
+      return this.loaded[job.id];
     });
+  }
+
+  updateLoaded() {
+    this.updateSubject.next(Object.keys(this.loaded).map(key => this.loaded[key]));
   }
 
   retrieveJob(id: string): Promise<Collection> {
@@ -512,7 +538,7 @@ export class ElementService {
     }).then(hash => {
       // update ref
       collection.commit = hash;
-      return Promise.all([
+      return Promise.all(<any>[
         loadHashAs(this.repo, 'commit', hash),
         saveRecordAs(this.db, collection),
         updateRef(this.repo, collection.shortname, hash)
