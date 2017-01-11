@@ -14,7 +14,15 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
 @Component({
   selector: SIMPLE_TREE_ELEMENT_SELECTOR,
   templateUrl: './simple-tree-element.component.html',
-  styleUrls: ['./simple-tree-element.component.less']
+  styleUrls: ['./simple-tree-element.component.less'],
+  host: {
+    '(dragstart)': 'drag.emit({event: $event, component: this})',
+    '(dragover)':  'drag.emit({event: $event, component: this})',
+    '(dragleave)': 'drag.emit({event: $event, component: this})',
+    '(dragenter)': 'drag.emit({event: $event, component: this})',
+    '(dragend)':   'drag.emit({event: $event, component: this})',
+    '(drop)':      'drag.emit({event: $event, component: this})'
+  }
 })
 export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Input() public data: any = {};
@@ -22,7 +30,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Output() drag = new EventEmitter();
   @Output() collapse = new EventEmitter();
 
-  draggable: boolean = true;
+  dragEnabled: boolean;
 
   constructor(
     private injector: Injector,
@@ -32,8 +40,13 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() { 
+    this.dragEnabled = false;
   }
 
   ngOnChanges(changes) {
+  }
+  
+  setDraggable(val) {
+    this.dragEnabled = val;
   }
 }

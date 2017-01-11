@@ -111,7 +111,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .attr('y', height/2)
       .attr('x', (d:any) => d.x+d.count/2)
       .attr('color', 'black')
-      .text((d:any) => d.id + ' (' + d.count + ')')
+      .text((d:any) => d.data.name + ' (' + d.count + ')')
 
     return Observable.never();
   }

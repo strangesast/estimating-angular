@@ -1,10 +1,8 @@
 import {
   Input,
   Component,
-  SimpleChanges,
   OnInit,
   OnDestroy,
-  OnChanges
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 

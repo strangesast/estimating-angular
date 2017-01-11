@@ -64,7 +64,8 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   @Output() componentEdit: Subject<any> = new Subject();
   componentCollapse: Subject<any> = new Subject();
 
-  @Input() draggable: boolean = true;
+  // should be in config
+  //@Input() draggable: boolean = true;
 
   private elementComponentRefMap: Map<HTMLElement, ComponentRef<any>>;
   private nodeSub: Subscription;
@@ -109,7 +110,6 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
       provide: 'data',
       useValue: data
     }];
-
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
     let injector = ReflectiveInjector.fromResolvedProviders(resolvedInputs, this._parent.parentInjector);
     let componentRef = this.childComponentFactory.create(injector);

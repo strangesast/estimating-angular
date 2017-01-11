@@ -806,7 +806,20 @@ export class ElementService {
           }) : []).reduce((a,b) => a.concat(b));
         });
 
-        return getChildren.then(children => {
+        return getChildren.then(children=>{
+          let components = {};
+          children.map(child => {
+            components[child.ref] = null;
+          });
+          return Promise.all(Object.keys(components).map(id => this.retrieveComponent(id).then(component => {
+            components[id] = component;
+          }))).then(() => {
+            children.forEach(child => {
+              child.data = components[child.ref];
+            });
+            return children;
+          });
+        }).then(children => {
           return {
             entries: children,
             keys: rootFolders
