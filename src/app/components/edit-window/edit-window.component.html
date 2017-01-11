@@ -1,5 +1,5 @@
 <div>
-  <div class="header">
+  <div *ngIf="isWindow" class="header">
     <div>
       <span class="fa" [ngClass]="type | typeToClass"></span>
       <span class="hoverlink" (click)="toggleOpen()">{{ _element.name }}</span>
@@ -8,7 +8,10 @@
       <span class="hoverlink fa fa-remove" (click)="onClose()"></span>
     </div>
   </div>
-  <div *ngIf="config.open" class="body">
+  <div *ngIf="!isWindow">
+    <h1>{{ _element ? _element.name : 'New Element' }}</h1>
+  </div>
+  <div *ngIf="!isWindow || config.open" class="body">
     <p>More about this object</p>
     <pre>{{ _element | json }}</pre>
   </div>

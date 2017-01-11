@@ -615,7 +615,8 @@ export class ElementService {
   }
 
   buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
-    return rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
+    let subject = new BehaviorSubject(null);
+    rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
       let folderSubject = this.loadElement(FolderElement, root);
       return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
         if(!(folder instanceof FolderElement)) {
@@ -623,7 +624,8 @@ export class ElementService {
         }
         return Observable.fromPromise(this.resolveChildren(folder).then(()=>D3.hierarchy(folder)));
       });
-    });
+    }).subscribe(subject);
+    return subject;
   }
 
   buildComponentTree(job: Collection, root?) {

@@ -12,10 +12,21 @@ ul.tabs {
     &:not(:first-child) {
       border-left: 1px solid @off-white;
     }
+    &.active {
+      color: white;
+      background: black;
+    }
   }
 }
 @off-white: #D5D8DD;
 :host {
   display: block;
   margin-left: 10px;
+}
+.navigation {
+  display: flex;
+  justify-content: space-between;
+}
+.hoverlink {
+  cursor: pointer;
 }

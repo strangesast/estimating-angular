@@ -95,8 +95,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
           return;
         }
       } else {
-        console.log('node', node, 'el', el, node == el);
-        if(node == el) {
+        if(node.data == el.data) {
           node.open = !node.open;
           this.rootNode.next(node);
           return;
@@ -144,6 +143,8 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     nodes.forEach((node:any) => {
       arr.push(node)
       node.each((n:any)=>{
+        // init with open < amt
+        if(n.depth < 4 && n.open == null) n.open = true;
         if(n.children && n.open) {
           let i = arr.indexOf(n);
           if(i !== -1) {

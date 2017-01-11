@@ -1,13 +1,17 @@
 <div class="navigation">
   <ul class="tabs">
-    <li [class.active]="element == selectedElement" *ngFor="let element of openElements">
-      <span class="fa fa-lg" [ngClass]="typeOf(element) | typeToClass"></span>
-      <span>{{ element.name }}</span>
+    <li class="hoverlink" [class.active]="openElements[id].element == selectedElement" *ngFor="let id of openElementIds" (click)="setSelectedElement(openElements[id].element)">
+      <span class="fa fa-remove"></span>
+      <span class="fa fa-lg" [ngClass]="typeOf(openElements[id].element | async) | typeToClass"></span>
+      <span>{{ (openElements[id].element | async).name }}</span>
+    <li class="hoverlink" [class.active]="selectedElement == newElement" (click)="setCreateNew()">
+      <span class="fa fa-lg fa-plus"></span>
+      <span>Create New</span>
   </ul>
 </div>
 <div class="main">
   <div *ngIf="!selectedElement">
     <p>No element has been selected.  Search for one in on the left or create a new one.</p>
   </div>
-  <app-edit-window *ngIf="selectedElement" [element]="selectedElement"></app-edit-window>
+  <app-edit-window *ngIf="selectedElement" [isWindow]="false" [element]="selectedElement"></app-edit-window>
 </div>

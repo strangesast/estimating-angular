@@ -16,10 +16,8 @@
       <div class="settings dropdown">
         <button tabindex=0 class="dropdown-button"><span class="fa fa-cog"></span></button>
         <div class="dropdown-content">
-          <a>Link 1</a>
-          <a>Link 2</a>
-          <a>Link 3</a>
-          <a>Link 4</a>
+          <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Details</a>
+          <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Remove</a>
         </div>
       </div>
       <span class="owner">{{ job.owner.name }}</span>
