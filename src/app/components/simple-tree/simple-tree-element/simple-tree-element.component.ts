@@ -16,11 +16,11 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
   templateUrl: './simple-tree-element.component.html',
   styleUrls: ['./simple-tree-element.component.less'],
   host: {
-    '(dragstart)': 'drag.emit({event: $event, component: this})',
+    '(dragstart)': 'this.dragging = true; drag.emit({event: $event, component: this})',
     '(dragover)':  'drag.emit({event: $event, component: this})',
     '(dragleave)': 'drag.emit({event: $event, component: this})',
     '(dragenter)': 'drag.emit({event: $event, component: this})',
-    '(dragend)':   'drag.emit({event: $event, component: this})',
+    '(dragend)':   'this.dragging = false; drag.emit({event: $event, component: this})',
     '(drop)':      'drag.emit({event: $event, component: this})',
     '[attr.draggable]': 'draggable'
   }
@@ -32,6 +32,8 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Output() collapse = new EventEmitter();
 
   draggable: boolean = false;
+
+  dragging: boolean = false;
 
   constructor(
     private injector: Injector,

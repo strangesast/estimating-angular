@@ -33,6 +33,7 @@ export class FolderElement extends BaseElement {
         }
       });
     }
+    copy.children.map(child => typeof child !== 'string' ? child.id : child);
     return copy;
   }
 

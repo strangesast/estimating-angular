@@ -31,6 +31,8 @@ export const STORES = [
   ] },
   { name: Location.storeName,         keypath: 'id', indexes: [
     { on: 'children',  name: 'children',  unique: false, multiEntry: true }, // creates an index for every child id
+    { on: 'folder1',   name: 'folder1', unique: false },
+    { on: 'folder2',   name: 'folder2', unique: false },
     // { on: ['folder1', 'folder2', 'folder3'], name: 'folders', unique: true }, use this for > 2 folders
     { on: ['folder1', 'folder2'], name: 'folders', unique: true },
     { on: 'job',       name: 'job',       unique: false }

@@ -50,6 +50,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   private childComponents: Subject<any[]> = new Subject();
   @Output() componentEdit: Subject<any> = new Subject();
   @Output() drag: Subject<any> = new Subject();
+  private dragging: boolean = false;
   componentCollapse: Subject<any> = new Subject();
 
   // should be in config
@@ -77,11 +78,15 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
         component.instance.collapse))
     ).subscribe(this.componentCollapse);
 
-    this.childComponents.map(
+    this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
+
+    /*
+    this.childComponents.switchMap(
       (components:any[])=>Observable.merge(...components.map(
         ({instance: component})=>component.dragEmitter
       )))
       .subscribe(this.drag); // on childcomponents update, update drag listeners
+    */
 
     this.componentCollapse.withLatestFrom(this.rootNode).subscribe(([el, node]: [any, any]) => {
       let par = getNodeParent(el);
@@ -98,6 +103,15 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
           this.rootNode.next(node);
           return;
         }
+      }
+    });
+
+    this.drag.subscribe(({event: e, component}) => {
+      console.log('evt', e.type)
+      if(e.type == 'dragstart') {
+        this.dragging = true;
+      } else if(e.type == 'dragend') {
+        this.dragging = false;
       }
     });
   }

@@ -157,7 +157,7 @@ export class JobService implements Resolve<Promise<any>> {
     let config = this.nestConfigSubject.getValue();
 
     let affects = filter.affects;
-    delete filter['affects'];
+    delete filter.affects;
 
     let changed = false;
 

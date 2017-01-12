@@ -62,3 +62,17 @@
 [hidden] {
   visibility: hidden;
 }
+
+:host-context(.dragging) {
+  background: blue;
+  * {
+    pointer-events: none;
+  }
+}
+.dragging {
+  background: black;
+  color: white;
+  &, * {
+    pointer-events: none;
+  }
+}

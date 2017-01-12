@@ -184,12 +184,12 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   componentEdit(evt) {
-    console.log('edit');
     this.jobService.openElement(evt.data);
   }
 
   queryFilter([focused, { query }, config]:[boolean, any, NestConfig]) {
     if(!focused || !query) return Observable.of([]);
+    query = query.trim();
 
     let affects = config.folders.order.filter(name => config.folders.enabled[name])
     if (config.component.enabled) affects.push('component');
@@ -199,7 +199,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     
     // not a decimal number
     if(isNaN(query) || Number(query) % 1 === 0) {
-      arr.unshift(...['startsWith', 'contains', 'endsWith'].map(method => ['name', 'description'].map(prop => {
+      arr.unshift(...['startsWith', 'includes', 'endsWith'].map(method => ['name', 'description'].map(prop => {
         return { type: 'property', property: prop, method, value: query, affects, display: [prop, methodToSymbol(method)].join(' ') };
       })).reduce((a, b)=>a.concat(b)));
     }

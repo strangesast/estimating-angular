@@ -155,6 +155,7 @@ export class ElementService {
       if (result == null) {
         throw new Error('element with that id (' + id + ') does not exist');
       }
+      if(!(result instanceof _class)) throw new Error('invalid load');
       this.loaded[id] = new BehaviorSubject(result);
       this.updateLoaded();
       return this.loaded[id];
@@ -196,13 +197,19 @@ export class ElementService {
     return retrieveRecordAs(this.db, ComponentElement, id);
   }
 
+  retrieveChild(id: string): Promise<Child> {
+    return retrieveRecordAs(this.db, Child, id);
+  }
+
   retrieveLocationsWith(job:Collection, folderName:string, id:string) {
     let i = job.folders.order.indexOf(folderName);
-    if(i == -1) throw new Error('invalid folder name');
+    if(i == -1) throw new Error('invalid folder name ' + folderName);
+
     let index = i == 0 ? 'folder1' : 'folder2';
     return retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(id), index);
   }
 
+  /*
   retrieveLocation(id: string|string[]): Promise<Location> {
     if (typeof id === 'string') {
       return retrieveRecordAs(this.db, Location, id);
@@ -217,8 +224,9 @@ export class ElementService {
       throw new Error('invalid type');
     }
   }
+  */
 
-  retrieveLocation2(id: string[]): Promise<Location> {
+  retrieveLocation(id: string[]): Promise<Location> {
     return retrieveRecordAs(this.db, Location, id, 'folders');
   }
 
@@ -267,9 +275,9 @@ export class ElementService {
         let folders = job.folders.order.map(name => loc[name] || job.folders.roots[name]);
 
         return Promise.all([
-          saveChild,
-          this.retrieveLocation2(folders).then(_location => _location || this.createLocation(job, loc, []))
-        ]).then(([child, _location]) => {
+          <Promise<Child>>saveChild,
+          this.retrieveLocation(folders).then(_location => _location || this.createLocation(job, loc, []))
+        ]).then(([child, _location]:[any, any]) => {
           _location.children = _location.children || [];
           _location.children.push(child.id);
 
@@ -652,7 +660,10 @@ export class ElementService {
         if(!(folder instanceof FolderElement)) {
           throw new Error('invalid folder root"' + root + '"');
         }
-        return Observable.fromPromise(this.resolveChildren(folder).then(()=>D3.hierarchy(folder)));
+        return Observable.fromPromise(this.resolveChildren(folder).then(()=>{
+          let node =  D3.hierarchy(folder);
+          return node;
+        }));
       });
     }).subscribe(subject);
     return subject;
@@ -673,7 +684,7 @@ export class ElementService {
       return Observable.fromPromise(getRootFolders.then(folders => {
         let descendants = folders.map(folder => folder.descendants())
         let pairs = product(descendants.map(arr => arr.map(node => node.data.id)));
-        let getLocations = descendants.length ? Promise.all(pairs.map(pair => this.retrieveLocation2(pair))) : this.retrieveAllLocations(job);
+        let getLocations = descendants.length ? Promise.all(pairs.map(pair => this.retrieveLocation(pair))) : this.retrieveAllLocations(job);
 
         return getLocations.then(locations => {
           let getChildren = Promise.all(locations.map(loc => {
@@ -684,7 +695,36 @@ export class ElementService {
               child.next(val);
               return child;
             })));
-          })).then(results => results.reduce((a, b) => a.concat(b), []));
+          })).then(results => results.reduce((a, b) => a.concat(b), []).filter(child => {
+            let filters = config.component.filters.concat(config.filters);
+            let res = filters.every(filter => {
+              let fn
+              let prop = child.value[filter.property];
+              let val = filter.value;
+              switch(filter.method) {
+                case 'startsWith':
+                case 'includes':
+                case 'endsWith':
+                  prop = String(prop).toLowerCase();
+                  val = String(val).toLowerCase();
+                  fn = <any>String.prototype[filter.method];
+                  break;
+                case 'greaterThan':
+                  fn = function(n) { return this > n; };
+                  break;
+                case 'lessThan':
+                  fn = function(n) { return this < n; };
+                  break;
+                case 'equal':
+                  fn = function(n) { return this == n; };
+                  break;
+                default:
+                  fn = ()=>true;
+              };
+              return filter.type === 'property' ? fn.call(prop, val): true;
+            });
+            return res;
+          }));
 
           let components = {};
           return getChildren.then(children => {
