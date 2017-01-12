@@ -2,7 +2,7 @@ import { Collection } from './collection';
 import { Child } from './child';
 
 export class Location {
-  static storeName = 'locations';
+  static readonly storeName = 'locations';
   static excluded: string[] = ['commit', 'open', 'saveState'];
 
   public folder1: string;

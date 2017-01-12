@@ -5,7 +5,7 @@ import { SaveState } from './save-state';
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
 export class ComponentElement extends BaseElement {
-  static storeName = 'components';
+  static readonly storeName = 'components';
   static excluded: string[] = ['hash', 'saveState'];
 
   static fromObject(obj) {

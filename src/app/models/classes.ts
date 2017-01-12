@@ -1,12 +1,16 @@
+/* classes */
 export { ComponentElement } from './component-element';
 export { FolderElement } from './folder-element';
-export { EditElement } from './edit-element';
 export { Collection } from './collection';
-export { TreeConfig } from './tree-config';
-export { NestConfig } from './nest-config';
-export { SaveState } from './save-state';
 export { Location } from './location';
-export { BasedOn } from './based-on';
-export { Filter } from './filter';
 export { Child } from './child';
 export { User } from './user';
+export { BasedOn } from './based-on';
+
+/* interfaces */
+export { TreeConfig } from './tree-config';
+export { NestConfig } from './nest-config';
+export { Filter } from './filter';
+
+/* types */
+export { SaveState } from './save-state';

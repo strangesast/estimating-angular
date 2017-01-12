@@ -17,16 +17,8 @@
         <li *ngFor="let filter of filterSuggestions.slice(0, 10)" (click)="addFilter(filter)">
           <span [ngSwitch]="filter.type">
             <span *ngSwitchCase="'property'">
-              <span class="rounded">{{filter.property}}</span>
-              <span>{{ filter.value }}</span>
-            </span>
-            <span *ngSwitchCase="'price'">
-              <span class="rounded">{{ filter.method === 'greaterThan' ? '>' : filter.method === 'lessThan' ? '<' : '=' }}</span>
-              <span style.font-style="italic">${{ filter.value }}</span>
-            </span>
-            <span *ngSwitchCase="'qty'">
-              <span class="rounded">{{filter.method}}</span>
-              {{ filter.value }}
+              <span class="rounded">{{filter.display}}</span>
+              <span>{{ filter.property == 'price' ? '$' : '' }}{{ filter.value }}</span>
             </span>
             <span *ngSwitchDefault>
               <span>{{ filter.value }}</span>
@@ -43,7 +35,8 @@
   <ul class="filters">
     <li *ngFor="let filter of filters" [class.active]="filterActive(filter.affects)">
       <span class="fa fa-remove remove" (click)="removeFilter(filter)"></span>
-      <span>{{ filter.type }}: {{ filter.value }}</span>
+      <span class="fa" [ngClass]="a | typeToClass" *ngFor="let a of filter.affects"></span>
+      <span>{{ filter.display + ' ' + filter.value }}</span>
     </li>
   </ul>
 </div>

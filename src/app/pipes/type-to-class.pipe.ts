@@ -21,6 +21,8 @@ export class TypeToClassPipe implements PipeTransform {
         return 'fa-bookmark-o';
       case 'building':
         return 'fa-building-o';
+      case 'all':
+        return 'fa-asterisk';
       default:
         return 'fa-question';
     }

@@ -5,7 +5,7 @@ import { BasedOn } from './based-on';
 import { User } from './user';
 
 export class Collection extends BaseElement {
-  static storeName = 'collections';
+  static readonly storeName = 'collections';
   static excluded: string[] = ['commit', 'hash', 'saveState'];
 
   static fromObject(obj, commit?) {

@@ -57,7 +57,7 @@ export class JobService implements Resolve<Promise<any>> {
           order: ['phase', 'building'],
           roots: {},
           enabled: { phase: true, building: true },
-          filters: []
+          filters: { phase: [], building: [] }
         },
         component: {
           enabled: true,
@@ -119,35 +119,80 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   removeFilter(filter: Filter) {
+    let config = this.nestConfigSubject.getValue();
+
     let affects = filter.affects;
     delete filter['affects'];
-    let config = this.nestConfigSubject.getValue();
-    if(affects.indexOf('all') != -1) {
-      let filters = config.filters;
-      let f = filters.find(f => f.property == filter.property);
-      if(f) {
-        filters.splice(filters.indexOf(f), 1);
-        this.nestConfigSubject.next(config);
-      }
+
+    if(Array.isArray(affects) && affects.length) {
+      affects.forEach(name => {
+        let filters;
+        if(name == 'component') {
+          filters = config.component.filters;
+        } else if(config.folders.order.indexOf(name) !== -1) {
+          filters = config.folders.filters[name];
+        } else if(name === 'all') {
+          filters = config.filters;
+        } else {
+          throw new Error('invalid affect prop ' + name);
+        }
+        if (!Array.isArray(filters)) throw new Error('misconfigured nest config');
+        if (filter.type === 'property') {
+          let existing = filters.find(f => f.type === 'property' && f.property == filter.property && f.method == filter.method);
+          if (!existing) {
+            throw new Error('already removed');
+          }
+          filters.splice(filters.indexOf(existing), 1);
+          this.nestConfigSubject.next(config);
+        } else {
+          // unsupported
+        }
+      });
+    } else {
+      throw new Error('invalid affect prop ' + affects);
     }
   }
 
   addFilter(filter: Filter) {
+    let config = this.nestConfigSubject.getValue();
+
     let affects = filter.affects;
     delete filter['affects'];
-    let config = this.nestConfigSubject.getValue();
-    if(affects.indexOf('all') !== -1) {
-      let filters = config.filters;
-      if(filter.type == 'property') {
-        let f = filters.find(f => f.property == filter.property);
-        if(f) {
-          filters.splice(filters.indexOf(f), 1, filter);
+
+    let changed = false;
+
+    console.log('adding filter...', filter);
+
+    if(Array.isArray(affects) && affects.length) {
+      affects.forEach(name => {
+        let filters;
+        if(name == 'component') {
+          filters = config.component.filters;
+        } else if(config.folders.order.indexOf(name) !== -1) {
+          filters = config.folders.filters[name];
+        } else if(name === 'all') {
+          filters = config.filters;
         } else {
-          filters.push(filter);
+          throw new Error('invalid affect prop ' + name);
         }
-        this.nestConfigSubject.next(config);
-      }
+        if(!Array.isArray(filters)) throw new Error('misconfigured nest config');
+        if(filter.type === 'property') {
+          let existing = filters.find(f => f.type === 'property' && f.property == filter.property && f.method == filter.method);
+          if(existing) {
+            filters.splice(filters.indexOf(existing), 1, filter);
+          } else {
+            filters.push(filter);
+          }
+          changed = true;
+        } else {
+          // unsupported
+        }
+      });
+    } else {
+      throw new Error('invalid affect prop ' + affects);
     }
+
+    if(changed) this.nestConfigSubject.next(config);
   }
 
   search(query) {

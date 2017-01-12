@@ -4,4 +4,5 @@ export interface Filter {
   affects: string[] // removed when added to nestconfig filters array
   method?: string,
   property?: string,
+  display?: string
 }

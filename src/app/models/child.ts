@@ -1,6 +1,7 @@
 import { SaveState } from './save-state';
 // how are other elements referenced
 export class Child { // needs 'name', 'description'
+  static readonly storeName = 'children';
   static excluded: string[] = ['data', 'folders', 'saveState'];
   static fromObject(obj) {
     return new Child(obj.id, obj.name, obj.description, obj.ref, obj.qty, obj._ref, obj.data);

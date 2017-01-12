@@ -90,9 +90,12 @@ export class NestComponent implements OnInit {
 
     keys.forEach((key, i) => {
       let _class = ['fa', this.typeToClassPipe.transform(key.data.type)].join(' ');
-      selection.text(''); // necessary... ? yes.
+      selection.text(''); // necessary? ...yes.
       let title = selection.selectAll('span.title').data([key.data.name]);
-      let enter = title.enter().append('span').attr('class', 'title');
+      let enter = title.enter()
+        .append('span')
+        .attr('class', 'title')
+        .attr('tabindex', '0');
       enter.append('span').attr('class', _class);
       enter.append('span').text(d => d);
 
@@ -103,12 +106,15 @@ export class NestComponent implements OnInit {
     if(selection == this.host) selection.text('');
     //selection.selectAll('span.title').data([]).exit().remove();
     selection.selectAll('ul').data([]).exit().remove();
-    let row = selection.selectAll('li').data((d:any) => d ? d.values : data).enter().append('li');
+    let row = selection.selectAll('li').data((d:any) => d ? d.values : data).enter()
+      .append('li')
+      .attr('tabindex', '0');
 
     row.append('span').attr('class', 'icon fa fa-cubes')
     row.append('span').attr('class', 'hoverlink name').text((d:any) => d.name)
-    row.append('span').attr('class', 'description').text((d:any) => d.description);
     row.append('span').attr('class', 'spacer');
+    row.append('span').attr('class', 'description').text((d:any) => d.description);
+    row.append('span').attr('class', 'qty').text((d:any) => d.qty);
     row.append('span').attr('class', 'hoverlink fa fa-angle-up collapse');
     row.attr('draggable', true);
     row.append('span').attr('class', 'fa fa-grip grip');

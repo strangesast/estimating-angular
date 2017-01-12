@@ -3,7 +3,7 @@ export interface NestConfig {
     order: string[];
     roots: any;
     enabled: any;
-    filters: any[];
+    filters: any;
   };
   component: {
     enabled: boolean;

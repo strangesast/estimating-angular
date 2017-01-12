@@ -20,6 +20,19 @@ import { JobService } from '../../services/job.service';
 import { TreeComponent } from '../tree/tree.component';
 import { NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
 
+function methodToSymbol(name: string) {
+  switch(name) {
+    case 'greaterThan':
+      return '>';
+    case 'lessThan':
+      return '<';
+    case 'equal':
+      return '=';
+    default:
+      return name;
+  }
+}
+
 @Component({
   selector: 'app-build-page',
   templateUrl: './build-page.component.html',
@@ -42,30 +55,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private treesSubject: BehaviorSubject<any>;
 
   public filters: Filter[];
-  /*
-  private filters = [
-    {
-      name: 'All',
-      affects: ['all']
-    },
-    {
-      name: 'Phase Only',
-      affects: ['phase']
-    },
-    {
-      name: 'Building Only',
-      affects: ['building']
-    },
-    {
-      name: 'Folders',
-      affects: ['building', 'phase']
-    },
-    {
-      name: 'Component Only',
-      affects: ['component']
-    }
-  ];
-  */
 
   private nestConfig: NestConfig;
   private nestConfigSubject: BehaviorSubject<NestConfig>;
@@ -93,7 +82,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
         this.filters = [].concat(
           config.component.filters.map(f=>Object.assign(f, { affects: ['component']})),
-          config.folders.filters.map(f=>Object.assign(f, { affects: ['folders', 'building'] })),
+          Object.keys(config.folders.filters).map(name => config.folders.filters[name].map(f => Object.assign(f, { affects: [name] }))).reduce((a, b)=>a.concat(b)),
           config.filters.map(f=>Object.assign(f, { affects: ['all'] }))
         );
 
@@ -207,28 +196,30 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     if(!focused || !query) return Observable.of([]);
     console.log('config', config);
 
-    let affects = ['all'];
+
+    let affects = config.folders.order.filter(name => config.folders.enabled[name])
+    if (config.component.enabled) affects.push('component');
+    if (affects.length == config.folders.order.length + 1) affects = ['all'];
 
     let arr:Filter[] = [];
     
-    arr.unshift(...['name', 'description'].map(prop => {
-      return { type: 'property', property: prop, method: 'startsWith', value: query, affects }
-    }));
+    // not a decimal number
+    if(isNaN(query) || Number(query) % 1 === 0) {
+      arr.unshift(...['startsWith', 'contains', 'endsWith'].map(method => ['name', 'description'].map(prop => {
+        return { type: 'property', property: prop, method, value: query, affects, display: [prop, methodToSymbol(method)].join(' ') };
+      })).reduce((a, b)=>a.concat(b)));
+    }
 
+    // a number + component enabled
     if(config.component.enabled && !isNaN(query)) {
       let n = Number(query);
-      arr.unshift(
-        { type: 'price', method: 'greaterThan', value: n, affects: ['component'] },
-        { type: 'price', method: 'lessThan', value: n, affects: ['component'] },
-        { type: 'price', method: 'equal', value: n, affects: ['component'] }
-      );
-      if(n % 1 === 0) { // is integer
-        arr.unshift(
-          { type: 'qty', method: 'greaterThan', value: n, affects: ['component'] },
-          { type: 'qty', method: 'lessThan', value: n, affects: ['component'] },
-          { type: 'qty', method: 'equal', value: n, affects: ['component'] }
-        );
-      }
+
+      let props = ['price'];
+      if(n % 1 === 0) props.push('qty');
+
+      arr.unshift(...props.map(prop => ['greaterThan', 'lessThan', 'equal'].map(method => {
+        return { type: 'property', property: prop, method, value: query, affects: ['component'], display: [prop, methodToSymbol(method)].join(' ') }
+      })).reduce((a, b)=>a.concat(b)));
     }
     return Observable.of(arr);
   }

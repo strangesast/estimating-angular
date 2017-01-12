@@ -38,7 +38,8 @@ export const STORES = [
   ] },
   { name: Collection.storeName,       keypath: 'id', indexes: [
     { on: 'shortname', name: 'shortname', unique: true  }
-  ] }
+  ] },
+  { name: Child.storeName, keypath: 'id', indexes: [] }
 ];
 
 export function saveRecord(db, storeName: string, obj: any) {

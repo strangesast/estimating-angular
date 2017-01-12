@@ -1,5 +1,5 @@
 export class User {
-  static storeName = 'users';
+  static readonly storeName = 'users';
 
   public _id?: string;
 
