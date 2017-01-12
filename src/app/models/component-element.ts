@@ -12,13 +12,12 @@ export class ComponentElement extends BaseElement {
     return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn, obj.hash);
   }
 
-
   constructor(
     id,
     name,
     description,
     public job: string,
-    public children?: Child[],
+    public children?: string[]|Child[],
     public basedOn?: BasedOn|null,
     public hash?: string,
     public saveState: SaveState = 'unsaved'
@@ -28,7 +27,6 @@ export class ComponentElement extends BaseElement {
       this.children = [];
     }
   }
-
 
   toJSON(removeExcluded = 1) {
     let copy = Object.assign({}, this);

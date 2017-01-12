@@ -30,16 +30,17 @@ export const STORES = [
     { on: 'job',       name: 'job',       unique: false }
   ] },
   { name: Location.storeName,         keypath: 'id', indexes: [
-    { on: 'children',  name: 'children',  unique: false, multiEntry: true },
+    { on: 'children',  name: 'children',  unique: false, multiEntry: true }, // creates an index for every child id
+    // { on: ['folder1', 'folder2', 'folder3'], name: 'folders', unique: true }, use this for > 2 folders
     { on: ['folder1', 'folder2'], name: 'folders', unique: true },
-    { on: 'folder1',   name: 'folder1',   unique: false },
-    { on: 'folder2',   name: 'folder2',   unique: false },
     { on: 'job',       name: 'job',       unique: false }
   ] },
   { name: Collection.storeName,       keypath: 'id', indexes: [
     { on: 'shortname', name: 'shortname', unique: true  }
   ] },
-  { name: Child.storeName, keypath: 'id', indexes: [] }
+  { name: Child.storeName,            keypath: 'id', indexes: [
+    { on: 'job',       name: 'job',       unique: false }
+  ] }
 ];
 
 export function saveRecord(db, storeName: string, obj: any) {
@@ -92,7 +93,7 @@ export function saveRecordAsSubject(db, obj: Location|Child|ComponentElement|Fol
   return saveRecordSubject(db, storeName, obj.toJSON());
 }
 
-export function retrieveRecord(db, storeName: string, id: string, key?: string) {
+export function retrieveRecord(db, storeName: string, id: string|string[], key?: string) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction([storeName]);
     let req: any = trans.objectStore(storeName);
@@ -105,7 +106,7 @@ export function retrieveRecord(db, storeName: string, id: string, key?: string) 
   });
 }
 
-export function retrieveRecordAs(db, _class: any, id: string, key?: string): Promise<Collection|FolderElement|ComponentElement> {
+export function retrieveRecordAs(db, _class: any, id: string|string[], key?: string): Promise<Collection|FolderElement|ComponentElement> {
   if (typeof _class.storeName !== 'string') {
     throw new Error('improper class or class definition');
   }

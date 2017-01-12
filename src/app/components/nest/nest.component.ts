@@ -81,7 +81,7 @@ export class NestComponent implements OnInit {
 
     let nest = D3.nest()
     keys.forEach(key => {
-      nest = nest.key((d:any) => d.folders[key.data.type]);
+      nest = nest.key((d:any) => d.data.value.folders[key.data.type]);
     })
 
     let data = nest.entries(entries);
@@ -108,13 +108,14 @@ export class NestComponent implements OnInit {
     selection.selectAll('ul').data([]).exit().remove();
     let row = selection.selectAll('li').data((d:any) => d ? d.values : data).enter()
       .append('li')
-      .attr('tabindex', '0');
+      .attr('tabindex', '0')
+      .attr('children', (d:any)=> d.children ? d.children.length || null : null)
 
     row.append('span').attr('class', 'icon fa fa-cubes')
-    row.append('span').attr('class', 'hoverlink name').text((d:any) => d.name)
+    row.append('span').attr('class', 'hoverlink name').text((d:any) => d.data.value.name)
     row.append('span').attr('class', 'spacer');
-    row.append('span').attr('class', 'description').text((d:any) => d.description);
-    row.append('span').attr('class', 'qty').text((d:any) => d.qty);
+    row.append('span').attr('class', 'description').text((d:any) => d.data.value.description);
+    row.append('span').attr('class', 'qty').text((d:any) => d.data.value.qty);
     row.append('span').attr('class', 'hoverlink fa fa-angle-up collapse');
     row.attr('draggable', true);
     row.append('span').attr('class', 'fa fa-grip grip');

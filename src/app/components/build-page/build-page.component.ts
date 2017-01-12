@@ -78,15 +78,11 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig, trees }}) =>{
       this.nestConfigSubject = nestConfig;
       this.nestConfigSubject.subscribe(config => {
-        console.log('config', config);
-
         this.filters = [].concat(
           config.component.filters.map(f=>Object.assign(f, { affects: ['component']})),
           Object.keys(config.folders.filters).map(name => config.folders.filters[name].map(f => Object.assign(f, { affects: [name] }))).reduce((a, b)=>a.concat(b)),
           config.filters.map(f=>Object.assign(f, { affects: ['all'] }))
         );
-
-        console.log('filters', this.filters);
 
         this.nestConfig = config
 
@@ -194,8 +190,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
   queryFilter([focused, { query }, config]:[boolean, any, NestConfig]) {
     if(!focused || !query) return Observable.of([]);
-    console.log('config', config);
-
 
     let affects = config.folders.order.filter(name => config.folders.enabled[name])
     if (config.component.enabled) affects.push('component');

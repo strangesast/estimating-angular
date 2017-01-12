@@ -70,10 +70,10 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
     let groups = svg.selectAll('g').data((a:any) => {
       let folderType = a.data.type;
-      return D3.nest().key((n:any) => n.folders[folderType]).rollup((b:any) => <any>D3.map(b, (c:any) => c.ref).entries().map(({key, value}) => {
+      return D3.nest().key((n:any) => n.data.value.folders[folderType]).rollup((b:any) => <any>D3.map(b, (c:any) => c.data.value.ref).entries().map(({key, value}) => {
           let ob = {
             id: key,
-            count: b.filter(d => d.ref == key).length,
+            count: b.filter(d => d.data.value.ref == key).length,
             data: value.data,
             x: 0
           };
@@ -111,7 +111,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .attr('y', height/2)
       .attr('x', (d:any) => d.x+d.count/2)
       .attr('color', 'black')
-      .text((d:any) => d.data.name + ' (' + d.count + ')')
+      .text((d:any) => d.data.value.name + ' (' + d.count + ')');
 
     return Observable.never();
   }

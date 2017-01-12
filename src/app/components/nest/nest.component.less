@@ -29,6 +29,10 @@
         transform: rotate(0deg);
       }
     }
+    &:not([children]) > .collapse {
+      visibility: hidden;
+    }
+
     .fa.fa-grip-large:before {
       content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142";
     }
@@ -55,7 +59,6 @@
     & > span:not(:first-child):not(.spacer) {
       margin-left: 8px;
     }
-
   }
 }
 :host > ul {
