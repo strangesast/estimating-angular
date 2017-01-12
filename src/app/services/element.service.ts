@@ -554,7 +554,7 @@ export class ElementService {
         loadHashAs(this.repo, 'commit', hash),
         saveRecordAs(this.db, collection),
         updateRef(this.repo, collection.shortname, hash)
-      ]).then(([commit]:[Commit]) => {
+      ]).then(([commit]:[any]) => {
         return {
           commit,
           job: collection

@@ -60,7 +60,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ) { }
 
   ngOnInit() {
-    this.route.data.subscribe(({job: { job: jobSubject, openElements, nest }}) => {
+    this.route.data.subscribe(({job: { job: jobSubject, openElements, nest, nestConfig, trees }}) => {
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.searchService.setJob(job);
@@ -73,12 +73,27 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.openElementIds = Object.keys(els);
       });
 
-      nest.subscribe(({ keys, entries }) => {
+
+      let [folderCount, nestCount] = nestConfig.map(config => {
+        if(config.component.enabled) return ''
+        return config.folders.order.find(n => config.folders.enabled[n]);
+      }).distinctUntilChanged().partition(x=>x!=='');
+
+      nestCount.switchMap(x => nest).subscribe(({ keys, entries }) => {
         let nest = D3.nest();
         this.stats.folderCnt = keys.map(k => k.descendants()).reduce((a, b)=> a+b.length, 0);
         this.stats.childCnt = entries.length;
         this.stats.componentCnt = (<any>nest).rollup((d:any) => D3.map(d, (e:any)=> e.data.value.ref).size()).entries(entries)
       });
+
+      folderCount.withLatestFrom(trees).switchMap(([folder, trees]) => {
+        return trees[folder];
+      }).subscribe(res => {
+        this.stats.folderCnt = res.descendants().length;
+        this.stats.childCnt = 0;
+        this.stats.componentCnt = 0;
+      })
+
     });
   }
 
