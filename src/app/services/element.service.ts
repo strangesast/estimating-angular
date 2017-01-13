@@ -48,7 +48,8 @@ import {
   retrieveRecordArray,
   retrieveUniqueId,
   removeRecord,
-  removeRecordAs
+  removeRecordAs,
+  retrieveRecordsInAs
 } from '../resources/indexedDB';
 
 import { HierarchyNode, Nest } from 'd3';
@@ -199,6 +200,14 @@ export class ElementService {
 
   retrieveChild(id: string): Promise<Child> {
     return retrieveRecordAs(this.db, Child, id);
+  }
+
+  retrieveChildrenIn(ids: string[]): Promise<Child[]> {
+    return ids.length ? retrieveRecordsInAs(this.db, Child, ids) : Promise.resolve([]);
+  }
+
+  retrieveComponentsIn(ids: string[]): Promise<ComponentElement[]> {
+    return ids.length ? retrieveRecordsInAs(this.db, ComponentElement, ids) : Promise.resolve([]);
   }
 
   retrieveLocationsWith(job:Collection, folderName:string, id:string) {
@@ -379,7 +388,7 @@ export class ElementService {
     }).then(children => ret.children = children);
 
     let createLocations = Promise.all([createFolders, createChildren]).then(([folders, children]) => {
-      let groups = product(job.folders.order.map(t => folders.filter(f => f.type === t).map(f => f.id)));
+      let groups = product(job.folders.order.map(t => folders.filter((f:any) => f.type === t).map(f => f.id)));
       let copy = children.map(c => c.id);
       return Promise.all(groups.map((pair, i) => {
         let ob = {};
@@ -629,6 +638,13 @@ export class ElementService {
     });
   }
 
+  retrieveChildren(root) {
+    return Promise.all(root.children.map((id, i) => retrieveRecordAs(this.db, root.constructor, id).then(child => {
+      root.children.splice(i, 1, child);
+      return this.retrieveChildren(child);
+    }))).then(() => root);
+  }
+
   buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
       let folder = folderSubject.getValue();
@@ -645,7 +661,6 @@ export class ElementService {
   buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
     let subject = new BehaviorSubject(null);
     rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
-      console.log('building tree for ' + root);
       let folderSubject = this.loadElement(FolderElement, root);
       return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
         if(!(folder instanceof FolderElement)) {
@@ -667,7 +682,7 @@ export class ElementService {
   };
 
   loadChildrenAtRoot2(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>): Observable<HierarchyNode<BehaviorSubject<Child>>[]> {
-    return Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]) => {
+    return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
       let rootFolderNames = job.folders.order;
       let rootFolderIds = rootFolderNames.map(n => config.folders.roots[n]||job.folders.roots[n]);
       let getRootFolders = Promise.all(rootFolderIds.map(id => this.buildTree(job, id).then(bs=>bs.getValue())));
@@ -738,49 +753,40 @@ export class ElementService {
     });
   }
 
-  loadChildrenAtRoot(job: Collection, roots) {
-    let rootFolderNames = Object.keys(roots);
-    let rootFolderIds = rootFolderNames.map(n => roots[n]);
+  loadRootFolderNodes(folderIds): Promise<HierarchyNode<FolderElement>[]> {
+    return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.db, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
+  }
+  
+  loadChildrenAtRoot(nodes): Promise<HierarchyNode<Child>[]> {
+    // get all combinations of locations
+    let pairs = product(nodes.map(node => node.descendants().map((n:any) => n.data.id)));
+    return Promise.all(pairs.map(pair => this.retrieveLocation(pair))).then((locations:Location[]) => {
+      // filter null locations (no children yet), get children at those locations
+      let validLocs = locations.filter(l => l != null && l.children && l.children.length);
+      let childIds = validLocs.map(l => l.children).reduce((a, b)=>a.concat(b));
 
-    let getRootFolders = Promise.all(rootFolderIds.map(id => this.buildTree(job, id).then(bs=>bs.getValue())));
-
-    let rootFolders;
-    let getPairs = getRootFolders.then(folders => {
-      rootFolders = folders;
-      let descendants = folders.map((folder:any)=>folder.descendants());
-
-      let recurse = (arr, curr=[]) => {
-        if (!arr.length) {
-          return [curr];
-        }
-        let a = arr[0];
-        let next = arr.slice(1);
-        return a.map(x => recurse(next, curr.concat(x))).reduce((a,b)=>a.concat(b));
-      }
-      return recurse(descendants);
-    });
-
-    let combine = getPairs.then(pairs => {
-
-      let getLocations = rootFolders.length ? Promise.all(pairs.map(pair => {
-        if(pair.length == 1) return this.retrieveLocationsWith(job, rootFolderNames[0], pair[0].data.id);
-        return this.retrieveLocation(pair.map(x=>x.data.id));
-      })).then((locations:any[]) => locations.reduce((a, b) => Array.isArray(a) ? a.concat(b) : [a].concat(b)).filter((x,i,arr)=>x != null && arr.indexOf(x) === i)) : this.retrieveAllLocations(job);
-
-      let getChildren = getLocations.then(locations => {
-        return locations.map(loc => loc.children ? loc.children.map(child => {
-          let folders = {};
-          job.folders.order.map((name, i) => {
-            folders[name] = loc['folder' + (i+1)];
-          });
-          child.folders = folders;
-          return child;
-        }) : []).reduce((a,b) => a.concat(b));
+      let map = {};
+      validLocs.forEach(loc => {
+        loc.children.forEach(id => map[id] = loc.folders);
       });
 
-      return getChildren;
+      return this.retrieveChildrenIn(childIds).then(children => {
+        let components = {};
+        children.forEach((child:any) => {
+          child.folders = map[child.id];
+          components[child.ref] = null
+        });
+        return this.retrieveComponentsIn(Object.keys(components)).then(compArr => {
+          compArr.forEach((component:ComponentElement) => {
+            components[component.id] = component;
+          });
+          return children.map((child:Child) => {
+            child.data = components[child.ref];
+            return D3.hierarchy(child, (d) => d.data.children);
+          });
+        });
+      });
     });
-    return combine;
   }
 
   buildNest(jobSubject: BehaviorSubject<Collection>, configSubject) {
@@ -792,7 +798,7 @@ export class ElementService {
 
     // return { entries: entries, keys: keys }
 
-    let getRootFolders =  Observable.combineLatest(jobSubject, configSubject).switchMap(([job, config]:[Collection, any]) => {
+    let getRootFolders =  configSubject.withLatestFrom(jobSubject).switchMap(([config, job]:[any, Collection]) => {
       let rootFolderNames = config.folders.order
         .filter(name=>config.folders.enabled[name])
       let rootFolderIds = rootFolderNames
@@ -803,12 +809,29 @@ export class ElementService {
 
     let getChildren = this.loadChildrenAtRoot2(jobSubject, configSubject);
 
+
     // should add .debounceTime(50)
     return Observable.combineLatest(getRootFolders, getChildren).map(([folders, children]) => {
       return {
         keys: folders,
         entries: children
       }
+    });
+  }
+
+  buildNest2(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<NestConfig>) {
+    return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
+      let rootFolderIds = config.folders.order.map(name => config.folders.roots[name]||job.folders.roots[name]);
+      let promise = this.loadRootFolderNodes(rootFolderIds).then(nodes => {
+        return this.loadChildrenAtRoot(nodes).then(children => {
+          let nodesEnabled = config.folders.order.map(name => config.folders.enabled[name]);
+          return {
+            keys: nodes.filter((n, i) => nodesEnabled[i]),
+            entries: children
+          };
+        });
+      });
+      return Observable.fromPromise(promise);
     });
   }
 

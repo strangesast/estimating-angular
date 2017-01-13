@@ -13,7 +13,8 @@ import {
   Input
 } from '@angular/core';
 
-import { Observable, BehaviorSubject } from 'rxjs'; import { Selection, HierarchyNode } from 'd3';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
 import { TypeToClassPipe } from '../../pipes/type-to-class.pipe'
@@ -73,19 +74,99 @@ export class NestComponent implements OnInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('ul');
     this.host = D3.select(this.htmlElement);
-    this.nest.switchMap(this.subjectUpdate.bind(this)).subscribe();
+    this.nest.flatMap(this.subjectUpdate.bind(this)).subscribe();
     //this.update(this.nest);
   }
 
   subjectUpdate({ entries, keys }) {
+
+    let calc = (selection, data?, level=2) => {
+      let nodesSelection = selection.selectAll('li')
+        .data(data ? data.filter(d => d instanceof D3.hierarchy) : (d) => d.values.filter(d => d instanceof D3.hierarchy));
+
+      console.log('selection', nodesSelection);
+
+      nodesSelection.exit().remove();
+      nodesSelection = nodesSelection
+        .enter()
+        .append('li')
+        .merge(nodesSelection)
+        .text((n:any) => n.data.name);
+
+      let groupsSelection = selection.selectAll('ul')
+        .data(data ? data.filter(d => !(d instanceof D3.hierarchy)) : (d) => d.values.filter(d => !(d instanceof D3.hierarchy)));
+
+      groupsSelection.exit().remove();
+      groupsSelection = groupsSelection
+        .enter()
+        .append('ul')
+        .merge(groupsSelection)
+        .text((d:any) => {
+        let folder = folders[d.key];
+        return folder.ancestors().reverse().slice(1).map(node => node.data.name).join(' > ');
+      });
+
+      return level > 0 ? calc(groupsSelection, undefined, level-1) : groupsSelection;
+    }
+
+    // store folder ref for D3 access
+    let folders = {};
+    keys.forEach(folder => folder.descendants().forEach(child => folders[child.data.id] = child));
+
+    // data setup
+    let nest = D3.nest();
+    keys.forEach(key => nest = nest.key((d:any) => d.data.folders[this.order.indexOf(key.data.type)]));
+    let data = nest.entries(entries);
+
+    console.log('data', data);
+    calc(this.host, data, keys.length);
+
+    /*
+    let firstSelection = this.host.selectAll('ul').data(data.filter(n => !(n instanceof D3.hierarchy)));
+    let firstSelectionAlt = this.host.selectAll('li').data(data.filter(n => n instanceof D3.hierarchy), (d:any) => d.data.id);
+
+    firstSelection.exit().remove();
+    firstSelection = firstSelection.enter().append('ul')
+      .merge(firstSelection)
+
+    firstSelection
+      .text(d => folders[d.key].data.name);
+
+    firstSelectionAlt.exit().remove();
+    firstSelectionAlt.enter().append('li').merge(firstSelectionAlt).text((n:any) => n.data.name);
+
+    let secondSelection = firstSelection.selectAll('ul').data((d:any) => d.values.filter(n => !(n instanceof D3.hierarchy)));
+    let secondSelectionAlt = firstSelection.selectAll('li').data((d:any) => d.values.filter(n => n instanceof D3.hierarchy));
+
+    secondSelection.exit().remove();
+    secondSelection = secondSelection.enter().append('ul')
+      .merge(secondSelection)
+
+    secondSelection
+      .text((d:any) => folders[d.key].data.name);
+
+    secondSelectionAlt.exit().remove();
+    secondSelectionAlt.enter().append('li').merge(secondSelectionAlt).text((n:any) => n.data.name);
+
+    let thirdSelection = secondSelection.selectAll('li').data((d:any) => d.values);
+
+    thirdSelection.exit().remove();
+    thirdSelection = thirdSelection.enter().append('li')
+      .merge(thirdSelection)
+
+    thirdSelection
+      .text((d:any) => d.data.name);
+    */
+
+    /*
+    console.log('entries', entries, 'keys', keys);
     let arr:any = [];
 
     let nest = D3.nest()
     console.log('order', this.order, 'keys', keys);
     keys.forEach(key => {
       nest = nest.key((d:any) => {
-        let res = d.data.value.folders[this.order.indexOf(key.data.type)]
-        console.log('res', res);
+        let res = d.data.folders[this.order.indexOf(key.data.type)]
         return res;
       });
     })
@@ -93,6 +174,8 @@ export class NestComponent implements OnInit {
     let data = nest.entries(entries);
 
     let selection = this.host;
+
+    selection
 
     keys.forEach((key, i) => {
       let _class = ['fa', this.typeToClassPipe.transform(key.data.type)].join(' ');
@@ -109,7 +192,8 @@ export class NestComponent implements OnInit {
       enter.append('span').text(d => d);
 
       selection.selectAll('li').data([]).exit().remove();
-      selection = selection.selectAll('ul').data(d => d ? d.values : data).enter().append('ul');
+      selection = selection.selectAll('ul').data(d => d ? d.values : data).enter().append('ul').text((d:any) => {
+      });
     });
 
     if(selection == this.host) selection.text('');
@@ -129,6 +213,7 @@ export class NestComponent implements OnInit {
     row.attr('draggable', true);
     row.append('span').attr('class', 'fa fa-grip grip');
     
+    */
     return Observable.never();
   }
 

@@ -45,6 +45,10 @@ export const STORES = [
   ] }
 ];
 
+function comparer(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export function saveRecord(db, storeName: string, obj: any) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction(storeName, 'readwrite');
@@ -108,7 +112,7 @@ export function retrieveRecord(db, storeName: string, id: string|string[], key?:
   });
 }
 
-export function retrieveRecordAs(db, _class: any, id: string|string[], key?: string): Promise<Collection|FolderElement|ComponentElement> {
+export function retrieveRecordAs(db, _class: any, id: string|string[], key?: string): Promise<Collection|FolderElement|ComponentElement|Location|Child> {
   if (typeof _class.storeName !== 'string') {
     throw new Error('improper class or class definition');
   }
@@ -120,6 +124,57 @@ export function retrieveRecordAs(db, _class: any, id: string|string[], key?: str
     let el = _class.fromObject(record);
     el.saveState = 'saved:uncommitted';
     return el;
+  });
+}
+
+export function retrieveRecordsIn(db, storeName: string, ids: string[], key?: string): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    let arr = ids.sort(comparer);
+    let i = 0;
+    let trans = db.transaction([storeName]);
+    let store = trans.objectStore(storeName)
+    if (key !== undefined) {
+      store = store.index(key)
+    }
+    let req = store.openCursor();
+    let result = [];
+    req.onsuccess = (e) => {
+      let cursor = e.target.result;
+      if(!cursor) {
+        return resolve(result);
+      }
+      let _key = cursor.key;
+      while (_key > arr[i]) {
+        ++i;
+
+        if (i === arr.length) {
+          return resolve(result)
+        }
+      }
+
+      if (_key === arr[i]) {
+        result.push(cursor.value);
+        cursor.continue()
+
+      } else {
+        cursor.continue(arr[i]);
+      }
+    };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+export function retrieveRecordsInAs(db, _class: any, ids: string[], key?: string): Promise<Collection[]|Child[]|FolderElement[]|ComponentElement[]> {
+  if (typeof _class.storeName !== 'string') {
+    throw new Error('improper class or class definition');
+  }
+  let storeName = _class.storeName;
+  return retrieveRecordsIn(db, storeName, ids, key).then(records => {
+    return records.map(el => {
+      let ob = _class.fromObject(el)
+      ob.saveState = 'saved:uncommitted';
+      return ob;
+    });
   });
 }
 

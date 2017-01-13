@@ -37,9 +37,11 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
       this.treesSubject = treesSubject;
 
+      /*
       this.hostReady.switchMap(ready => ready ? this.nestSubject.switchMap(this.nestSubjectUpdate.bind(this)): Observable.never()).subscribe(res => {
         console.log('nest updated', res);
       });
+      */
 
       this.hostReady.switchMap(ready => ready ? this.treesSubject.switchMap(this.treesSubjectUpdate.bind(this)): Observable.never()).subscribe();
       
@@ -101,7 +103,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
           .attr('preserveAspectRatio', 'none');
 
         svg.each(function(d) {
-            console.log('this', this);
             let treemap = D3.treemap().tile(D3.treemapResquarify).size([500, 500]).round(true).paddingInner(1);
 
             d.sum((e) => e.qty);
@@ -137,7 +138,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
           .attr('x', 4)
           .attr('y', 20)
           .append('tspan')
-          .attr('textLength', (d:any) => d.x1 - d.x0 - 20)
+          .attr('textLength', (d:any) => Math.max(d.x1 - d.x0 - 20, 0))
           .attr('lengthAdjust', 'spacingAndGlyphs')
           .text((d) => d.data.name);
 
@@ -178,7 +179,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
     let groups = svg.selectAll('g').data((a:any) => {
       let folderType = a.data.type;
-      console.log('folderType', folderType);
       return D3.nest().key((n:any) => n.data.value.folders[folderType]).rollup((b:any) => <any>D3.map(b, (c:any) => c.data.value.ref).entries().map(({key, value}) => {
           let ob = {
             id: key,
