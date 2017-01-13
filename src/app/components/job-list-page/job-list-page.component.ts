@@ -15,6 +15,8 @@ export class JobListPageComponent implements OnInit {
   jobs: Collection[] = [];
   users: User[] = [];
 
+  editing: Collection = null;
+
   aboutJob: any = {}; // { job: about }
 
   jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
@@ -80,6 +82,17 @@ export class JobListPageComponent implements OnInit {
         });
       }
     );
+  }
+
+  renameJob(job:Collection) {
+    this.editing = job;
+  }
+
+  finishRename(job: Collection) {
+    let jobs = this.jobsSubject.getValue();
+    let bs = jobs.find(j => j.value == job);
+    bs.next(job);
+    this.editing = null;
   }
 
   deleteJob(job:Collection) {

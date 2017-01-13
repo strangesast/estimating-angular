@@ -11,11 +11,14 @@
   </ul>
   <ul class="jobs">
     <li *ngFor="let job of filter(jobs)" class="list-item" tabindex="0">
-      <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
+      <a *ngIf="job !== editing" class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
+      <span *ngIf="job === editing" class="name"><input autofocus (blur)="finishRename(job)" [(ngModel)]="job.name"></span>
       <span class="description">{{ job.description }}</span>
       <div class="settings dropdown">
-        <button tabindex=0 class="dropdown-button"><span class="fa fa-cog"></span></button>
+        <span class="dropdown-button"><span class="fa fa-cog"></span></span>
         <div class="dropdown-content">
+          <span class="triangle"></span>
+          <span (click)="renameJob(job)"class="hoverunderline">Rename</span>
           <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Details</a>
           <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Remove</a>
         </div>
