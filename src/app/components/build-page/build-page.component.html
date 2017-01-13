@@ -43,4 +43,4 @@
 <div *ngFor="let folderName of job.folders.order">
   <app-simple-tree *ngIf="folderEnabled === folderName" [rootNode]="trees[folderName]" (componentEdit)="componentEdit($event)"></app-simple-tree>
 </div>
-<app-nest [hidden]="!nestEnabled" [nest]="nestSubject"></app-nest>
+<app-nest [hidden]="!nestEnabled" [nest]="nestSubject" [order]="job.folders.order"></app-nest>

@@ -243,7 +243,6 @@ export class ElementService {
       children,
       folders
     );
-
     return saveRecordAs(this.db, _location).then((locationId) => {
       _location.id = locationId;
       return _location;
@@ -310,54 +309,28 @@ export class ElementService {
     });
   }
 
-  createFolder(job, _type, name, description = '(no description)', parentId?): Promise<FolderElement> {
-    if (parentId == null && (!job.folders.roots || !(_type in job.folders.roots))) {
-      // root case
-      if (name !== 'root') {
-        throw new Error('root folder name must be \'root\' (' + name + ')');
-      }
-      let folder = new FolderElement(
-        '',
-        name,
-        'root folder (' + _type + ')',
-        _type,
-        job.id,
-        []
-      );
-      return saveRecordAs(this.db, folder).then(folderId => {
-        folder.id = folderId;
-        job.folders.roots[_type] = folderId;
-        return saveRecordAs(this.db, job);
-      }).then(() => {
-        return folder;
-      });
+  createFolder(job, _type, name, description = '(no description)', children = [], parentId?): Promise<FolderElement> {
+    let folder = new FolderElement('', name, description, _type, job.id, children);
+
+    let saveFolder = saveRecordAs(this.db, folder).then(folderId => {
+      folder.id = folderId;
+      return folder;
+    });
+
+    if(parentId === undefined) {
+      return saveFolder;
+
     } else {
-      if (!job.folders.roots) {
-        throw new Error('root folders have not yet been defined');
-      }
-      if (!(_type in job.folders.roots)) {
-        throw new Error('invalid type for this job');
-      }
-      // non-root case else
-      parentId = parentId || job.folders.roots[_type];
-      let folder = new FolderElement(
-        '', // id
-        name,
-        description,
-        _type,
-        job.id,
-        [] // children
-      );
+      let getParentFolder:Promise<FolderElement> = retrieveRecordAs(this.db, FolderElement, parentId);
+
       return Promise.all([
-        saveRecordAs(this.db, folder),
-        retrieveRecordAs(this.db, FolderElement, parentId)
-      ]).then(([folderId, par]: [string, any]) => {
-        folder.id = folderId;
-        par.children = par.children || [];
-        par.children.push(folderId);
-        return saveRecordAs(this.db, par);
-      }).then(parResult => {
-        return folder;
+        saveFolder,
+        getParentFolder
+      ]).then(([child, _parent]) => {
+        _parent.children = _parent.children || [];
+        _parent.children.push(child.id);
+
+        return saveRecordAs(this.db, _parent).then(() => child);
       });
     }
   }
@@ -366,7 +339,7 @@ export class ElementService {
     let arr = Array.from(Array(n).keys());
     let ret:any = {};
 
-    let createFolders = Promise.all(arr.map(i => {
+    let createFolders: Promise<FolderElement[]> = Promise.all(arr.map(i => {
       let types = Object.keys(job.folders.roots);
       let _type = types[i % types.length];
       let name = ['Example Folder ', i, ' (', _type, ')'].join('');
@@ -376,7 +349,17 @@ export class ElementService {
         name,
         'description',
       );
-    })).then(folders => ret.folders = folders);
+    })).then(folders => {
+      let types = folders.map(f => f.type).filter((t, i, arr) => arr.indexOf(t) === i);
+      ret.folders = folders
+      return Promise.all(types.map(t => {
+        return retrieveRecordAs(this.db, FolderElement, job.folders.roots[t]).then((rootFolder:FolderElement) => {
+          rootFolder.children = rootFolder.children || [];
+          rootFolder.children.push(...folders.filter(f => f.type == t).map(f => f.id));
+          return saveRecordAs(this.db, rootFolder);
+        });
+      })).then(() => folders);
+    });
 
     let createComponents = Promise.all(arr.map(i => this.createComponent(
       job,
@@ -384,7 +367,7 @@ export class ElementService {
       'description'
     ))).then(components => ret.components = components);
 
-    let createChildren = createComponents.then(components => {
+    let createChildren: Promise<Child[]> = createComponents.then(components => {
       return Promise.all(components.map(component => arr.map(i => this.createChild(
         job,
         component,
@@ -395,11 +378,16 @@ export class ElementService {
       ))).reduce((a, b)=>a.concat(b)));
     }).then(children => ret.children = children);
 
-    let createLocations = Promise.all([createFolders, createChildren]).then(([folders, children]) => Promise.all([this.createLocation(
-      job,
-      job.folders.roots,
-      children.map(child=>child.id)
-    )])).then(locations => ret.locations = locations);
+    let createLocations = Promise.all([createFolders, createChildren]).then(([folders, children]) => {
+      let groups = product(job.folders.order.map(t => folders.filter(f => f.type === t).map(f => f.id)));
+      let copy = children.map(c => c.id);
+      return Promise.all(groups.map((pair, i) => {
+        let ob = {};
+        job.folders.order.forEach((name, j) => ob[name] = pair[j]);
+        let chil = copy.splice(0, groups.length);
+        return this.createLocation(job, ob, chil);
+      }));
+    }).then(locations => ret.locations = locations);
 
     return createLocations.then(() => ret);
   }
@@ -440,11 +428,13 @@ export class ElementService {
 
       job.folders.roots = {};
       return Promise.all(job.folders.order.map(_type => {
-        return this.createFolder(job, _type, 'root');
+        return this.createFolder(job, _type, 'root').then(folder => {
+          job.folders.roots[_type] = folder.id;
+        });
 
       })).then(rootFolders => {
         // add a few example components (folders, components, children)
-        return this.createExampleElements(job);
+        return this.createExampleElements(job, 5);
 
       }).then((elements) => {
         console.log('created', elements);
@@ -655,6 +645,7 @@ export class ElementService {
   buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
     let subject = new BehaviorSubject(null);
     rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
+      console.log('building tree for ' + root);
       let folderSubject = this.loadElement(FolderElement, root);
       return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
         if(!(folder instanceof FolderElement)) {
@@ -793,6 +784,7 @@ export class ElementService {
   }
 
   buildNest(jobSubject: BehaviorSubject<Collection>, configSubject) {
+    console.log('calculating nest....');
     // find root folders
     // build folder trees based on roots / each folder filters
     // get locations for folder intersection

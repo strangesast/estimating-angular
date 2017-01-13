@@ -64,7 +64,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
           promises.push(this.elementService.retrieveLocationsWith(job, n.data.type, n.data.id).then(locs => {
             return Promise.all(locs.map(loc => {
               return Promise.all(loc.children.map((id, i, arr) => this.elementService.retrieveChild(id))).then(children => {
-                console.log('children', children);
+                n.children = n.children || [];
                 n.children.push(...children.map(child => {
                   let node:any = D3.hierarchy(child);
                   node.parent = n;
@@ -98,6 +98,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
           .attr('width', '100%')
           .attr('height', '500px')
           .attr('viewBox', '0 0 500 500')
+          .attr('preserveAspectRatio', 'none');
 
         svg.each(function(d) {
             console.log('this', this);
@@ -173,7 +174,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .attr('width', '100%')
       .attr('height', '50px')
       .attr('viewBox', '0 0 '+width+' '+height)
-      //.attr('preserveAspectRatio', 'xMinYMin meet')
+      .attr('preserveAspectRatio', 'none');
 
     let groups = svg.selectAll('g').data((a:any) => {
       let folderType = a.data.type;

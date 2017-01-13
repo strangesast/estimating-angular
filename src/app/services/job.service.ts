@@ -49,6 +49,7 @@ export class JobService implements Resolve<Promise<any>> {
     let shortname = route.params['shortname'];
 
     return this.elementService.loadJob(shortname).then(jobSubject => {
+      console.log('job', jobSubject);
       // build trees
       // build nest
       this.jobSubject = jobSubject;

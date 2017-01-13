@@ -31,6 +31,7 @@ export class NestComponent implements OnInit {
   @Input() nest: any;
   @Input() roots: any;
   @Input() data: any[];
+  @Input() order: string[];
 
   // should be replaysubject
   private nestSubject: BehaviorSubject<any>;
@@ -80,8 +81,13 @@ export class NestComponent implements OnInit {
     let arr:any = [];
 
     let nest = D3.nest()
+    console.log('order', this.order, 'keys', keys);
     keys.forEach(key => {
-      nest = nest.key((d:any) => d.data.value.folders[key.data.type]);
+      nest = nest.key((d:any) => {
+        let res = d.data.value.folders[this.order.indexOf(key.data.type)]
+        console.log('res', res);
+        return res;
+      });
     })
 
     let data = nest.entries(entries);
@@ -91,7 +97,10 @@ export class NestComponent implements OnInit {
     keys.forEach((key, i) => {
       let _class = ['fa', this.typeToClassPipe.transform(key.data.type)].join(' ');
       selection.text(''); // necessary? ...yes.
-      let title = selection.selectAll('span.title').data([key.data.name]);
+      let title = selection.selectAll('span.title').data((d) => {
+        // this is bugged
+        return [d ? d.key : 'root'];
+      });
       let enter = title.enter()
         .append('span')
         .attr('class', 'title')
