@@ -3,6 +3,7 @@
   <span class="hoverlink name" (click)="nameClicked.emit(data)" [title]="data.data.name">{{ data.data.name }}</span>
   <span class="description">{{ data.data.description }}</span>
   <span class="spacer"></span>
+  <span class="qty"*ngIf="data.data.qty !== undefined">{{ data.data.qty }}</span>
   <span [hidden]="!data.children || !data.children.length" class="hoverlink fa fa-angle-up collapse" [class.open]="data && data.open" (click)="collapse.emit(data)"></span>
   <span class="fa fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
 </li>

@@ -10,19 +10,21 @@ import {
   Component,
   OnChanges,
   OnInit,
+  Output,
   Input
 } from '@angular/core';
 
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Subject, Observable, BehaviorSubject, Subscription } from 'rxjs';
 import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
+import { waitForTransition } from '../../resources/util';
 import { SimpleTreeElementComponent } from '../simple-tree/simple-tree-element/simple-tree-element.component';
 
 import { TypeToClassPipe } from '../../pipes/type-to-class.pipe'
 import { Child } from '../../models/classes';
 
-const HEIGHT = 40;
+const HEIGHT = 36;
 let cnt = 0;
 
 @Component({
@@ -36,16 +38,19 @@ export class NestComponent implements OnInit {
   @Input() roots: any;
   @Input() data: any[];
   @Input() order: string[];
-  @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
+  @Output() drag: Subject<any> = new Subject();
+  @Output() dropEvt: Subject<any> = new Subject();
 
   // should be replaysubject
   private nestSubject: BehaviorSubject<any>;
 
-  //@ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
+  @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
   private host: Selection<any, any, any, any>;
   private htmlElement: HTMLElement;
   private childComponentFactory: ComponentFactory<any>;
   private elementComponentRefMap: Map<HTMLElement, ComponentRef<any>>;
+  private childComponents: Subject<any[]> = new Subject();
+  private nodeSub: Subscription;
 
   private foldersById: any;
   private currentTree: any;
@@ -60,6 +65,15 @@ export class NestComponent implements OnInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
+
+    this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
+    this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.dropEvt))).subscribe(this.dropEvt);
+
+    /*
+    this.dropEvt.subscribe(dropped => {
+      console.log('dropped', dropped)
+    });
+    */
   }
 
   createChildComponent(data, index) {
@@ -88,7 +102,7 @@ export class NestComponent implements OnInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('div');
     this.host = D3.select(this.htmlElement);
-    this.nest.flatMap(this.subjectUpdate.bind(this)).subscribe();
+    this.nodeSub = this.nest.switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
     //this.update(this.nest);
   }
 
@@ -113,10 +127,7 @@ export class NestComponent implements OnInit {
 
     let node = tree(root);
 
-    this.update(node);
-
-
-    return Observable.never();
+    return this.update(node);
   }
 
   update(source) {
@@ -136,21 +147,21 @@ export class NestComponent implements OnInit {
 
     let t = D3.transition(undefined).duration(500);
 
-    selection.exit()
-      //.style('transform', (d:any) => 'translate(' + (d.y - 40) + 'px' + ',' + d.x + 'px' + ')')
+    let toRemove = selection.exit()
+      //.style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .transition(t)
       .styleTween('opacity', () => <any>D3.interpolate(1, 0))
-      .style('transform', (d:any) => 'translate(' + (d.y - 40 - 40) + 'px' + ',' + d.x + 'px' + ')')
+      .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .remove();
 
-    selection
+    let toAdjust = selection
       //.style('transform', (d:any) => 'translateY(' + d.x + 'px' + ')')
-      .style('width', (d:any) => 'calc(100% - ' + (d.y - 40) + 'px' + ')')
+      .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
       .transition(t)
-      .style('width', (d:any) => 'calc(100% - ' + (d.y - 40) + 'px' + ')')
-      .style('transform', (d:any) => 'translate(' + (d.y - 40) + 'px' + ',' + d.x + 'px' + ')')
+      .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
+      .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
 
-    selection.enter()
+    let toAdd = selection.enter()
       .append((n, i) => {
         if(n.data instanceof D3.hierarchy) {
           return this.createChildComponent(n.data, i);
@@ -162,24 +173,24 @@ export class NestComponent implements OnInit {
         }
       })
       .attr('class', 'item')
-      /*
-      .text(d => {
-        if(d.data instanceof D3.hierarchy) {
-          return d.data.data.name;
-        } else if (d.data.key !== undefined) {
-          let id = d.data.key;
-          return this.foldersById[id].data.name;
-        } else {
-          return 'root';
-        }
-      })
-      */
-      .style('width', (d:any) => 'calc(100% - ' + (d.y - 40) + 'px' + ')')
-      .style('transform', (d:any) => 'translate(' + (d.y - 40 - 40) + 'px' + ',' + d.x + 'px' + ')')
+      .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
+      .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .transition(t)
       .styleTween('opacity', () => <any>D3.interpolate(0, 1))
-      .style('transform', (d:any) => 'translate(' + (d.y - 40) + 'px' + ',' + d.x + 'px' + ')')
+      .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
 
+    return Observable.forkJoin(...[toRemove, toAdjust, toAdd].map(waitForTransition)).map(([removed, adjusted, added]:[any[], any[], any[]]) => {
+      removed.forEach(el => {
+        return this.removeChildComponent(el.element);
+      });
+
+      let remaining = [].concat(adjusted, added)
+      return remaining.map(({element, data, index}) => {
+        let component = this.elementComponentRefMap.get(element);
+        //component.instance.data = data;
+        return component;
+      });
+    });
   }
 
   ngOnChanges(changes: any) {

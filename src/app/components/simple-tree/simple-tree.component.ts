@@ -50,6 +50,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   private childComponents: Subject<any[]> = new Subject();
   @Output() componentEdit: Subject<any> = new Subject();
   @Output() drag: Subject<any> = new Subject();
+  @Output() dropEvt: Subject<any> = new Subject();
   private dragging: boolean = false;
   componentCollapse: Subject<any> = new Subject();
 
@@ -79,6 +80,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     ).subscribe(this.componentCollapse);
 
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
+    this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.dropEvt))).subscribe(this.dropEvt);
 
     /*
     this.childComponents.switchMap(

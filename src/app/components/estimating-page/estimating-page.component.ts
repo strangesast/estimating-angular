@@ -7,7 +7,7 @@ import { Selection, HierarchyNode } from 'd3';
 
 import { ElementService } from '../../services/element.service';
 import { JobService } from '../../services/job.service';
-import { Collection } from '../../models/classes';
+import { Collection, Child } from '../../models/classes';
 
 @Component({
   selector: 'app-estimating-page',
@@ -22,6 +22,10 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
   private hostReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
   private htmlElement: HTMLElement;
   private host: Selection<any, any, any, any>;
+
+  private groupBy:'qty'|'buy'|'sell' = 'qty';
+  private groupByOptions = ['qty', 'buy', 'sell'];
+  private groupBySubject: BehaviorSubject<string> = new BehaviorSubject('qty');
 
   constructor(
     private jobService: JobService,
@@ -60,6 +64,12 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
       let copied = nodes.map(node => node.copy());
 
+      let getChildren = Promise.all(copied.map(node => this.elementService.retrieveAllChildren(job, node.data).then(node => {
+        console.log('node', node);
+        return node;
+      })));
+
+      /*
       let promises = [];
       copied.forEach(rootNode => {
         rootNode.each(n => {
@@ -78,77 +88,157 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
           }));
         });
       });
+      */
 
-      return Observable.fromPromise(Promise.all(promises).then(() => {
+      return Observable.combineLatest(Observable.fromPromise(getChildren), this.groupBySubject).switchMap(([nodes, groupBy]) => {
 
-        let fader = (c) => D3.interpolateRgb(c, '#fff')(0.2);
-        let color = D3.scaleOrdinal(D3.schemeCategory20.map(fader));
+        return this.treeUpdate(nodes, groupBy);
+      });
 
-        let selection = this.host
-          .select('.second')
-          .selectAll('div.graph')
-          .data(copied)
-          .enter()
-          .append('div')
-          .attr('class', 'graph')
-          .text((d) => {
-            return d.data.type + ' tree graph';
-          });
-        
-        let svg = selection
-          .append('svg')
-          .attr('width', '100%')
-          .attr('height', '500px')
-          .attr('viewBox', '0 0 500 500')
-          .attr('preserveAspectRatio', 'none');
-
-        svg.each(function(d) {
-            let treemap = D3.treemap().tile(D3.treemapResquarify).size([500, 500]).round(true).paddingInner(1);
-
-            d.sum((e) => e.qty);
-            treemap(d);
-          })
-
-        let cell = svg.selectAll('g')
-          .data(n => {
-            return n.leaves();
-          })
-          .enter()
-          .append('g')
-          .attr('transform', (d:any) => {
-            return 'translate(' + d.x0 + ',' + d.y0 + ')'
-          });
-
-        cell.append('rect')
-          .attr('id', (d:any) => {
-            return d.data.id
-          })
-          .attr('width', (d:any) => d.x1 - d.x0)
-          .attr('height', (d:any) => d.y1 - d.y0)
-          .attr('fill', (d:any) => color(d.parent.data.id))
-
-        /*
-        cell.append('clipPath')
-          .attr('id', (d) => 'clip-' + d.data.id)
-          .append('use')
-          .attr('xlink:href', (d) => '#' + d.data.id)
-        */
-
-        cell.append('text')
-          .attr('x', 4)
-          .attr('y', 20)
-          .append('tspan')
-          .attr('textLength', (d:any) => Math.max(d.x1 - d.x0 - 20, 0))
-          .attr('lengthAdjust', 'spacingAndGlyphs')
-          .text((d) => d.data.name);
-
-        cell.append('title')
-          .text((d) => d.data.id + '\n' + d.value)
-
-        return null;
-
-      }));
     });
+  }
+
+  treeUpdate(data, groupBy) {
+    //let t = D3.transition(null).duration(500);
+
+    console.log('data', data);
+
+    let fader = (c) => D3.interpolateRgb(c, '#fff')(0.2);
+    let color = D3.scaleOrdinal(D3.schemeCategory20.map(fader));
+
+    let treemap = D3.treemap()
+      .tile(D3.treemapResquarify)
+      .size([500, 500])
+      .round(true)
+      .paddingInner(1);
+
+    let svg = this.host.selectAll('svg').data(data);
+
+    let cell = svg.enter()
+      .append('svg')
+      .attr('width', '100%')
+      .attr('height', '500px')
+      .attr('viewBox', '0 0 500 500')
+      .attr('preserveAspectRatio', 'none')
+      .merge(svg)
+      .selectAll('g').data((d:any) => {
+      d.sum((e) => {
+        if(e instanceof Child) {
+          return groupBy === 'qty' ? e[groupBy] : e.data[groupBy];
+        }
+        return 0;
+      });
+      treemap(d)
+      return d.leaves();
+    });
+
+    cell.exit().remove();
+
+    let rect = cell.enter()
+      .append('g')
+      .merge(cell)
+      .attr('transform', (d:any) => {
+        return 'translate(' + d.x0 + ',' + d.y0 + ')'
+      })
+      .append('rect')
+
+    rect.attr('width', (d:any) => d.x1 - d.x0)
+      .attr('height', (d:any) => d.y1 - d.y0)
+      .attr('fill', (d:any) => color(d.parent.data.id))
+
+
+    /*
+    cell
+      .attr('transform', (d:any) => {
+        return 'translate(' + d.x0 + ',' + d.y0 + ')'
+      })
+      .select('rect')
+      .attr('width', (d:any) => d.x1 - d.x0)
+      .attr('height', (d:any) => d.y1 - d.y0)
+      .attr('fill', (d:any) => color(d.parent.data.id))
+      .transition(t)
+
+
+    cell.enter()
+      .append('g')
+      .attr('title', (d:any) => d.data.id + '\n' + d.value)
+      .append('rect')
+      .attr('id', (d:any) => {
+        return d.data.id
+      })
+      .transition(t)
+      .attr('transform', (d:any) => {
+        return 'translate(' + d.x0 + ',' + d.y0 + ')'
+      })
+
+    cell.exit().transition(t).remove();
+    */
+
+
+
+
+    /*
+    let selection = this.host
+      .select('.second')
+      .selectAll('div.graph')
+      .data(() => {
+        let treemap = D3.treemap().tile(D3.treemapResquarify).size([500, 500]).round(true).paddingInner(1);
+
+        return data.map(d => {
+          d.sum((e:any) => e[groupBy]);
+          return treemap(d);
+        });
+      })
+
+    selection.enter()
+      .append('div')
+      .attr('class', 'graph')
+      .text((d:any) => d.data.type + ' tree graph')
+      .append('svg')
+
+    let svg = selection.select('svg')
+      .attr('width', '100%')
+      .attr('height', '500px')
+      .attr('viewBox', '0 0 500 500')
+      .attr('preserveAspectRatio', 'none');
+
+    let cell = svg.selectAll('g')
+      .data((n:any) => n.leaves())
+
+    cell
+      .attr('transform', (d:any) => {
+        return 'translate(' + d.x0 + ',' + d.y0 + ')'
+      })
+      .select('rect')
+      .attr('width', (d:any) => d.x1 - d.x0)
+      .attr('height', (d:any) => d.y1 - d.y0)
+      .attr('fill', (d:any) => color(d.parent.data.id))
+      .transition(t)
+
+
+    cell.enter()
+      .append('g')
+      .attr('title', (d:any) => d.data.id + '\n' + d.value)
+      .append('rect')
+      .attr('id', (d:any) => {
+        return d.data.id
+      })
+      .transition(t)
+      .attr('transform', (d:any) => {
+        return 'translate(' + d.x0 + ',' + d.y0 + ')'
+      })
+
+    cell.exit().transition(t).remove();
+
+
+    cell.append('clipPath')
+      .attr('id', (d) => 'clip-' + d.data.id)
+      .append('use')
+      .attr('xlink:href', (d) => '#' + d.data.id)
+    */
+
+
+    return Observable.never();
   }
 
   nestSubjectUpdate({ keys, entries }) {
@@ -223,6 +313,10 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .text((d:any) => d.data.value.name + ' (' + d.count + ')');
 
     return Observable.never();
+  }
+
+  groupByChanged(evt) {
+    this.groupBySubject.next(this.groupBy);
   }
 
 }

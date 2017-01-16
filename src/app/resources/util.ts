@@ -1,4 +1,6 @@
 // d3
+import { Collection, ComponentElement, Child, FolderElement } from '../models/classes';
+
 import { Observable } from 'rxjs';
 export function waitForTransition(_transition) {
   return Observable.create(subscriber => {
@@ -89,4 +91,33 @@ export function initObjectStore(name: string, version: number, stores: StoreDefi
       resolve(db);
     };
   });
+}
+
+export function classToNameString(_class): string {
+  switch(_class) {
+    case ComponentElement:
+      return 'component';
+    case Child:
+      return 'child';
+    case FolderElement:
+      return 'folder';
+    case Collection:
+      return 'collection';
+    default:
+      throw new Error('unrecognized class "'+_class+'"');
+  }
+}
+export function nameStringToClass(name):any {
+  switch(name) {
+    case 'component':
+      return ComponentElement;
+    case 'child':
+      return Child;
+    case 'folder':
+      return FolderElement;
+    case 'collection':
+      return Collection;
+    default: 
+      throw new Error('unrecognized class name "'+name+'"');
+  }
 }

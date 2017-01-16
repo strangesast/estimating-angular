@@ -66,6 +66,20 @@ function product(arr) {
   [[]]);
 }
 
+function applyMethod(method, val, test) {
+  if(['includes', 'startsWith', 'endsWith'].indexOf(method) !== -1) {
+    return (<any>String.prototype[method]).call(test, val);
+  } else if (method === 'lessThan') {
+    return !isNaN(test) && Number(test) < val;
+  } else if (method === 'greaterThan') {
+    return !isNaN(test) && Number(test) > val;
+  } else if (method === 'equal') {
+    return !isNaN(test) && Number(test) == val;
+  } else {
+    return true;
+  }
+}
+
 /* useful
 indexedDB.webkitGetDatabaseNames().onsuccess = (res) =>\
 {console.log([].slice.call(res.target.result).forEach((e) => {indexedDB.deleteDatabase(e)}))}
@@ -163,6 +177,10 @@ export class ElementService {
     });
   }
 
+  retrieveElement(_class, id: string) {
+    return retrieveRecordAs(this.db, _class, id);
+  }
+
   loadJob(id: string): Promise<BehaviorSubject<Collection>> {
     if (id in this.loaded) {
       return Promise.resolve(this.loaded[id]);
@@ -206,8 +224,16 @@ export class ElementService {
     return ids.length ? retrieveRecordsInAs(this.db, Child, ids) : Promise.resolve([]);
   }
 
-  retrieveComponentsIn(ids: string[]): Promise<ComponentElement[]> {
-    return ids.length ? retrieveRecordsInAs(this.db, ComponentElement, ids) : Promise.resolve([]);
+  retrieveComponentsIn(ids: string[], prev={}): Promise<ComponentElement[]> {
+    return ids.length ? retrieveRecordsInAs(this.db, ComponentElement, ids).then(components => {
+      let parents = {};
+      components.forEach(component => Array.isArray(component.children) ? component.children.forEach(c => parents[c] = null) : null);
+      return this.retrieveChildrenIn(Object.keys(parents)).then(arr => {
+        arr.forEach(c => parents[c.id] = c);
+        components.forEach(c => c.children = c.children.map(_c => typeof _c === 'string' ? parents[_c] : _c));
+        return components;
+      })
+    }) : Promise.resolve([]);
   }
 
   retrieveLocationsWith(job:Collection, folderName:string, id:string) {
@@ -268,7 +294,7 @@ export class ElementService {
       name = name || component.name;
       description = description || component.description;
 
-      let child = new Child('', name, description, job.id, component.id, 1);
+      let child = new Child('', name, description, job.id, component.id, qty);
 
       let saveChild = saveRecordAs(this.db, child).then(childId => {
         child.id = childId;
@@ -300,6 +326,8 @@ export class ElementService {
       '',
       name,
       description,
+      Math.ceil(Math.random()*100000)/100, // sell
+      Math.ceil(Math.random()*10000)/100,  // buy
       job.id, // job id
       [] // children
     );
@@ -383,7 +411,7 @@ export class ElementService {
         undefined,
         component.name + ' (Child '+(i+1)+')',
         component.description + ' (Child '+(i+1)+')',
-        Math.ceil(Math.random())*4
+        Math.ceil(Math.random()*4)
       ))).reduce((a, b)=>a.concat(b)));
     }).then(children => ret.children = children);
 
@@ -639,11 +667,87 @@ export class ElementService {
   }
 
   retrieveChildren(root) {
-    return Promise.all(root.children.map((id, i) => retrieveRecordAs(this.db, root.constructor, id).then(child => {
+    return Promise.all(root.children.filter(c => typeof c === 'string').map((id, i) => retrieveRecordAs(this.db, root.constructor, id).then(child => {
       root.children.splice(i, 1, child);
       return this.retrieveChildren(child);
     }))).then(() => root);
   }
+
+  retrieveChildChildren(rootId:string|Child) {
+    return (typeof rootId === 'string' ? this.retrieveChild(rootId) : Promise.resolve(rootId)).then((root:Child) => {
+      return this.retrieveComponent(root.ref).then(component => {
+        root.data = component;
+        return Promise.all((root.data.children || []).map(this.retrieveChildChildren.bind(this))).then((res) => {
+          root.data.children = res;
+          return root;
+        });
+      });
+    });
+  }
+
+  /*
+  retrieveAllChildren(job, rootFolder) {
+    let i = job.folders.order.indexOf(rootFolder.type);
+    if(i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
+    return this.retrieveChildren(rootFolder).then(root => {
+      let node = D3.hierarchy(root, (d) => d.children);
+      let keyName = 'folder' + (i+1);
+      let folderIds = node.descendants().map(f => f.data.id);
+      return retrieveRecordsInAs(this.db, Location, folderIds, keyName).then(locations => {
+        let byLoc = {};
+        locations.filter(loc => loc != null).forEach(loc => {
+          loc.children.forEach(c => byLoc[c] = loc.folders[i]);
+        });
+        return retrieveRecordsInAs(this.db, Child, Object.keys(byLoc)).then(children => {
+          return Promise.all(children.map(this.retrieveChildChildren.bind(this))).then(() => {
+            children.forEach(c => {
+              c.folder = byLoc[c.id];
+            });
+            let nest = D3.nest().key((d:any) => d.folder).object(children);
+
+            return D3.hierarchy(root, (d) => {
+              if (d instanceof FolderElement) {
+                return nest[d.id] !== undefined ? (d.children || []).concat(nest[d.id]) : d.children;
+
+              } else if (d instanceof Child) {
+                console.log('children', d.data ? d.data.children : []);
+                return d.data ? d.data.children : [];
+
+              } else if (d instanceof ComponentElement) {
+                return d.children;
+
+              } else {
+                return [];
+              }
+            });
+          });
+        });
+      });
+    });
+  }
+
+  /*
+  retrieveAllChildren(job, rootFolder) {
+    let i = job.folders.order.indexOf(rootFolder.type)
+    if(i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
+
+    return this.retrieveChildren(rootFolder).then(root => {
+      let folderIds = D3.hierarchy(root).descendants().map(f => f.data.id);
+      let keyName = 'folder' + (i + 1);
+      return retrieveRecordsInAs(this.db, Location, folderIds, keyName).then(locations => {
+        let childToFolder = {};
+        locations.forEach(loc => loc.children.forEach(c => childToFolder[c] = loc.folders[i]));
+        return retrieveRecordsInAs(this.db, Child, Object.keys(childToFolder)).then(children => {
+          return Promise.all(children.map(this.retrieveChildChildren.bind(this))).then(() => {
+            return D3.hierarchy(root, (d) => {
+              d.children || d.data.children);
+            });
+          });
+        });
+      });
+    });
+  }
+  */
 
   buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
@@ -757,7 +861,7 @@ export class ElementService {
     return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.db, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
   }
   
-  loadChildrenAtRoot(nodes): Promise<HierarchyNode<Child>[]> {
+  loadChildrenAtRoot(nodes, filters=[]): Promise<HierarchyNode<Child>[]> {
     // get all combinations of locations
     let pairs = product(nodes.map(node => node.descendants().map((n:any) => n.data.id)));
     return Promise.all(pairs.map(pair => this.retrieveLocation(pair))).then((locations:Location[]) => {
@@ -780,9 +884,11 @@ export class ElementService {
           compArr.forEach((component:ComponentElement) => {
             components[component.id] = component;
           });
-          return children.map((child:Child) => {
+          return children.filter(child => {
+            return filters.every(f => applyMethod(f.method, f.value, child[f.property]));
+          }).map((child:Child) => {
             child.data = components[child.ref];
-            return D3.hierarchy(child, (d) => d.data.children);
+            return D3.hierarchy(child, (d) => d.data ? d.data.children : []);
           });
         });
       });
@@ -823,7 +929,7 @@ export class ElementService {
     return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
       let rootFolderIds = config.folders.order.map(name => config.folders.roots[name]||job.folders.roots[name]);
       let promise = this.loadRootFolderNodes(rootFolderIds).then(nodes => {
-        return this.loadChildrenAtRoot(nodes).then(children => {
+        return this.loadChildrenAtRoot(nodes, config.filters.concat(config.component.filters)).then(children => {
           let nodesEnabled = config.folders.order.map(name => config.folders.enabled[name]);
           return {
             keys: nodes.filter((n, i) => nodesEnabled[i]),

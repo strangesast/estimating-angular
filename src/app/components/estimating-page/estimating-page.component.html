@@ -1,4 +1,7 @@
 <div>
+  <select [(ngModel)]="groupBy" (ngModelChange)="groupByChanged($event)">
+    <option *ngFor="let option of groupByOptions">{{option}}</option>
+  </select>
   <div class="first">
 
   </div>

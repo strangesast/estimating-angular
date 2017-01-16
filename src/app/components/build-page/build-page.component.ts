@@ -18,7 +18,7 @@ import { Nest } from 'd3';
 
 import { JobService } from '../../services/job.service';
 import { TreeComponent } from '../tree/tree.component';
-import { NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
+import { Child, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
 
 function methodToSymbol(name: string) {
   switch(name) {
@@ -233,6 +233,19 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   filterFormSubmit() {
     if(this.filterSuggestions.length) {
       this.addFilter(this.filterSuggestions[0]);
+    }
+  }
+
+  handleDrop({dropped, on}) {
+    if (on instanceof Child) {
+      if (dropped instanceof ComponentElement) {
+        Promise.all([
+          this.jobService.retrieveElement(dropped),
+          this.jobService.retrieveElement(on)
+        ]).then(([_dropped, _on]) => {
+          return this.jobService.addChild(_on, _dropped).then(res => console.log('res', res));
+        });
+      }
     }
   }
 }

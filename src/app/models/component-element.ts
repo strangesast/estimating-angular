@@ -9,13 +9,15 @@ export class ComponentElement extends BaseElement {
   static excluded: string[] = ['hash', 'saveState'];
 
   static fromObject(obj) {
-    return new ComponentElement(obj.id, obj.name, obj.description, obj.job, obj.children || [], obj.basedOn, obj.hash);
+    return new ComponentElement(obj.id, obj.name, obj.description, obj.sell, obj.buy, obj.job, obj.children || [], obj.basedOn, obj.hash);
   }
 
   constructor(
     id,
     name,
     description,
+    public sell: number,
+    public buy: number,
     public job: string,
     public children?: string[]|Child[],
     public basedOn?: BasedOn|null,

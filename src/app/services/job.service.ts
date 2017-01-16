@@ -112,6 +112,39 @@ export class JobService implements Resolve<Promise<any>> {
     });
   }
 
+  retrieveElement(elementId, _class?) {
+    return this.elementService.retrieveElement(typeof elementId === 'string' ? _class : elementId.constructor, typeof elementId === 'string' ? elementId : elementId.id);
+  }
+
+  loadElement(_class, id) {
+    return this.elementService.loadElement(_class, id);
+  }
+
+  addChild(to, what) {
+    if(to instanceof Child) {
+      return this.elementService.loadElement(ComponentElement, to.ref).then(_component => {
+        let component = _component.getValue();
+        component.children = component.children || [];
+        return (what instanceof Child ? Promise.resolve(what) : this.elementService.createChild(this.jobSubject.getValue(), what)).then(child => {
+          component.children.push(child.id);
+          _component.next(component);
+          return component;
+        });
+      })
+
+    } else if (to instanceof ComponentElement) {
+      // tbd
+
+    } else if (to instanceof FolderElement) {
+      if(what instanceof FolderElement) {
+        // tbd
+
+      } else {
+        throw new Error('invalid child type "'+what.constructor+'"');
+      }
+    }
+  }
+
   closeOpenElement(both) {
     let elements = this.openElements.getValue();
     let id = both.element.getValue().id;

@@ -45,13 +45,14 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
           let root = {
             name: 'Components in ' + job.name,
             type: 'filter',
-            children: components.map(component => {
+            children: components/*.map(component => {
               return {
                 name: component.name,
                 data: component,
                 type: 'component'
               };
             })
+            */
           };
           return [D3.hierarchy(root)];
         });
