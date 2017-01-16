@@ -1,4 +1,20 @@
 @off-white: #D5D8DD;
+:host > div {
+  position: relative;
+
+  & /deep/ .item {
+    display: inline-block;
+    top: 0;
+    left: 0;
+    width: 100%;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    height: 40px;
+    position: absolute;
+  }
+}
+/*
 :host /deep/ ul {
   list-style-type: none;
   margin-bottom: 0;
@@ -67,3 +83,4 @@
   margin-bottom: 4px;
   padding-left: 0;
 }
+*/
