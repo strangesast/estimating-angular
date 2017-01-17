@@ -685,69 +685,58 @@ export class ElementService {
     });
   }
 
-  /*
   retrieveAllChildren(job, rootFolder) {
+    // load folder tree
+    let getFolderTree = this.retrieveChildren(rootFolder).then(() => {
+      return D3.hierarchy(rootFolder)
+    })
+    // load locations for each folder in tree
     let i = job.folders.order.indexOf(rootFolder.type);
-    if(i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
-    return this.retrieveChildren(rootFolder).then(root => {
-      let node = D3.hierarchy(root, (d) => d.children);
-      let keyName = 'folder' + (i+1);
+    if (i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
+    let getLocations = getFolderTree.then(node => {
       let folderIds = node.descendants().map(f => f.data.id);
-      return retrieveRecordsInAs(this.db, Location, folderIds, keyName).then(locations => {
-        let byLoc = {};
-        locations.filter(loc => loc != null).forEach(loc => {
-          loc.children.forEach(c => byLoc[c] = loc.folders[i]);
-        });
-        return retrieveRecordsInAs(this.db, Child, Object.keys(byLoc)).then(children => {
-          return Promise.all(children.map(this.retrieveChildChildren.bind(this))).then(() => {
-            children.forEach(c => {
-              c.folder = byLoc[c.id];
-            });
-            let nest = D3.nest().key((d:any) => d.folder).object(children);
-
-            return D3.hierarchy(root, (d) => {
-              if (d instanceof FolderElement) {
-                return nest[d.id] !== undefined ? (d.children || []).concat(nest[d.id]) : d.children;
-
-              } else if (d instanceof Child) {
-                console.log('children', d.data ? d.data.children : []);
-                return d.data ? d.data.children : [];
-
-              } else if (d instanceof ComponentElement) {
-                return d.children;
-
-              } else {
-                return [];
-              }
-            });
-          });
-        });
-      });
-    });
-  }
-
-  /*
-  retrieveAllChildren(job, rootFolder) {
-    let i = job.folders.order.indexOf(rootFolder.type)
-    if(i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
-
-    return this.retrieveChildren(rootFolder).then(root => {
-      let folderIds = D3.hierarchy(root).descendants().map(f => f.data.id);
       let keyName = 'folder' + (i + 1);
-      return retrieveRecordsInAs(this.db, Location, folderIds, keyName).then(locations => {
-        let childToFolder = {};
-        locations.forEach(loc => loc.children.forEach(c => childToFolder[c] = loc.folders[i]));
-        return retrieveRecordsInAs(this.db, Child, Object.keys(childToFolder)).then(children => {
-          return Promise.all(children.map(this.retrieveChildChildren.bind(this))).then(() => {
-            return D3.hierarchy(root, (d) => {
-              d.children || d.data.children);
-            });
-          });
+      return retrieveRecordsInAs(this.db, Location, folderIds, keyName);
+    });
+    // load children of those locations
+    let childrenToFolder = {};
+    let getChildren = getLocations.then(locations => {
+      locations.forEach(loc => loc.children.forEach(cid => childrenToFolder[cid] = loc.folders[i]));
+      return retrieveRecordsInAs(this.db, Child, Object.keys(childrenToFolder));
+    });
+    // load tree for each child
+    let getChildrenChildren = getChildren.then(children => {
+      return Promise.all(children.map(child => this.retrieveChildChildren(child))).then(() => {
+        let folderToChildren = {};
+        children.forEach(child => {
+          let f = childrenToFolder[child.id];
+          let a = folderToChildren[f];
+          if (a) {
+            a.push(child)
+          } else {
+            folderToChildren[f] = [child];
+          }
         });
+        return folderToChildren;
       });
     });
+    // load whole tree
+    return getChildrenChildren.then(ob => {
+      let node = D3.hierarchy(rootFolder, (d) => {
+        if (d instanceof FolderElement) {
+          let more = ob[d.id] || [];
+          return d.children.concat(more);
+        } else if (d instanceof Child) {
+          return d.data ? d.data.children : [];
+        } else if (d instanceof ComponentElement) {
+          return d.children;
+        } else {
+          throw new Error('unexpected type');
+        }
+      });
+      return node;
+    })
   }
-  */
 
   buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {

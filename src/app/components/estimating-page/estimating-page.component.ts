@@ -69,27 +69,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
         return node;
       })));
 
-      /*
-      let promises = [];
-      copied.forEach(rootNode => {
-        rootNode.each(n => {
-          promises.push(this.elementService.retrieveLocationsWith(job, n.data.type, n.data.id).then(locs => {
-            return Promise.all(locs.map(loc => {
-              return Promise.all(loc.children.map((id, i, arr) => this.elementService.retrieveChild(id))).then(children => {
-                n.children = n.children || [];
-                n.children.push(...children.map(child => {
-                  let node:any = D3.hierarchy(child);
-                  node.parent = n;
-                  node.depth = n.depth + 1;
-                  return node;
-                }));
-              });
-            }));
-          }));
-        });
-      });
-      */
-
       return Observable.combineLatest(Observable.fromPromise(getChildren), this.groupBySubject).switchMap(([nodes, groupBy]) => {
 
         return this.treeUpdate(nodes, groupBy);
@@ -121,16 +100,26 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .attr('viewBox', '0 0 500 500')
       .attr('preserveAspectRatio', 'none')
       .merge(svg)
-      .selectAll('g').data((d:any) => {
-      d.sum((e) => {
-        if(e instanceof Child) {
-          return groupBy === 'qty' ? e[groupBy] : e.data[groupBy];
-        }
-        return 0;
+      .selectAll('g').data((rootNode:any) => {
+        console.log('rootNode', rootNode);
+        rootNode.sum((d) => {
+          console.log('d', d);
+          if(d instanceof Child) {
+            return d.data['buy'];
+            return groupBy == 'qty' ? d.qty : d.data[groupBy];
+          }
+          return 0;
+        });
+        rootNode.each(n => {
+          console.log('n', n);
+          if(n.data instanceof Child) {
+            n._children = n.children;
+            delete n.children;
+          }
+        });
+        treemap(rootNode)
+        return rootNode.leaves();
       });
-      treemap(d)
-      return d.leaves();
-    });
 
     cell.exit().remove();
 
