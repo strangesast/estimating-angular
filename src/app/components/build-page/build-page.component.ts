@@ -18,7 +18,7 @@ import { Nest } from 'd3';
 
 import { JobService } from '../../services/job.service';
 import { TreeComponent } from '../tree/tree.component';
-import { Child, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
+import { Child, FolderElement, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
 
 function methodToSymbol(name: string) {
   switch(name) {
@@ -208,7 +208,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     if(config.component.enabled && !isNaN(query)) {
       let n = Number(query);
 
-      let props = ['price'];
+      let props = ['buy', 'sell'];
       if(n % 1 === 0) props.push('qty');
 
       arr.unshift(...props.map(prop => ['greaterThan', 'lessThan', 'equal'].map(method => {
@@ -237,15 +237,27 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   handleDrop({dropped, on}) {
+    let add;
+    let getElements = Promise.all([
+      this.jobService.retrieveElement(dropped),
+      this.jobService.retrieveElement(on)
+    ]);
     if (on instanceof Child) {
       if (dropped instanceof ComponentElement) {
-        Promise.all([
-          this.jobService.retrieveElement(dropped),
-          this.jobService.retrieveElement(on)
-        ]).then(([_dropped, _on]) => {
-          return this.jobService.addChild(_on, _dropped).then(res => console.log('res', res));
+        add = getElements.then(([_dropped, _on]) => {
+          return this.jobService.addChild(_on, _dropped);
+        });
+      }
+    } else if (on instanceof FolderElement) {
+      if (dropped instanceof FolderElement) {
+        add = getElements.then(([_dropped, _on]) => {
+          return this.jobService.addChild(_on, _dropped);
         });
       }
     }
+
+    if(add) add.then(res => {
+      this.nestConfigSubject.next(this.nestConfigSubject.getValue());
+    });
   }
 }

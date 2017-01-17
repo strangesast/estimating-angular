@@ -18,7 +18,7 @@
           <span [ngSwitch]="filter.type">
             <span *ngSwitchCase="'property'">
               <span class="rounded">{{filter.display}}</span>
-              <span>{{ filter.property == 'price' ? '$' : '' }}{{ filter.value }}</span>
+              <span>{{ filter.property == 'buy' ? '$' : '' }}{{ filter.value }}</span>
             </span>
             <span *ngSwitchDefault>
               <span>{{ filter.value }}</span>

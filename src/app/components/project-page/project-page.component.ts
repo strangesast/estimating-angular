@@ -84,6 +84,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.stats.folderCnt = keys.map(k => k.descendants()).reduce((a, b)=> a+b.length, 0);
         this.stats.childCnt = entries.length;
         this.stats.componentCnt = (<any>nest).rollup((d:any) => D3.map(d, (e:any)=> e.data.ref).size()).entries(entries)
+
+        this.stats.buy = nest.rollup(leaves => leaves.map(n => n.sum(m => m.data ? m.data.buy : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
+        this.stats.sell = nest.rollup(leaves => leaves.map(n => n.sum(m => m.data ? m.data.sell : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
       });
 
       folderCount.withLatestFrom(trees).switchMap(([folder, trees]) => {

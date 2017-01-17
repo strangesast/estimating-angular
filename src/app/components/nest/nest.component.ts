@@ -140,7 +140,9 @@ export class NestComponent implements OnInit {
     this.host.style('height', arr.length * HEIGHT + 'px');
 
     let selection = this.host.selectAll('.item').data(arr, (d) => {
-      if(d.data instanceof D3.hierarchy) return d.data.data.id;
+      if(d.data instanceof D3.hierarchy) {
+        return d.data.ancestors().map(n => n.data.id).join('');
+      }
       if(d.data.key !== undefined && d.data.values !== undefined) return d.data.key;
       return (d.id || (d.id = ++cnt))
     });

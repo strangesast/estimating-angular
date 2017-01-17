@@ -12,8 +12,10 @@
 </div>
 <ul class="info">
   <li>
-    <span>Total</span>
-    <span style="font-style:italic">$0.00</span>
+    <span>Buy</span>
+    <span style="font-style:italic">{{stats.buy | currency:'USD':true}}</span>
+    <span>Sell</span>
+    <span style="font-style:italic">{{stats.sell | currency:'USD':true}}</span>
   </li>
   <li class="counts">
     <span title="number of folders">{{stats.folderCnt}}<span class="fa fa-folder-o"></span></span>

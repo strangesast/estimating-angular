@@ -137,7 +137,13 @@ export class JobService implements Resolve<Promise<any>> {
 
     } else if (to instanceof FolderElement) {
       if(what instanceof FolderElement) {
-        // tbd
+        return this.elementService.loadElement(FolderElement, to.id).then(_folder => {
+          let folder = _folder.getValue();
+          folder.children = folder.children || [];
+          folder.children.push(what.id);
+          _folder.next(folder);
+          return to;
+        });
 
       } else {
         throw new Error('invalid child type "'+what.constructor+'"');
