@@ -67,6 +67,7 @@ export class JobService implements Resolve<Promise<any>> {
         filters: []
       });
       this.nestConfigSubject = nestConfig;
+      //let filteredConfig:any = nestConfig.switchMap(config => config.component.enabled ? Observable.of(config) : Observable.never());
       let buildNest = this.elementService.buildNest(jobSubject, nestConfig);
       let buildTrees = this.elementService.buildTrees(jobSubject, nestConfig);
       return {

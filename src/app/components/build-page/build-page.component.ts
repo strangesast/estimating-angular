@@ -48,7 +48,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private filterSuggestionsSubject: BehaviorSubject<any[]> = new BehaviorSubject([]);
   private filterFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  private nestEnabled: boolean = false;
+  //private nestEnabled: boolean = false;
   private folderEnabled: string = '';
 
   private trees: any[];
@@ -95,20 +95,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
           folderFilters,
           generalFilters
         );
-
         this.nestConfig = config
-
-        if(config.component.enabled) {
-          // enable nest, disable tree
-          this.nestEnabled = true;
-          this.folderEnabled = '';
-
-        } else {
-          // disable nest, enable tree
-          let name = Object.keys(config.folders.enabled).find(n=>config.folders.enabled[n]);
-          this.folderEnabled = name;
-          this.nestEnabled = false;
-        }
       });
 
       this.filterForm = this.formBuilder.group({

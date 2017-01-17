@@ -134,11 +134,16 @@ export class NestComponent implements OnInit {
     keys.forEach(key => nest = nest.key((d:any) => d.data.folders[this.order.indexOf(key.data.type)]));
     let data = nest.entries(entries);
 
-    // if empty folders
-    let enabled = config.folders.order.filter(n => config.folders.enabled[n]).map(n => !!config.folders.filters[n].find(f => f.type == 'emptyFolders'));
-    addEmptyFolders(data, keys, enabled);
+    let root;
+    if (config.component.enabled) {
+      // if empty folders
+      let enabled = config.folders.order.filter(n => config.folders.enabled[n]).map(n => !!config.folders.filters[n].find(f => f.type == 'emptyFolders'));
+      addEmptyFolders(data, keys, enabled);
+      root = D3.hierarchy({ values: data, children: [] }, (d) => d.values || d.children);
 
-    let root = D3.hierarchy({ values: data, children: [] }, (d) => d.values || d.children);
+    } else {
+      root = D3.hierarchy(keys[0]);
+    }
     this.currentRoot = root;
 
     let tree = (<any>D3).tree().nodeSize([0, HEIGHT]);
@@ -161,7 +166,8 @@ export class NestComponent implements OnInit {
 
     let selection = this.host.selectAll('.item').data(arr, (d) => {
       if(d.data instanceof D3.hierarchy) {
-        return d.data.ancestors().map(n => n.data.id).join('');
+        return d.data.data.id;
+        //return d.data.ancestors().map(n => n.data.id).join('');
       }
       if(d.data.key !== undefined && d.data.values !== undefined) return d.data.key;
       return (d.id || (d.id = ++cnt))
@@ -170,15 +176,12 @@ export class NestComponent implements OnInit {
     let t = D3.transition(undefined).duration(500);
 
     let toRemove = selection.exit()
-      //.style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .transition(t)
       .styleTween('opacity', () => <any>D3.interpolate(1, 0))
       .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .remove();
 
     let toAdjust = selection
-      //.style('transform', (d:any) => 'translateY(' + d.x + 'px' + ')')
-      .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
       .transition(t)
       .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
       .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')

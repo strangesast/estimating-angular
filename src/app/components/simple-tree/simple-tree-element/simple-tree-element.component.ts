@@ -31,6 +31,8 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
   host: {
     '(dragstart)': 'onDragStart($event)',
     '(dragover)':  'onDragOver($event)',
+    '(dragenter)':  'onDragEnter($event)',
+    '(dragleave)':  'onDragLeave($event)',
     '(drop)':      'onDragDrop($event)',
     '(dragend)':   'onDragEnd($event)',
     '[attr.draggable]': 'draggable'
@@ -45,7 +47,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Output() dropEvt = new EventEmitter();
 
   draggable: boolean = false;
-
+  dragover: boolean = false;
   dragging: boolean = false;
 
   constructor(
@@ -57,8 +59,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
 
   ngOnInit() {}
 
-  ngOnChanges(changes) {
-  }
+  ngOnChanges(changes) {}
   
   setDraggable(val) {
     this.draggable = val;
@@ -72,10 +73,20 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
 
   onDragOver(evt) {
     evt.preventDefault();
+    this.dragover = true;
     return false;
   }
 
+  onDragEnter(evt) {
+    evt.preventDefault();
+  }
+
+  onDragLeave(evt) {
+    this.dragover = false;
+  }
+
   onDragDrop(evt) {
+    this.dragover = false;
     let data = JSON.parse(evt.dataTransfer.getData('text'));
     if(data.object !== undefined && typeof data.type === 'string') {
       let obj = nameStringToClass(data.type).fromObject(data.object);

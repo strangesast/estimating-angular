@@ -41,12 +41,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
       this.treesSubject = treesSubject;
 
-      /*
-      this.hostReady.switchMap(ready => ready ? this.nestSubject.switchMap(this.nestSubjectUpdate.bind(this)): Observable.never()).subscribe(res => {
-        console.log('nest updated', res);
-      });
-      */
-
       this.hostReady.switchMap(ready => ready ? this.treesSubject.switchMap(this.treesSubjectUpdate.bind(this)): Observable.never()).subscribe();
       
     });
@@ -65,7 +59,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       let copied = nodes.map(node => node.copy());
 
       let getChildren = Promise.all(copied.map(node => this.elementService.retrieveAllChildren(job, node.data).then(node => {
-        console.log('node', node);
         return node;
       })));
 
