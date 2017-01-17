@@ -17,7 +17,6 @@ import {
 import { Nest } from 'd3';
 
 import { JobService } from '../../services/job.service';
-import { TreeComponent } from '../tree/tree.component';
 import { Child, FolderElement, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
 
 function methodToSymbol(name: string) {
@@ -36,8 +35,7 @@ function methodToSymbol(name: string) {
 @Component({
   selector: 'app-build-page',
   templateUrl: './build-page.component.html',
-  styleUrls: ['./build-page.component.less'],
-  providers: [TreeComponent]
+  styleUrls: ['./build-page.component.less']
 })
 export class BuildPageComponent implements OnInit, OnDestroy {
   private job: Collection;
@@ -260,7 +258,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
           add = this.jobService.createFolder(dropped, on.id);
         } else {
           add = getElements.then(([_dropped, _on]) => {
-            console.log(_dropped, _on);
             return this.jobService.addChild(_on, _dropped);
           });
         }

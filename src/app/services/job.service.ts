@@ -49,7 +49,6 @@ export class JobService implements Resolve<Promise<any>> {
     let shortname = route.params['shortname'];
 
     return this.elementService.loadJob(shortname).then(jobSubject => {
-      console.log('job', jobSubject);
       // build trees
       // build nest
       this.jobSubject = jobSubject;
@@ -120,7 +119,6 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   addChild(to, what) {
-    console.log('to', to, 'what', what);
     if(to instanceof Child) {
       if(what instanceof Child || what instanceof ComponentElement) {
         return this.elementService.loadElement(ComponentElement, to.ref).then(_component => {
@@ -217,8 +215,6 @@ export class JobService implements Resolve<Promise<any>> {
     delete filter.affects;
 
     let changed = false;
-
-    console.log('adding filter...', filter);
 
     if(Array.isArray(affects) && affects.length) {
       affects.forEach(name => {

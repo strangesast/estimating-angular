@@ -92,7 +92,6 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
       }
     });
     this.jobSub = this.elementService.isReady.distinct().switchMap(isReady => isReady ? jobPageSwitch : Observable.never()).subscribe((results:any) => {
-      //console.log('results', results);
       this.results.next(results);
     });
     /*

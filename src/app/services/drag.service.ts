@@ -6,7 +6,6 @@ export class DragService {
   constructor() { }
 
   handle(evt) {
-    console.log('drag event', evt);
   }
 
 }

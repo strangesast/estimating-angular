@@ -84,12 +84,6 @@ export class NestComponent implements OnInit {
 
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.dropEvt))).subscribe(this.dropEvt);
-
-    /*
-    this.dropEvt.subscribe(dropped => {
-      console.log('dropped', dropped)
-    });
-    */
   }
 
   createChildComponent(data, index) {

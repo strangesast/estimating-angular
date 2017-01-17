@@ -10,8 +10,6 @@ import { ElementService } from './services/element.service';
 import { DragService } from './services/drag.service';
 
 import { AppComponent }               from './components/app.component';
-import { TreeComponent }              from './components/tree/tree.component';
-import { TreeElementComponent }       from './components/tree/tree-element/tree-element.component';
 import { SearchResultsComponent }     from './components/search-results/search-results.component';
 import { SearchComponent }            from './components/search/search.component';
 import { EditPageComponent }          from './components/edit-page/edit-page.component';
@@ -34,8 +32,6 @@ import { ClassToStringPipe }          from './pipes/class-to-string.pipe';
 @NgModule({
   declarations: [
     AppComponent,
-    TreeComponent,
-    TreeElementComponent,
     SearchResultsComponent,
     SearchComponent,
     EditPageComponent,
@@ -65,7 +61,7 @@ import { ClassToStringPipe }          from './pipes/class-to-string.pipe';
     ElementService,
     DragService
   ],
-  entryComponents: [ SimpleTreeElementComponent, TreeElementComponent ],
-  bootstrap: [AppComponent]
+  entryComponents: [ SimpleTreeElementComponent ],
+  bootstrap: [ AppComponent ]
 })
 export class AppModule { }

@@ -657,6 +657,7 @@ export class ElementService {
     }))).then(() => root);
   }
 
+  // TODO: check for loop
   retrieveChildChildren(rootId:string|Child) {
     return (typeof rootId === 'string' ? this.retrieveChild(rootId) : Promise.resolve(rootId)).then((root:Child) => {
       return this.retrieveComponent(root.ref).then(component => {

@@ -111,7 +111,6 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     });
 
     this.drag.subscribe(({event: e, component}) => {
-      console.log('evt', e.type)
       if(e.type == 'dragstart') {
         this.dragging = true;
       } else if(e.type == 'dragend') {

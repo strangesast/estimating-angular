@@ -21,7 +21,6 @@ import { HierarchyNode } from 'd3';
 import { hierarchy } from 'd3-hierarchy';
 import * as D3 from 'd3';
 
-import { TreeComponent } from '../tree/tree.component';
 import { SimpleTreeComponent } from '../simple-tree/simple-tree.component';
 
 import { ClassToStringPipe } from '../../pipes/pipes';
@@ -41,7 +40,7 @@ import { JobService }     from '../../services/job.service';
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
   styleUrls: ['./project-page.component.less'],
-  providers: [ SimpleTreeComponent, TreeComponent, ClassToStringPipe ]
+  providers: [ SimpleTreeComponent, ClassToStringPipe ]
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private job: Collection;
