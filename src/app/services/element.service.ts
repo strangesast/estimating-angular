@@ -49,7 +49,8 @@ import {
   retrieveUniqueId,
   removeRecord,
   removeRecordAs,
-  retrieveRecordsInAs
+  retrieveRecordsInAs,
+  retrieveRecordsAsWith
 } from '../resources/indexedDB';
 
 import { HierarchyNode, Nest } from 'd3';
@@ -162,19 +163,30 @@ export class ElementService {
     });
   }
 
-  loadElement(_class, id: string): Promise<BehaviorSubject<any>> {
-    if (id in this.loaded) {
-      return Promise.resolve(this.loaded[id]);
-    }
-    return retrieveRecordAs(this.db, _class, id).then(result => {
-      if (result == null) {
-        throw new Error('element with that id (' + id + ') does not exist');
+  loadElement(_class, id?: string): Promise<BehaviorSubject<any>> {
+    if ([Child, ComponentElement, FolderElement, Collection].some(cnstr => _class instanceof cnstr)) {
+      let id = _class.id;
+      if (id in this.loaded) {
+        return Promise.resolve(this.loaded[id]);
       }
-      if(!(result instanceof _class)) throw new Error('invalid load');
-      this.loaded[id] = new BehaviorSubject(result);
+      this.loaded[id] = new BehaviorSubject(_class);
       this.updateLoaded();
-      return this.loaded[id];
-    });
+      return Promise.resolve(this.loaded[id]);
+
+    } else {
+      if (id in this.loaded) {
+        return Promise.resolve(this.loaded[id]);
+      }
+      return retrieveRecordAs(this.db, _class, id).then(result => {
+        if (result == null) {
+          throw new Error('element with that id (' + id + ') does not exist');
+        }
+        if(!(result instanceof _class)) throw new Error('invalid load');
+        this.loaded[id] = new BehaviorSubject(result);
+        this.updateLoaded();
+        return this.loaded[id];
+      });
+    }
   }
 
   retrieveElement(_class, id: string) {
@@ -668,6 +680,46 @@ export class ElementService {
         });
       });
     });
+  }
+
+  addChild(job, to, what) {
+    if(to instanceof Child) {
+      if(what instanceof Child || what instanceof ComponentElement) {
+        return this.loadElement(ComponentElement, to.ref).then(_component => {
+          let component = _component.getValue();
+          component.children = component.children || [];
+          return (what instanceof Child ? Promise.resolve(what) : this.createChild(job, what)).then(child => {
+            component.children.push(child.id);
+            _component.next(component);
+            return component;
+          });
+        })
+      }
+
+    } else if (to instanceof ComponentElement) {
+      // tbd
+
+    } else if (to instanceof FolderElement) {
+      if(what instanceof FolderElement) {
+        if (what.id) {
+          return Promise.all([retrieveRecordsAsWith(this.db, FolderElement, what.id, 'children').then(children => Promise.all(children.map(this.loadElement.bind(this)))), this.loadElement(FolderElement, to.id)]).then(([current, _folder]:[any, BehaviorSubject<FolderElement>]) => {
+            let currentVal = current.map(bs => bs.getValue());
+            currentVal.forEach((val, i) => {
+              val.children.splice(val.children.indexOf(what.id), 1);
+              current[i].next(val);
+            });
+            let folder = _folder.getValue();
+            folder.children = folder.children || [];
+            folder.children.push(what.id);
+            _folder.next(folder);
+            return to;
+          });
+        }
+
+      } else {
+        throw new Error('invalid child type "'+what+'"');
+      }
+    }
   }
 
   retrieveAllChildren(job, rootFolder) {

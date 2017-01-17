@@ -26,6 +26,7 @@ export const STORES = [
     { on: 'job',       name: 'job',       unique: false }
   ] },
   { name: FolderElement.storeName,    keypath: 'id', indexes: [
+    { on: 'children',  name: 'children',  unique: false, multiEntry: true },
     { on: 'type',      name: 'type',      unique: false },
     { on: 'job',       name: 'job',       unique: false }
   ] },
@@ -158,6 +159,41 @@ export function retrieveRecordsIn(db, storeName: string, ids: string[], key?: st
 
       } else {
         cursor.continue(arr[i]);
+      }
+    };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+export function retrieveRecordsAsWith(db, _class, id, indexName) {
+  if (typeof _class.storeName !== 'string') {
+    throw new Error('improper class or class definition');
+  }
+  let storeName = _class.storeName;
+  return retrieveRecordsWith(db, storeName, id, indexName).then(records => {
+    return records.map(el => {
+      let ob = _class.fromObject(el)
+      ob.saveState = 'saved:uncommitted';
+      return ob;
+    });
+  });
+}
+
+export function retrieveRecordsWith(db, storeName, id, indexName): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    let trans = db.transaction([storeName]);
+    let store = trans.objectStore(storeName);
+    let index = store.index(indexName);
+    let q = IDBKeyRange.only(id);
+    let req = index.openCursor(q);
+    let results = [];
+    req.onsuccess = (e) => {
+      let cursor = e.target.result;
+      if(cursor) {
+        results.push(cursor.value);
+        cursor.continue();
+      } else {
+        resolve(results);
       }
     };
     req.onerror = (e) => reject(e.target.error);

@@ -119,36 +119,7 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   addChild(to, what) {
-    if(to instanceof Child) {
-      if(what instanceof Child || what instanceof ComponentElement) {
-        return this.elementService.loadElement(ComponentElement, to.ref).then(_component => {
-          let component = _component.getValue();
-          component.children = component.children || [];
-          return (what instanceof Child ? Promise.resolve(what) : this.elementService.createChild(this.jobSubject.getValue(), what)).then(child => {
-            component.children.push(child.id);
-            _component.next(component);
-            return component;
-          });
-        })
-      }
-
-    } else if (to instanceof ComponentElement) {
-      // tbd
-
-    } else if (to instanceof FolderElement) {
-      if(what instanceof FolderElement) {
-        return this.elementService.loadElement(FolderElement, to.id).then(_folder => {
-          let folder = _folder.getValue();
-          folder.children = folder.children || [];
-          folder.children.push(what.id);
-          _folder.next(folder);
-          return to;
-        });
-
-      } else {
-        throw new Error('invalid child type "'+what+'"');
-      }
-    }
+    return this.elementService.addChild(this.jobSubject.getValue(), to, what);
   }
 
   createFolder(el, parentId) {
