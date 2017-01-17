@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 
 import { Subscription, Subject, Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
+import { ClassToStringPipe } from '../../pipes/pipes';
 
 import {
   SIMPLE_TREE_ELEMENT_SELECTOR,
@@ -37,7 +38,8 @@ let cnt = 0;
 @Component({
   selector: 'app-simple-tree',
   templateUrl: './simple-tree.component.html',
-  styleUrls: ['./simple-tree.component.less']
+  styleUrls: ['./simple-tree.component.less'],
+  providers: [ ClassToStringPipe ]
 })
 export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() rootNode: ReplaySubject<HierarchyNode<any>|HierarchyNode<any>[]>;

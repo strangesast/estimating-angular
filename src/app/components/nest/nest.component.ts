@@ -21,7 +21,7 @@ import * as D3 from 'd3';
 import { waitForTransition } from '../../resources/util';
 import { SimpleTreeElementComponent } from '../simple-tree/simple-tree-element/simple-tree-element.component';
 
-import { TypeToClassPipe } from '../../pipes/type-to-class.pipe'
+import { ClassToStringPipe, TypeToClassPipe } from '../../pipes/pipes';
 import { Child } from '../../models/classes';
 
 const HEIGHT = 36;
@@ -47,7 +47,7 @@ function addEmptyFolders(arr, nodes, enabled = [true, true]) {
   selector: 'app-nest',
   templateUrl: './nest.component.html',
   styleUrls: ['./nest.component.less'],
-  providers: [ TypeToClassPipe ]
+  providers: [ TypeToClassPipe, ClassToStringPipe ]
 })
 export class NestComponent implements OnInit {
   @Input() nest: any;
@@ -162,20 +162,24 @@ export class NestComponent implements OnInit {
     arr.forEach((n, i) => {
       n.x = i * HEIGHT;
     });
-    this.host.style('height', arr.length * HEIGHT + 'px');
 
     let selection = this.host.selectAll('.item').data(arr, (d) => {
       if(d.data instanceof D3.hierarchy) {
+        if (d.data.data instanceof Child) {
+          return d.data.ancestors().map(n => n.data.id).join('');
+        }
         return d.data.data.id;
-        //return d.data.ancestors().map(n => n.data.id).join('');
       }
       if(d.data.key !== undefined && d.data.values !== undefined) return d.data.key;
       return (d.id || (d.id = ++cnt))
-    });
+    })
 
     let t = D3.transition(undefined).duration(500);
 
+    this.host.transition(t).style('height', arr.length * HEIGHT + 'px');
+
     let toRemove = selection.exit()
+      .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .transition(t)
       .styleTween('opacity', () => <any>D3.interpolate(1, 0))
       .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')

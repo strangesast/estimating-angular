@@ -28,6 +28,7 @@ import { SimpleTreeComponent }        from './components/simple-tree/simple-tree
 import { SimpleTreeElementComponent } from './components/simple-tree/simple-tree-element/simple-tree-element.component';
 
 import { TypeToClassPipe }            from './pipes/type-to-class.pipe';
+import { ClassToStringPipe }          from './pipes/class-to-string.pipe';
 
 
 @NgModule({
@@ -49,7 +50,8 @@ import { TypeToClassPipe }            from './pipes/type-to-class.pipe';
     NestComponent,
     SimpleTreeComponent,
     SimpleTreeElementComponent,
-    TypeToClassPipe
+    TypeToClassPipe,
+    ClassToStringPipe
   ],
   imports: [
     BrowserModule,

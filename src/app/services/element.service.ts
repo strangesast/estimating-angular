@@ -637,7 +637,6 @@ export class ElementService {
   }
 
   resolveChildren(root) {
-    console.log('resolve');
     if (!Array.isArray(root.children) || root.children.length === 0) {
       return root;
     }
@@ -739,7 +738,6 @@ export class ElementService {
   buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
     let subject = new BehaviorSubject(null);
     rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
-      console.log('update');
       let folderSubject = this.loadElement(FolderElement, root);
       return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
         if(!(folder instanceof FolderElement)) {

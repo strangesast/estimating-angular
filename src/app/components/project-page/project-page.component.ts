@@ -11,6 +11,7 @@ import {
 
 import {
   ActivatedRoute,
+  Router,
   Params
 } from '@angular/router';
 
@@ -23,12 +24,15 @@ import * as D3 from 'd3';
 import { TreeComponent } from '../tree/tree.component';
 import { SimpleTreeComponent } from '../simple-tree/simple-tree.component';
 
+import { ClassToStringPipe } from '../../pipes/pipes';
+
 import {
   ComponentElement,
   FolderElement,
   TreeConfig,
   Collection
 } from '../../models/classes';
+
 import { ElementService } from '../../services/element.service';
 import { SearchService } from '../../services/search.service';
 import { JobService }     from '../../services/job.service';
@@ -37,7 +41,7 @@ import { JobService }     from '../../services/job.service';
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
   styleUrls: ['./project-page.component.less'],
-  providers: [ SimpleTreeComponent, TreeComponent ]
+  providers: [ SimpleTreeComponent, TreeComponent, ClassToStringPipe ]
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private job: Collection;
@@ -56,11 +60,14 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     private elementService: ElementService,
     private searchService: SearchService,
     private jobService: JobService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router,
+    private classToStringPipe: ClassToStringPipe
   ) { }
 
   ngOnInit() {
     this.route.data.subscribe(({job: { job: jobSubject, openElements, nest, nestConfig, trees }}) => {
+      console.log('route', this.route);
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.searchService.setJob(job);
@@ -70,7 +77,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
       this.openElementsSubject = openElements;
       this.openElementsSubject.subscribe(els => {
         this.openElements = els;
-        this.openElementIds = Object.keys(els);
+        this.openElementIds = Object.keys(els).reverse();
       });
 
 
@@ -85,8 +92,9 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.stats.childCnt = entries.length;
         this.stats.componentCnt = (<any>nest).rollup((d:any) => D3.map(d, (e:any)=> e.data.ref).size()).entries(entries)
 
-        this.stats.buy = nest.rollup(leaves => leaves.map(n => n.sum(m => m.data ? m.data.buy : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
-        this.stats.sell = nest.rollup(leaves => leaves.map(n => n.sum(m => m.data ? m.data.sell : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
+        // could be done in the same rollup
+        this.stats.buy =  nest.rollup(leaves => leaves.map((n:any) => n.sum(m => m.data ? m.data.buy  : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
+        this.stats.sell = nest.rollup(leaves => leaves.map((n:any) => n.sum(m => m.data ? m.data.sell : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
       });
 
       folderCount.withLatestFrom(trees).switchMap(([folder, trees]) => {
@@ -96,7 +104,20 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.stats.childCnt = 0;
         this.stats.componentCnt = 0;
       })
+    });
 
+    this.route.fragment.subscribe((frag) => {
+      if(frag) {
+        let [kind, id] = frag.split('/');
+        let _class = this.classToStringPipe.transform(kind);
+        return this.jobService.retrieveElement(id, _class).then((element: any) => {
+          if(element) {
+            return this.jobService.openElement(element);
+          } else {
+            // removed / doesn't exist
+          }
+        });
+      }
     });
   }
 
@@ -112,6 +133,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
   closeOpenElement(element) {
     this.jobService.closeOpenElement(element);
+    this.router.navigate([], { fragment: null });
   }
 
 }

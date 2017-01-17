@@ -4,10 +4,10 @@
     <span class="description">{{ job.description }}</span>
   </div>
   <div class="links">
-    <a class="hoverunderline" routerLinkActive="active" routerLink="./build">Build</a>
-    <a class="hoverunderline" routerLinkActive="active" routerLink="./edit">Edit</a>
-    <a class="hoverunderline" routerLinkActive="active" routerLink="./estimate">Estimate</a>
-    <a class="hoverunderline" routerLinkActive="active" routerLink="./details">Details</a>
+    <a class="hoverunderline" routerLinkActive="active" [preserveFragment]="true" [routerLink]="['build']">Build</a>
+    <a class="hoverunderline" routerLinkActive="active" [preserveFragment]="true" [routerLink]="['edit']">Edit</a>
+    <a class="hoverunderline" routerLinkActive="active" [preserveFragment]="true" [routerLink]="['estimate']">Estimate</a>
+    <a class="hoverunderline" routerLinkActive="active" [preserveFragment]="true" [routerLink]="['details']">Details</a>
   </div>
 </div>
 <ul class="info">
