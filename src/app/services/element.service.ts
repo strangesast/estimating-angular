@@ -225,12 +225,12 @@ export class ElementService {
   }
 
   retrieveComponentsIn(ids: string[], prev={}): Promise<ComponentElement[]> {
-    return ids.length ? retrieveRecordsInAs(this.db, ComponentElement, ids).then(components => {
+    return ids.length ? retrieveRecordsInAs(this.db, ComponentElement, ids).then((components:ComponentElement[]) => {
       let parents = {};
-      components.forEach(component => Array.isArray(component.children) ? component.children.forEach(c => parents[c] = null) : null);
+      components.forEach(component => Array.isArray(component.children) ? (<string[]>component.children).forEach(c => parents[c] = null) : null);
       return this.retrieveChildrenIn(Object.keys(parents)).then(arr => {
         arr.forEach(c => parents[c.id] = c);
-        components.forEach(c => c.children = c.children.map(_c => typeof _c === 'string' ? parents[_c] : _c));
+        components.forEach(c => c.children = (<string[]>c.children).map(_c => typeof _c === 'string' ? parents[_c] : _c));
         return components;
       })
     }) : Promise.resolve([]);
@@ -678,19 +678,19 @@ export class ElementService {
     // load locations for each folder in tree
     let i = job.folders.order.indexOf(rootFolder.type);
     if (i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
-    let getLocations = getFolderTree.then(node => {
+    let getLocations: Promise<Location[]> = getFolderTree.then(node => {
       let folderIds = node.descendants().map(f => f.data.id);
       let keyName = 'folder' + (i + 1);
       return retrieveRecordsInAs(this.db, Location, folderIds, keyName);
     });
     // load children of those locations
     let childrenToFolder = {};
-    let getChildren = getLocations.then(locations => {
-      locations.forEach(loc => loc.children.forEach(cid => childrenToFolder[cid] = loc.folders[i]));
+    let getChildren = getLocations.then((locations:Location[]) => {
+      locations.forEach(loc => (<string[]>loc.children).forEach(cid => childrenToFolder[cid] = loc.folders[i]));
       return retrieveRecordsInAs(this.db, Child, Object.keys(childrenToFolder));
     });
     // load tree for each child
-    let getChildrenChildren = getChildren.then(children => {
+    let getChildrenChildren = getChildren.then((children:Child[]) => {
       return Promise.all(children.map(child => this.retrieveChildChildren(child))).then(() => {
         let folderToChildren = {};
         children.forEach(child => {
@@ -757,10 +757,10 @@ export class ElementService {
     return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.db, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
   }
   
-  loadChildrenAtRoot(nodes, filters=[]): Promise<HierarchyNode<Child>[]> {
+  loadChildrenAtRoot(nodes, filters=[]): Promise<any[]> {
     // get all combinations of locations
     let pairs = product(nodes.map(node => node.descendants().map((n:any) => n.data.id)));
-    return Promise.all(pairs.map(pair => this.retrieveLocation(pair))).then((locations:Location[]) => {
+    return Promise.all(pairs.map(pair => this.retrieveLocation(pair))).then((locations:any[]) => {
       // filter null locations (no children yet), get children at those locations
       let validLocs = locations.filter(l => l != null && l.children && l.children.length);
       let childIds = validLocs.map(l => l.children).reduce((a, b)=>a.concat(b));
