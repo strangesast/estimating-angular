@@ -91,33 +91,10 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
         });
       }
     });
+
     this.jobSub = this.elementService.isReady.distinct().switchMap(isReady => isReady ? jobPageSwitch : Observable.never()).subscribe((results:any) => {
       this.results.next(results);
     });
-    /*
-    if(this.resultObservable) return this.resultObservable;
-    let observ = this.elementService.isReady.switchMap(isReady => {
-      if(!isReady) return Observable.never();
-      return this.currentJob.switchMap(job => {
-      });
-    });
-    
-    let published = observ.share();
-    
-    published.subscribe(this.results);
-    this.resultObservable = published;
-    
-    return published;
-
-    if(this.resultObservable) return this.resultObservable;
-    this.resultObservable = (this.currentJob || (this.currentJob = new BehaviorSubject(null))).switchMap(job => {
-    }).share();
-    this.jobSub = this.resultObservable.subscribe(this.results);
-    
-    return this.resultObservable;
-    return (this.currentJob || (this.currentJob = new BehaviorSubject(null))).switchMap(job => {
-    });
-    */
   }
 
   resolve() {
@@ -127,5 +104,14 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
 
   setJob(job: Collection) {
     this.currentJob.next(job);
+  }
+
+  search(query) {
+    let arr = query.split('').map(str => {
+      return D3.hierarchy({
+        name: str
+      });
+    });
+    return Observable.of(arr);
   }
 }

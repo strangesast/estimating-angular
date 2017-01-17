@@ -11,7 +11,9 @@
 <div class="body">
   <div class="side">
     <div class="search">
-      <input type="text" placeholder="search">
+      <form *ngIf="searchForm" [formGroup]="searchForm" (ngSubmit)="searchFormSubmit(searchForm)">
+        <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
+      </form>
     </div>
     <app-simple-tree class="default-margin" [rootNode]="results"></app-simple-tree>
     <!--
