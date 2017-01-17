@@ -67,9 +67,7 @@ export class JobService implements Resolve<Promise<any>> {
         filters: []
       });
       this.nestConfigSubject = nestConfig;
-      //let buildNest = this.elementService.buildNest(jobSubject, nestConfig.switchMap(config => config.component.enabled ? Observable.of(config) : Observable.never()));
-      //let buildNest = this.elementService.buildNest2(jobSubject, nestConfig.switchMap(config => config.component.enabled ? Observable.of(config) : Observable.never()));
-      let buildNest = this.elementService.buildNest2(jobSubject, nestConfig);
+      let buildNest = this.elementService.buildNest(jobSubject, nestConfig);
       let buildTrees = this.elementService.buildTrees(jobSubject, nestConfig);
       return {
         job: jobSubject,
@@ -121,16 +119,19 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   addChild(to, what) {
+    console.log('to', to, 'what', what);
     if(to instanceof Child) {
-      return this.elementService.loadElement(ComponentElement, to.ref).then(_component => {
-        let component = _component.getValue();
-        component.children = component.children || [];
-        return (what instanceof Child ? Promise.resolve(what) : this.elementService.createChild(this.jobSubject.getValue(), what)).then(child => {
-          component.children.push(child.id);
-          _component.next(component);
-          return component;
-        });
-      })
+      if(what instanceof Child || what instanceof ComponentElement) {
+        return this.elementService.loadElement(ComponentElement, to.ref).then(_component => {
+          let component = _component.getValue();
+          component.children = component.children || [];
+          return (what instanceof Child ? Promise.resolve(what) : this.elementService.createChild(this.jobSubject.getValue(), what)).then(child => {
+            component.children.push(child.id);
+            _component.next(component);
+            return component;
+          });
+        })
+      }
 
     } else if (to instanceof ComponentElement) {
       // tbd
@@ -146,9 +147,14 @@ export class JobService implements Resolve<Promise<any>> {
         });
 
       } else {
-        throw new Error('invalid child type "'+what.constructor+'"');
+        throw new Error('invalid child type "'+what+'"');
       }
     }
+  }
+
+  createFolder(el, parentId) {
+    let job = this.jobSubject.getValue();
+    return this.elementService.createFolder(job.id, el.type, el.name, el.description || '(no description)', [], parentId);
   }
 
   closeOpenElement(both) {
@@ -164,7 +170,7 @@ export class JobService implements Resolve<Promise<any>> {
     let config = this.nestConfigSubject.getValue();
 
     let affects = filter.affects;
-    delete filter['affects'];
+    delete filter.affects;
 
     if(Array.isArray(affects) && affects.length) {
       affects.forEach(name => {
@@ -186,6 +192,14 @@ export class JobService implements Resolve<Promise<any>> {
           }
           filters.splice(filters.indexOf(existing), 1);
           this.nestConfigSubject.next(config);
+        } else if (filter.type === 'emptyFolders') {
+          let existing = filters.find(f => f.type === 'emptyFolders');
+          if(!existing) {
+            throw new Error('already removed');
+          }
+          filters.splice(filters.indexOf(existing), 1);
+          this.nestConfigSubject.next(config);
+
         } else {
           // unsupported
         }
@@ -220,6 +234,14 @@ export class JobService implements Resolve<Promise<any>> {
         if(!Array.isArray(filters)) throw new Error('misconfigured nest config');
         if(filter.type === 'property') {
           let existing = filters.find(f => f.type === 'property' && f.property == filter.property && f.method == filter.method);
+          if(existing) {
+            filters.splice(filters.indexOf(existing), 1, filter);
+          } else {
+            filters.push(filter);
+          }
+          changed = true;
+        } else if (filter.type === 'emptyFolders') {
+          let existing = filters.find(f => f.type === 'emptyFolders');
           if(existing) {
             filters.splice(filters.indexOf(existing), 1, filter);
           } else {

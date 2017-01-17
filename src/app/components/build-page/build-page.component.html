@@ -20,6 +20,9 @@
               <span class="rounded">{{filter.display}}</span>
               <span>{{ filter.property == 'buy' ? '$' : '' }}{{ filter.value }}</span>
             </span>
+            <span *ngSwitchCase="'emptyFolders'">
+              <span class="rounded">{{filter.display}}</span>
+            </span>
             <span *ngSwitchDefault>
               <span>{{ filter.value }}</span>
 
@@ -33,7 +36,7 @@
 </div>
 <div class="navigation">
   <ul class="filters">
-    <li *ngFor="let filter of filters" [class.active]="filterActive(filter.affects)">
+    <li *ngFor="let filter of filters" [class.active]="filterActive(filter)">
       <span class="fa fa-remove remove" (click)="removeFilter(filter)"></span>
       <span class="fa" [ngClass]="a | typeToClass" *ngFor="let a of filter.affects"></span>
       <span>{{ filter.display + ' ' + filter.value }}</span>

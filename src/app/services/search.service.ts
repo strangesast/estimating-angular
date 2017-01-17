@@ -58,8 +58,8 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
         });
         let prom2 = Promise.resolve([
           new ComponentElement('', 'New Component', '', 0, 0, ''),
-          new FolderElement('', 'New Folder', '', 'phase', '', []),
-          new FolderElement('', 'New Folder', '', 'building', '', [])
+          new FolderElement('', 'New Folder (phase)', '', 'phase', '', []),
+          new FolderElement('', 'New Folder (building)', '', 'building', '', [])
         ].map(n=>D3.hierarchy(n)));
         return <any>Observable.fromPromise(<any>Promise.all([prom, prom2]).then((results:any) => results.reduce((a, b)=>a.concat(b))));
 

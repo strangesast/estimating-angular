@@ -27,6 +27,22 @@ import { Child } from '../../models/classes';
 const HEIGHT = 36;
 let cnt = 0;
 
+function addEmptyFolders(arr, nodes, enabled = [true, true]) {
+  if(nodes.length) {
+    if(nodes.length > 1) arr.forEach(({ key, values }) => addEmptyFolders(values, nodes.slice(1), enabled.slice(1)));
+    if(enabled[0]) {
+      let ids = arr.map(el => el.key)
+      let desired = nodes[0].descendants().map(el => el.data.id);
+      desired.forEach(id => {
+        if(ids.indexOf(id) === -1) {
+          arr.push({ key: id, values: [] });
+        }
+      });
+    }
+  }
+}
+
+
 @Component({
   selector: 'app-nest',
   templateUrl: './nest.component.html',
@@ -106,10 +122,10 @@ export class NestComponent implements OnInit {
     //this.update(this.nest);
   }
 
-  subjectUpdate({ entries, keys }) {
+  subjectUpdate({ entries, keys, config }) {
     // store folder ref for D3 access
     let folders = {};
-    keys.forEach(folder => folder.descendants().forEach(child => folders[child.data.id] = child));
+    keys.forEach(folder => folder.descendants().forEach(child => folders[child.data.id] = child.copy()));
 
     this.foldersById = folders;
 
@@ -117,6 +133,10 @@ export class NestComponent implements OnInit {
     let nest = D3.nest();
     keys.forEach(key => nest = nest.key((d:any) => d.data.folders[this.order.indexOf(key.data.type)]));
     let data = nest.entries(entries);
+
+    // if empty folders
+    let enabled = config.folders.order.filter(n => config.folders.enabled[n]).map(n => !!config.folders.filters[n].find(f => f.type == 'emptyFolders'));
+    addEmptyFolders(data, keys, enabled);
 
     let root = D3.hierarchy({ values: data, children: [] }, (d) => d.values || d.children);
     this.currentRoot = root;

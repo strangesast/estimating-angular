@@ -78,10 +78,22 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig, trees }}) =>{
       this.nestConfigSubject = nestConfig;
       this.nestConfigSubject.subscribe(config => {
+        let folderFilters = config.folders.order.map(name => config.folders.filters[name].map(f => {
+          f.affects = [name];
+          return f;
+        })).reduce((a, b) => a.concat(b), []);
+        let componentFilters = config.component.filters.map(f => {
+          f.affects = ['component'];
+          return f;
+        });
+        let generalFilters = config.filters.map(f => {
+          f.affects = ['all'];
+          return f;
+        });
         this.filters = [].concat(
-          config.component.filters.map(f=>Object.assign(f, { affects: ['component']})),
-          Object.keys(config.folders.filters).map(name => config.folders.filters[name].map(f => Object.assign(f, { affects: [name] }))).reduce((a, b)=>a.concat(b)),
-          config.filters.map(f=>Object.assign(f, { affects: ['all'] }))
+          componentFilters,
+          folderFilters,
+          generalFilters
         );
 
         this.nestConfig = config
@@ -176,7 +188,8 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     this.nestConfigSubject.next(val);
   }
 
-  filterActive(types: string[]) {
+  filterActive(filter) {
+    let types = filter.affects;
     let config = this.nestConfig;
     let enabledFolders = Object.keys(config.folders.enabled).filter(n=>config.folders.enabled[n])
     let enabledComponent = config.component.enabled ? ['component'] : [];
@@ -196,6 +209,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     if (affects.length == config.folders.order.length + 1) affects = ['all'];
 
     let arr:Filter[] = [];
+
     
     // not a decimal number
     if(isNaN(query) || Number(query) % 1 === 0) {
@@ -215,6 +229,10 @@ export class BuildPageComponent implements OnInit, OnDestroy {
         return { type: 'property', property: prop, method, value: query, affects: ['component'], display: [prop, methodToSymbol(method)].join(' ') }
       })).reduce((a, b)=>a.concat(b)));
     }
+
+    let emptyFolders = { type: 'emptyFolders', display: 'show empty folders', value: true, affects: config.folders.order };
+    if(emptyFolders.display.includes(query)) arr.unshift(emptyFolders);
+
     return Observable.of(arr);
   }
 
@@ -250,9 +268,15 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       }
     } else if (on instanceof FolderElement) {
       if (dropped instanceof FolderElement) {
-        add = getElements.then(([_dropped, _on]) => {
-          return this.jobService.addChild(_on, _dropped);
-        });
+        if(on.type !== dropped.type) throw new Error('folder types must match');
+        if(dropped.id === '') {
+          add = this.jobService.createFolder(dropped, on.id);
+        } else {
+          add = getElements.then(([_dropped, _on]) => {
+            console.log(_dropped, _on);
+            return this.jobService.addChild(_on, _dropped);
+          });
+        }
       }
     }
 
