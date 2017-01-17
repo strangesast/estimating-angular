@@ -78,10 +78,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
   }
 
   treeUpdate(data, groupBy) {
-    //let t = D3.transition(null).duration(500);
-
-    console.log('data', data);
-
     let fader = (c) => D3.interpolateRgb(c, '#fff')(0.2);
     let color = D3.scaleOrdinal(D3.schemeCategory20.map(fader));
 
@@ -100,18 +96,15 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .attr('viewBox', '0 0 500 500')
       .attr('preserveAspectRatio', 'none')
       .merge(svg)
-      .selectAll('g').data((rootNode:any) => {
-        console.log('rootNode', rootNode);
+      .selectAll('g')
+      .data((rootNode:any) => {
         rootNode.sum((d) => {
-          console.log('d', d);
           if(d instanceof Child) {
-            return d.data['buy'];
             return groupBy == 'qty' ? d.qty : d.data[groupBy];
           }
           return 0;
         });
         rootNode.each(n => {
-          console.log('n', n);
           if(n.data instanceof Child) {
             n._children = n.children;
             delete n.children;
@@ -119,113 +112,26 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
         });
         treemap(rootNode)
         return rootNode.leaves();
-      });
+      })
 
-    cell.exit().remove();
-
-    let rect = cell.enter()
+    let cellEnter = cell.enter()
       .append('g')
-      .merge(cell)
-      .attr('transform', (d:any) => {
-        return 'translate(' + d.x0 + ',' + d.y0 + ')'
-      })
-      .append('rect')
+      .attr('transform', (d:any) => 'translate(' + d.x0 + ',' + d.y0 + ')')
 
-    rect.attr('width', (d:any) => d.x1 - d.x0)
-      .attr('height', (d:any) => d.y1 - d.y0)
-      .attr('fill', (d:any) => color(d.parent.data.id))
-
-
-    /*
-    cell
-      .attr('transform', (d:any) => {
-        return 'translate(' + d.x0 + ',' + d.y0 + ')'
-      })
-      .select('rect')
+    cellEnter.append('rect')
       .attr('width', (d:any) => d.x1 - d.x0)
       .attr('height', (d:any) => d.y1 - d.y0)
       .attr('fill', (d:any) => color(d.parent.data.id))
-      .transition(t)
-
-
-    cell.enter()
-      .append('g')
-      .attr('title', (d:any) => d.data.id + '\n' + d.value)
-      .append('rect')
-      .attr('id', (d:any) => {
-        return d.data.id
-      })
-      .transition(t)
-      .attr('transform', (d:any) => {
-        return 'translate(' + d.x0 + ',' + d.y0 + ')'
+      .append('title').text((d:any) => {
+        return d.data.name;
       })
 
-    cell.exit().transition(t).remove();
-    */
-
-
-
-
-    /*
-    let selection = this.host
-      .select('.second')
-      .selectAll('div.graph')
-      .data(() => {
-        let treemap = D3.treemap().tile(D3.treemapResquarify).size([500, 500]).round(true).paddingInner(1);
-
-        return data.map(d => {
-          d.sum((e:any) => e[groupBy]);
-          return treemap(d);
-        });
-      })
-
-    selection.enter()
-      .append('div')
-      .attr('class', 'graph')
-      .text((d:any) => d.data.type + ' tree graph')
-      .append('svg')
-
-    let svg = selection.select('svg')
-      .attr('width', '100%')
-      .attr('height', '500px')
-      .attr('viewBox', '0 0 500 500')
-      .attr('preserveAspectRatio', 'none');
-
-    let cell = svg.selectAll('g')
-      .data((n:any) => n.leaves())
-
-    cell
-      .attr('transform', (d:any) => {
-        return 'translate(' + d.x0 + ',' + d.y0 + ')'
-      })
+    cell.transition()
+      .duration(500)
+      .attr('transform', (d:any) => 'translate(' + d.x0 + ',' + d.y0 + ')')
       .select('rect')
-      .attr('width', (d:any) => d.x1 - d.x0)
-      .attr('height', (d:any) => d.y1 - d.y0)
-      .attr('fill', (d:any) => color(d.parent.data.id))
-      .transition(t)
-
-
-    cell.enter()
-      .append('g')
-      .attr('title', (d:any) => d.data.id + '\n' + d.value)
-      .append('rect')
-      .attr('id', (d:any) => {
-        return d.data.id
-      })
-      .transition(t)
-      .attr('transform', (d:any) => {
-        return 'translate(' + d.x0 + ',' + d.y0 + ')'
-      })
-
-    cell.exit().transition(t).remove();
-
-
-    cell.append('clipPath')
-      .attr('id', (d) => 'clip-' + d.data.id)
-      .append('use')
-      .attr('xlink:href', (d) => '#' + d.data.id)
-    */
-
+      .attr('width', (d:any) => isNaN(d.x1 - d.x0) ? 0 : d.x1 - d.x0)
+      .attr('height', (d:any) => isNaN(d.y1 - d.y0) ? 0 : d.y1 - d.y0)
 
     return Observable.never();
   }
