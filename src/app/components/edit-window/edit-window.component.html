@@ -13,6 +13,23 @@
   </div>
   <div *ngIf="!isWindow || config.open" class="body">
     <p>More about this object</p>
+    <form (ngSubmit)="onSubmit(form)" [formGroup]="form">
+      <div class="form-control">
+        <label>Name:</label>
+        <input formControlName="name" type="text">
+      </div>
+      <div class="form-control">
+        <label>Description:</label>
+        <textarea formControlName="description"></textarea>
+      </div>
+      <div *ngIf="type === 'child'" class="form-control">
+        <label>Qty:</label>
+        <input formControlName="qty" type="number">
+      </div>
+      <button type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
+      <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
+
+    </form>
     <pre>{{ _element | json }}</pre>
   </div>
 </div>

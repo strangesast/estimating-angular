@@ -66,7 +66,6 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
   ngOnInit() {
     this.route.data.subscribe(({job: { job: jobSubject, openElements, nest, nestConfig, trees }}) => {
-      console.log('route', this.route);
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
         this.searchService.setJob(job);

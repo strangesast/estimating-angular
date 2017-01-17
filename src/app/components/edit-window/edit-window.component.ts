@@ -28,6 +28,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
   public _element: ComponentElement|FolderElement|Child|null;
   public type: string = 'unknown';
   @Output() close = new EventEmitter();
+
   private form: FormGroup;
   
   private elementSub: Subscription;
@@ -37,7 +38,27 @@ export class EditWindowComponent implements OnInit, OnChanges {
   constructor(private formBuilder: FormBuilder) { }
 
   ngOnInit() {
-    if(this.element) this.initElement(this.element);
+    let el = this.element;
+
+    if(el) this.initElement(el);
+
+    let val:any = el ? el.getValue() : {};
+
+    if(val && val instanceof Child) {
+      console.log('el', el, 'val', val);
+      this.form = this.formBuilder.group({
+        name: [ val.name || '' ],
+        description: val.name || '',
+        qty: [ val.qty || null ]
+      });
+
+    } else {
+      this.form = this.formBuilder.group({
+        name: [ val.name || '' ],
+        description: val.name || ''
+      });
+
+    }
   }
 
   initElement(element) {
@@ -60,4 +81,15 @@ export class EditWindowComponent implements OnInit, OnChanges {
   onClose() {
     this.close.emit();
   }
+
+  onSubmit({ dirty, value, valid }: { dirty: boolean, value: any, valid: boolean}) {
+    if(dirty && valid) {
+      let current = this.element.getValue();
+      this.element.next(Object.assign(current, value));
+
+    } else if (!valid) {
+      alert('invalid');
+    }
+  }
+
 }

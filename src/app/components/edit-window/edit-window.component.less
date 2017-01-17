@@ -1,3 +1,4 @@
+@off-white: #D5D8DD;
 :host {
   display:inline-block;
   background: white;
@@ -20,5 +21,25 @@
 .hoverlink {
   &:hover {
     cursor: pointer;
+  }
+}
+form {
+  .form-group {
+    .form-group-title {
+      border-bottom: 1px solid @off-white;
+      font-size: 18px;
+    }
+    .form-control {
+      padding: 8px;
+    }
+    &:not(:first-child) {
+      margin-top: 20px;
+    }
+
+  }
+  .form-control {
+    label, .about {
+      display: block;
+    }
   }
 }
