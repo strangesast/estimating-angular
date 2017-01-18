@@ -164,7 +164,7 @@ export class ElementService {
   }
 
   loadElement(_class, id?: string): Promise<BehaviorSubject<any>> {
-    if ([Child, ComponentElement, FolderElement, Collection].some(cnstr => _class instanceof cnstr)) {
+    if ([Location, Child, ComponentElement, FolderElement, Collection].some(cnstr => _class instanceof cnstr)) {
       let id = _class.id;
       if (id in this.loaded) {
         return Promise.resolve(this.loaded[id]);
@@ -279,6 +279,15 @@ export class ElementService {
     });
   }
 
+  retrieveLocationOrCreate(job, folders, children = []): Promise<Location> {
+    return this.retrieveLocation(folders).then(loc => {
+      if(loc) return loc;
+      let ob = {};
+      job.folders.order.forEach((name, i) => ob[name] = folders[i]);
+      return this.createLocation(job, ob);
+    });
+  }
+
   createChild(job: Collection, componentId: string|ComponentElement, loc?, name?: string, description?: string, qty = 1): Promise<Child> {
     return (typeof componentId === 'string' ? this.retrieveComponent(componentId) : Promise.resolve(componentId)).then(component => {
       if (component == null) {
@@ -367,7 +376,7 @@ export class ElementService {
     }
   }
 
-  createExampleElements(job, n = 3) {
+  createExampleElements(job, n=4) {
     let arr = Array.from(Array(n).keys());
     let ret:any = {};
 
@@ -413,11 +422,11 @@ export class ElementService {
     let createLocations = Promise.all([createFolders, createChildren]).then(([folders, children]) => {
       let groups = product(job.folders.order.map(t => folders.filter((f:any) => f.type === t).map(f => f.id)));
       let copy = children.map(c => c.id);
+      let s = Math.ceil(copy.length/groups.length);
       return Promise.all(groups.map((pair, i) => {
         let ob = {};
         job.folders.order.forEach((name, j) => ob[name] = pair[j]);
-        let chil = copy.splice(0, groups.length);
-        return this.createLocation(job, ob, chil);
+        return this.createLocation(job, ob, copy.splice(0, s));
       }));
     }).then(locations => ret.locations = locations);
 
@@ -467,7 +476,7 @@ export class ElementService {
 
       })).then(rootFolders => {
         // add a few example components (folders, components, children)
-        return exampleElements ? this.createExampleElements(job, 5) : Promise.resolve({});
+        return exampleElements ? this.createExampleElements(job) : Promise.resolve({});
 
       }).then((elements) => {
         console.log('created', elements);
@@ -682,43 +691,128 @@ export class ElementService {
     });
   }
 
-  addChild(job, to, what) {
-    if(to instanceof Child) {
-      if(what instanceof Child || what instanceof ComponentElement) {
-        return this.loadElement(ComponentElement, to.ref).then(_component => {
-          let component = _component.getValue();
-          component.children = component.children || [];
-          return (what instanceof Child ? Promise.resolve(what) : this.createChild(job, what)).then(child => {
-            component.children.push(child.id);
-            _component.next(component);
-            return component;
-          });
-        })
-      }
-
-    } else if (to instanceof ComponentElement) {
-      // tbd
-
-    } else if (to instanceof FolderElement) {
-      if(what instanceof FolderElement) {
-        if (what.id) {
-          return Promise.all([retrieveRecordsAsWith(this.db, FolderElement, what.id, 'children').then(children => Promise.all(children.map(this.loadElement.bind(this)))), this.loadElement(FolderElement, to.id)]).then(([current, _folder]:[any, BehaviorSubject<FolderElement>]) => {
-            let currentVal = current.map(bs => bs.getValue());
-            currentVal.forEach((val, i) => {
-              val.children.splice(val.children.indexOf(what.id), 1);
-              current[i].next(val);
-            });
-            let folder = _folder.getValue();
-            folder.children = folder.children || [];
-            folder.children.push(what.id);
-            _folder.next(folder);
-            return to;
-          });
-        }
-
+  // move child to specified location string or obj
+  moveChild(job:Collection, child:Child, loc: string[]|string|Location|ComponentElement) {
+    if(!(child instanceof Child)) throw new Error('invalid child');
+    // assumes that both elements exist
+    return Promise.all([
+      retrieveRecordsAsWith(this.db, Location,         child.id, 'children'),
+      retrieveRecordsAsWith(this.db, ComponentElement, child.id, 'children')
+    ]).then(([locs, comps]) => {
+      if (locs.length == 0 && comps.length == 0) {
+        // currently in neither
+      } else if (locs.length == 1 && comps.length == 0) {
+        // remove child from location children
+        console.log('currently in folder');
+        let i = locs[0].children.indexOf(child.id);
+        locs[0].children.splice(i, 1);
+        // save location without child
+      } else if (locs.length == 0 && comps.length == 1) {
+        // remove child from component children
+        console.log('currently in component');
+        let i = comps[0].children.indexOf(child.id);
+        comps[0].children.splice(i, 1);
+        // save component without child
       } else {
-        throw new Error('invalid child type "'+what+'"');
+        throw new Error('invalid state - child in more than one location/component');
       }
+      let old = locs.concat(comps);
+
+      return (Array.isArray(loc) ? this.retrieveLocationOrCreate(job, loc) : typeof loc === 'string' ? this.retrieveElement(ComponentElement, loc) : Promise.resolve(loc)).then((location: ComponentElement|Location) => {
+        if (!(location instanceof Location || location instanceof ComponentElement)) throw new Error('invalid/nonexistant location/component');
+        if (location.job !== child.job) throw new Error('unsupported - must be of the same job');
+
+        location.children = location.children || [];
+        (<string[]>location.children).push(child.id);
+        return Promise.all(old.concat(location).map(el => saveRecordAs(this.db, el)));
+      });
+    });
+  }
+
+  addChild(job, to, what) {
+    if(what.job !== job.id) throw new Error('unsupported - clone child from second job');
+
+    let getChild, getParent, getLocation;
+    if (to instanceof Child) {
+      getParent = this.retrieveElement(to.constructor, to.id).then((par: Child) => {
+        return retrieveRecordAs(this.db, ComponentElement, par.ref).then((comp:Child) => {
+          par.data = comp;
+          return par;
+        });
+      });
+    }
+    if (to instanceof ComponentElement) {
+      getParent = this.retrieveElement(to.constructor, to.id);
+    }
+    if (to instanceof FolderElement) {
+      let determineFolders = (what.id !== '' ? retrieveRecordsAsWith(this.db, Location, what.id, 'children') : Promise.resolve([])).then(locs => {
+        if(locs.length === 1) {
+          let folders = locs[0].folders.slice()
+          folders[job.folders.order.indexOf(to.type)] = to.id;
+          return folders;
+        }
+        let folders = job.folders.order.map(name => job.folders.roots[name]);
+        folders[job.folders.order.indexOf(to.type)] = to.id;
+        return folders;
+      });
+
+      // load/create location with root folders except 'to' folder 
+      getLocation = determineFolders.then(folders => this.retrieveLocationOrCreate(job, folders));
+    }
+    if (what instanceof FolderElement) {
+      getChild = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createFolder(job, what.type, what.name, what.description, what.children);
+    }
+    if (what instanceof Child) {
+      getChild = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createChild(job, what.ref, undefined, what.name, what.description, what.qty);
+
+    }
+    if (what instanceof ComponentElement) {
+      getChild = (what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createComponent(job, what.name, what.description)).then((component: ComponentElement) => {
+        return this.createChild(job, component.id, undefined, component.name, component.description, 1);
+      });
+    }
+    if (what instanceof Child && to instanceof FolderElement) {
+      return Promise.all([getChild, getLocation]).then(([child, loc]: [any, any]) =>
+        this.moveChild(job, child, loc));
+
+    } else if (what instanceof Child && to instanceof Child) {
+      return Promise.all([getChild, getParent]).then(([child, parent]: [Child, Child]) => {
+        let component = parent.data;
+        return this.moveChild(job, child, component);
+      });
+
+    } else if ((what instanceof Child || what instanceof ComponentElement) && to instanceof ComponentElement) {
+      return Promise.all([getChild, getParent]).then(([child, parent]) => {
+        return this.moveChild(job, child, parent);
+      });
+
+    } else if (what instanceof FolderElement && to instanceof FolderElement) {
+      return getChild.then(child => {
+        return retrieveRecordsAsWith(this.db, FolderElement, child.id, 'children').then(folders => {
+          to.children = to.children || [];
+          to.children.push(child.id);
+
+          if(folders.length == 1) {
+            folders[0].children.splice(folders[0].children.indexOf(child.id), 1)
+
+            return Promise.all([
+              saveRecordAs(this.db, folders[0]),
+              saveRecordAs(this.db, to)
+            ]);
+          } else if (folders.length == 0) {
+            return saveRecordAs(this.db, to)
+
+          } else {
+            throw new Error('invalid state - child in more than one folder');
+
+          }
+        });
+      });
+
+    } else {
+      // invalid drop
+      throw new Error('invalid parent child combination');
+
     }
   }
 

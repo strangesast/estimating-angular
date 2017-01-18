@@ -58,7 +58,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
       let copied = nodes.map(node => node.copy());
 
-      console.log('copied', copied);
       let getChildren = Promise.all(copied.map(node => this.elementService.retrieveAllChildren(job, node.data).then(node => {
         return node;
       })));

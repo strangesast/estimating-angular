@@ -3,6 +3,7 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  ViewChild
 } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -15,6 +16,8 @@ import {
 } from 'rxjs';
 
 import { Nest } from 'd3';
+
+import { NestComponent } from '../nest/nest.component';
 
 import { JobService } from '../../services/job.service';
 import { Child, FolderElement, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
@@ -59,6 +62,8 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private nestSubject: BehaviorSubject<Nest<any, any>>;
 
   private filterForm: FormGroup;
+
+  @ViewChild(NestComponent) nestComponent: NestComponent;
 
   public FOLDER_ICONS = {
     phase: 'fa fa-bookmark-o fa-lg',
@@ -240,32 +245,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   handleDrop({dropped, on}) {
-    let add;
-    let getElements = Promise.all([
-      this.jobService.retrieveElement(dropped),
-      this.jobService.retrieveElement(on)
-    ]);
-    if (on instanceof Child) {
-      if (dropped instanceof ComponentElement) {
-        add = getElements.then(([_dropped, _on]) => {
-          return this.jobService.addChild(_on, _dropped);
-        });
-      }
-    } else if (on instanceof FolderElement) {
-      if (dropped instanceof FolderElement) {
-        if(on.type !== dropped.type) throw new Error('folder types must match');
-        if(dropped.id === '') {
-          add = this.jobService.createFolder(dropped, on.id);
-        } else {
-          add = getElements.then(([_dropped, _on]) => {
-            return this.jobService.addChild(_on, _dropped);
-          });
-        }
-      }
-    }
-
-    if(add) add.then(res => {
-      this.nestConfigSubject.next(this.nestConfigSubject.getValue());
-    });
+    return this.jobService.addChild(on, dropped)
   }
 }

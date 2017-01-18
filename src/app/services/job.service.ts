@@ -119,7 +119,9 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   addChild(to, what) {
-    return this.elementService.addChild(this.jobSubject.getValue(), to, what);
+    return this.elementService.addChild(this.jobSubject.getValue(), to, what).then(() => {
+      this.nestConfigSubject.next(this.nestConfigSubject.getValue()); // touch the config to trigger recalc
+    });
   }
 
   createFolder(el, parentId) {

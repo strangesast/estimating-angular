@@ -1,5 +1,12 @@
 import { SaveState } from './save-state';
 // how are other elements referenced
+
+/*
+ * Child elements contain a reference to a ComponentElement and contextual information
+ * like quantity
+ *
+ */
+
 export class Child { // needs 'name', 'description'
   static readonly storeName = 'children';
   static excluded: string[] = ['data', 'folders', 'saveState'];

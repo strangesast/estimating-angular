@@ -19,7 +19,7 @@ export class ComponentElement extends BaseElement {
     public sell: number,
     public buy: number,
     public job: string,
-    public children?: string[]|Child[],
+    public children: string[]|Child[] = [],
     public basedOn?: BasedOn|null,
     public hash?: string,
     public saveState: SaveState = 'unsaved'

@@ -48,14 +48,14 @@ export class EditWindowComponent implements OnInit, OnChanges {
       console.log('el', el, 'val', val);
       this.form = this.formBuilder.group({
         name: [ val.name || '' ],
-        description: val.name || '',
+        description: val.description || '',
         qty: [ val.qty || null ]
       });
 
     } else {
       this.form = this.formBuilder.group({
         name: [ val.name || '' ],
-        description: val.name || ''
+        description: val.description || ''
       });
 
     }
@@ -86,10 +86,16 @@ export class EditWindowComponent implements OnInit, OnChanges {
     if(dirty && valid) {
       let current = this.element.getValue();
       this.element.next(Object.assign(current, value));
+      this.form.markAsPristine();
 
     } else if (!valid) {
       alert('invalid');
     }
+  }
+
+  reset() {
+    this.form.reset();
+    this.form.patchValue(this.element.getValue());
   }
 
 }

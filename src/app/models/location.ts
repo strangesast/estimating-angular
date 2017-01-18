@@ -5,6 +5,11 @@ import { Child } from './child';
 // can be modified for three folders
 const FOLDER_NAMES = ['folder1', 'folder2'];
 
+/*
+ * Locations are containers that match combinations of folders ( of different types ) to
+ * the root children at that intersection.
+ *
+ */
 export class Location {
   static readonly storeName = 'locations';
   static excluded: string[] = ['commit', 'open', 'saveState'];
@@ -17,7 +22,7 @@ export class Location {
   constructor(
     public id: string,
     public job: string,
-    public children: string[],
+    public children: string[]|Child[],
     public folders: string[], // same order as collection.folders.order
     public hash?: string,
     public saveState: SaveState = 'unsaved'
