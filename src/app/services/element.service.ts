@@ -739,7 +739,7 @@ export class ElementService {
   }
 
   addChild(job, to, what) {
-    if(what.job !== job.id) throw new Error('unsupported - clone child from second job');
+    if(what.job !== '' && what.job !== job.id) throw new Error('unsupported - clone child from second job');
 
     let getChild, getParent, getLocation;
     if (to instanceof Child) {

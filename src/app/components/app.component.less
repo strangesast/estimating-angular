@@ -1,8 +1,10 @@
+@off-white: #D5D8DD;
 @nav-height: 60px;
 
 :host {
   height: 100%;
   display: block;
+  position: relative;
 }
 
 a.nostyle {
@@ -38,63 +40,6 @@ nav {
   }
 }
 
-.body {
-  display: flex;
-  flex-direction: row;
-  //height: ~"calc(100% - " (@nav-height + 16px) ~")";
-}
-
-.body > .side {
-  width: 320px;
-  flex-direction: column;
-
-  .search, ul {
-    .default-margin;
-    margin-right: 0;
-  }
-
-  .search {
-    position: relative;
-    input {
-      box-sizing: border-box;
-      padding: 4px;
-      font-size: 1.1em;
-      border-radius: 4px;
-      -webkit-appearance: none;
-      border: 1px solid @off-white;
-      width: 100%;
-      &::-webkit-input-placeholder {
-        font-style: italic;
-      }
-      &::-moz-placeholder {
-        font-style: italic;
-      }
-      &:-ms-input-placeholder {
-        font-style: italic;
-      }
-      &:-moz-placeholder {
-        font-style: italic;
-      }
-    }
-  }
-
-  & > ul {
-    padding-left: 0;
-    list-style-type: none;
-    & > li {
-      padding: 8px;
-      height: 40px;
-      box-sizing: border-box;
-    }
-  }
-}
-
-.body > .main {
-  flex-grow: 1;
-  .default-margin-right;
-}
-
-@off-white: #D5D8DD;
 .default-margin-right {
   margin-right: 2px;
   @media(min-width: 500px) {

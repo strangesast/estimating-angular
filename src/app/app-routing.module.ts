@@ -9,6 +9,8 @@ import { EditPageComponent }       from './components/edit-page/edit-page.compon
 import { DetailsPageComponent }    from './components/details-page/details-page.component';
 import { EstimatingPageComponent } from './components/estimating-page/estimating-page.component';
 import { SettingsPageComponent }   from './components/settings-page/settings-page.component';
+import { SearchPageComponent }     from './components/search-page/search-page.component';
+import { WorkspaceComponent }      from './components/workspace/workspace.component';
 
 import { ElementService } from './services/element.service';
 import { SearchService }  from './services/search.service';
@@ -21,66 +23,79 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   {
-    path: 'jobs/:username',
-    resolve: {
-      elementService: ElementService,
-      search: SearchService
-    },
+    path: '',
+    component: WorkspaceComponent,
     children: [
       {
-        path: ':shortname',
-        component: ProjectPageComponent,
+        path: 'jobs/:username',
         resolve: {
-          job: JobService
+          elementService: ElementService,
+          search: SearchService
         },
         children: [
           {
-            path: '',
-            redirectTo: 'build',
-            pathMatch: 'full'
-          },
-          {
-            path: 'details',
-            component: DetailsPageComponent
-          },
-          {
-            path: 'edit',
-            component: EditPageComponent
-          },
-          {
-            path: 'edit/:kind/:id',
-            component: EditPageComponent
-          },
-          {
-            path: 'build',
-            component: BuildPageComponent
-          },
-          {
-            path: 'estimate',
-            component: EstimatingPageComponent
+            path: ':shortname',
+            component: ProjectPageComponent,
+            resolve: {
+              job: JobService
+            },
+            children: [
+              {
+                path: '',
+                redirectTo: 'build',
+                pathMatch: 'full'
+              },
+              {
+                path: 'details',
+                component: DetailsPageComponent
+              },
+              {
+                path: 'edit',
+                component: EditPageComponent
+              },
+              {
+                path: 'edit/:kind/:id',
+                component: EditPageComponent
+              },
+              {
+                path: 'build',
+                component: BuildPageComponent
+              },
+              {
+                path: 'estimate',
+                component: EstimatingPageComponent
+              }
+            ]
           }
         ]
+      },
+      {
+        path: 'jobs',
+        component: JobListPageComponent,
+        resolve: {
+          elements: ElementService,
+          search: SearchService
+        }
+      },
+      {
+        path: 'users',
+        resolve: {
+          elements: ElementService,
+          search: SearchService
+        },
+        children: [{
+          path: '',
+          component: UserListPageComponent
+        }]
       }
     ]
   },
   {
-    path: 'jobs',
-    component: JobListPageComponent,
+    path: 'search',
+    component: SearchPageComponent,
     resolve: {
-      elements: ElementService,
-      search: SearchService
+      elements: ElementService
     }
-  },
-  {
-    path: 'users',
-    resolve: {
-      elements: ElementService,
-      search: SearchService
-    },
-    children: [{
-      path: '',
-      component: UserListPageComponent
-    }]
   },
   {
     path: 'settings',

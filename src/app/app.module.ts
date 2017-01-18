@@ -28,6 +28,8 @@ import { SimpleTreeElementComponent } from './components/simple-tree/simple-tree
 import { TypeToClassPipe }            from './pipes/type-to-class.pipe';
 import { ClassToStringPipe }          from './pipes/class-to-string.pipe';
 import { SettingsPageComponent } from './components/settings-page/settings-page.component';
+import { SearchPageComponent } from './components/search-page/search-page.component';
+import { WorkspaceComponent } from './components/workspace/workspace.component';
 
 
 @NgModule({
@@ -49,7 +51,9 @@ import { SettingsPageComponent } from './components/settings-page/settings-page.
     SimpleTreeElementComponent,
     TypeToClassPipe,
     ClassToStringPipe,
-    SettingsPageComponent
+    SettingsPageComponent,
+    SearchPageComponent,
+    WorkspaceComponent
   ],
   imports: [
     BrowserModule,

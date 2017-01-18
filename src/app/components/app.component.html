@@ -4,26 +4,9 @@
     <div class="links">
       <a class="nostyle" routerLink="/jobs" routerLinkActive="active">Jobs</a>
       <a class="nostyle" routerLink="/users" routerLinkActive="active">Users</a>
+      <a class="nostyle" routerLink="/search" routerLinkActive="active">Search</a>
       <a class="nostyle" routerLink="/settings" routerLinkActive="active">Settings</a>
     </div>
   </div>
 </nav>
-<div class="body">
-  <div class="side">
-    <div class="search">
-      <form *ngIf="searchForm" [formGroup]="searchForm" (ngSubmit)="searchFormSubmit(searchForm)">
-        <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
-      </form>
-    </div>
-    <app-simple-tree class="default-margin" [rootNode]="results"></app-simple-tree>
-    <!--
-    <ul class="search-results">
-      <li class="search-result" tabindex="0">Item 1</li>
-      <li class="search-result" tabindex="0">Item 2</li>
-    </ul>
-    -->
-  </div>
-  <div class="main">
-    <router-outlet></router-outlet>
-  </div>
-</div>
+<router-outlet></router-outlet>
