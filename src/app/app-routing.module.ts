@@ -8,6 +8,7 @@ import { BuildPageComponent }      from './components/build-page/build-page.comp
 import { EditPageComponent }       from './components/edit-page/edit-page.component';
 import { DetailsPageComponent }    from './components/details-page/details-page.component';
 import { EstimatingPageComponent } from './components/estimating-page/estimating-page.component';
+import { SettingsPageComponent }   from './components/settings-page/settings-page.component';
 
 import { ElementService } from './services/element.service';
 import { SearchService }  from './services/search.service';
@@ -80,6 +81,13 @@ const routes: Routes = [
       path: '',
       component: UserListPageComponent
     }]
+  },
+  {
+    path: 'settings',
+    component: SettingsPageComponent,
+    resolve: {
+      elements: ElementService
+    }
   }
 ];
 
