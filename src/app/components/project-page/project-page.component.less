@@ -69,28 +69,32 @@
 }
 
 .edit-windows {
-  position: fixed;
-  bottom: 0;
-  right: 10px;
-  max-width: 80%;
-  overflow-x: auto;
-  //overflow-y: visible;
-  white-space: nowrap;
-  direction:rtl;
-  //max-height: 40px;
-  display: flex;
-  //pointer-events: none;
+  height: 60px;
 
-  & > app-edit-window {
-    direction:ltr;
-    pointer-events: auto;
-    margin-right: 10px;
-    display: inline-block;
-    align-self: flex-end;
-    vertical-align: bottom;
-    border-top: 1px solid black;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  .container {
+    position: fixed;
+    bottom: 0;
+    right: 10px;
+    max-width: 80%;
+    overflow-x: auto;
+    //overflow-y: visible;
+    white-space: nowrap;
+    direction:rtl;
+    //max-height: 40px;
+    display: flex;
+    //pointer-events: none;
+  
+    & > app-edit-window {
+      direction:ltr;
+      pointer-events: auto;
+      margin-right: 10px;
+      display: inline-block;
+      align-self: flex-end;
+      vertical-align: bottom;
+      border-top: 1px solid black;
+      border-left: 1px solid black;
+      border-right: 1px solid black;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
   }
 }

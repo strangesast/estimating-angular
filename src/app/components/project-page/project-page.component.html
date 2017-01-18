@@ -25,5 +25,7 @@
 </ul>
 <router-outlet></router-outlet>
 <div class="edit-windows" *ngIf="editWindowsEnabled">
-  <app-edit-window *ngFor="let id of openElementIds" [isWindow]="true" [config]="openElements[id].config" [element]="openElements[id].element" (close)="closeOpenElement(openElements[id])"></app-edit-window>
+  <div class="container">
+    <app-edit-window *ngFor="let id of openElementIds" [isWindow]="true" [config]="openElements[id].config" [element]="openElements[id].element" (close)="closeOpenElement(openElements[id])"></app-edit-window>
+  </div>
 </div>

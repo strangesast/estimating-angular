@@ -119,13 +119,27 @@ export class NestComponent implements OnInit {
   subjectUpdate({ entries, keys, config }) {
     // store folder ref for D3 access
     let folders = {};
-    keys.forEach(folder => folder.descendants().forEach(child => folders[child.data.id] = child.copy()));
+    let folderOrders = {};
+
+    keys.forEach(folder => {
+      let type = folder.data.type;
+      folderOrders[type] = [];
+      folder.eachBefore(n => {
+        let id = n.data.id;
+        folderOrders[type].push(id);
+        folders[id] = n.copy();
+      })
+    });
 
     this.foldersById = folders;
 
     // data setup
     let nest = D3.nest();
-    keys.forEach(key => nest = nest.key((d:any) => d.data.folders[this.order.indexOf(key.data.type)]));
+    // sort keys by position in hierarchy
+    keys.forEach(key => nest = nest.key((d:any) =>
+      d.data.folders[this.order.indexOf(key.data.type)]).sortKeys((a, b) =>
+        folderOrders[key.data.type].indexOf(a) < folderOrders[key.data.type].indexOf(b) ? -1 : 1));
+
     let data = nest.entries(entries);
 
     let root;

@@ -695,37 +695,46 @@ export class ElementService {
   moveChild(job:Collection, child:Child, loc: string[]|string|Location|ComponentElement) {
     if(!(child instanceof Child)) throw new Error('invalid child');
     // assumes that both elements exist
-    return Promise.all([
+    let getCurrentLocation = Promise.all([
       retrieveRecordsAsWith(this.db, Location,         child.id, 'children'),
       retrieveRecordsAsWith(this.db, ComponentElement, child.id, 'children')
-    ]).then(([locs, comps]) => {
+    ])
+    let getNewLocation = (Array.isArray(loc) ? this.retrieveLocationOrCreate(job, loc) : typeof loc === 'string' ? this.retrieveElement(ComponentElement, loc) : Promise.resolve(loc));
+    
+    return Promise.all([getCurrentLocation, getNewLocation]).then(([[locs, comps], location]:[[any, any], any]) => {
       if (locs.length == 0 && comps.length == 0) {
         // currently in neither
       } else if (locs.length == 1 && comps.length == 0) {
         // remove child from location children
         console.log('currently in folder');
-        let i = locs[0].children.indexOf(child.id);
-        locs[0].children.splice(i, 1);
+        let loc = locs[0];
+        // if it's already in the right location, dont do anything
+        if(loc.id == location.id) return;
+        let i = loc.children.indexOf(child.id);
+        if(i == -1) throw new Error('weird shit');
+        loc.children.splice(i, 1);
         // save location without child
       } else if (locs.length == 0 && comps.length == 1) {
         // remove child from component children
         console.log('currently in component');
-        let i = comps[0].children.indexOf(child.id);
-        comps[0].children.splice(i, 1);
+        let comp = comps[0];
+        let i = comp.children.indexOf(child.id);
+        if(i == -1) throw new Error('weird shit');
+        comp.children.splice(i, 1);
         // save component without child
       } else {
+        console.log('locs', locs);
         throw new Error('invalid state - child in more than one location/component');
       }
       let old = locs.concat(comps);
 
-      return (Array.isArray(loc) ? this.retrieveLocationOrCreate(job, loc) : typeof loc === 'string' ? this.retrieveElement(ComponentElement, loc) : Promise.resolve(loc)).then((location: ComponentElement|Location) => {
-        if (!(location instanceof Location || location instanceof ComponentElement)) throw new Error('invalid/nonexistant location/component');
-        if (location.job !== child.job) throw new Error('unsupported - must be of the same job');
+      if (!(location instanceof Location || location instanceof ComponentElement)) throw new Error('invalid/nonexistant location/component');
+      if (location.job !== child.job) throw new Error('unsupported - must be of the same job');
 
-        location.children = location.children || [];
-        (<string[]>location.children).push(child.id);
-        return Promise.all(old.concat(location).map(el => saveRecordAs(this.db, el)));
-      });
+      location.children = location.children || [];
+      (<string[]>location.children).push(child.id);
+      return Promise.all(old.concat(location).map(el => saveRecordAs(this.db, el)));
+
     });
   }
 
@@ -771,17 +780,19 @@ export class ElementService {
         return this.createChild(job, component.id, undefined, component.name, component.description, 1);
       });
     }
-    if (what instanceof Child && to instanceof FolderElement) {
+    if ((what instanceof Child || what instanceof ComponentElement) && to instanceof FolderElement) {
       return Promise.all([getChild, getLocation]).then(([child, loc]: [any, any]) =>
         this.moveChild(job, child, loc));
 
     } else if (what instanceof Child && to instanceof Child) {
+      if(what.id === to.id) return Promise.resolve(); // do nothing
       return Promise.all([getChild, getParent]).then(([child, parent]: [Child, Child]) => {
         let component = parent.data;
         return this.moveChild(job, child, component);
       });
 
     } else if ((what instanceof Child || what instanceof ComponentElement) && to instanceof ComponentElement) {
+      if(what.id === to.id) return Promise.resolve(); // do nothing
       return Promise.all([getChild, getParent]).then(([child, parent]) => {
         return this.moveChild(job, child, parent);
       });

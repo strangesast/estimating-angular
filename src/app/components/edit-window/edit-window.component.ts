@@ -45,7 +45,6 @@ export class EditWindowComponent implements OnInit, OnChanges {
     let val:any = el ? el.getValue() : {};
 
     if(val && val instanceof Child) {
-      console.log('el', el, 'val', val);
       this.form = this.formBuilder.group({
         name: [ val.name || '' ],
         description: val.description || '',
