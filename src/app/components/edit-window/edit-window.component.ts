@@ -8,11 +8,12 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
-import { Subscription, BehaviorSubject } from 'rxjs';
+import { Observable, Subscription, BehaviorSubject } from 'rxjs';
+
+import { ElementService } from '../../services/element.service';
+import { ComponentElement, Child, FolderElement } from '../../models/classes';
 
 // for use in edit page in '.main' and on build / elsewhere in lower window
-
-import { ComponentElement, Child, FolderElement } from '../../models/classes';
 
 @Component({
   selector: 'app-edit-window',
@@ -29,13 +30,14 @@ export class EditWindowComponent implements OnInit, OnChanges {
   public type: string = 'unknown';
   @Output() close = new EventEmitter();
 
+
   private form: FormGroup;
   
   private elementSub: Subscription;
 
   @Input() isWindow: boolean = false;
 
-  constructor(private formBuilder: FormBuilder) { }
+  constructor(private elementService: ElementService, private formBuilder: FormBuilder) { }
 
   ngOnInit() {
     let el = this.element;
@@ -61,7 +63,16 @@ export class EditWindowComponent implements OnInit, OnChanges {
   }
 
   initElement(element) {
-    this.elementSub = element.subscribe(_element => {
+    this.elementSub = element.switchMap(_element => {
+      if (_element instanceof Child) {
+        return Observable.fromPromise(this.elementService.retrieveElement(ComponentElement, _element.ref).then((data: ComponentElement) => {
+          _element.data = data;
+          return _element;
+        }));
+      } else {
+        return Observable.of(_element)
+      }
+    }).subscribe(_element => {
       this._element = _element;
       this.type = _element instanceof FolderElement ? _element.type : _element instanceof ComponentElement ? 'component' : _element instanceof Child ? 'child' : 'unknown';
     });

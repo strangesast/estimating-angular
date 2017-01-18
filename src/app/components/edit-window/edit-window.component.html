@@ -2,7 +2,8 @@
   <div *ngIf="isWindow" class="header">
     <div>
       <span class="fa" [ngClass]="type | typeToClass"></span>
-      <span class="hoverlink" (click)="toggleOpen()">{{ _element.name }}</span>
+      <span *ngIf="_element" class="hoverlink" (click)="toggleOpen()">{{ _element.name }}</span>
+      <span *ngIf="!_element">Loading...</span>
     </div>
     <div>
       <span class="hoverlink fa fa-remove" (click)="onClose()"></span>
@@ -30,6 +31,16 @@
       <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
 
     </form>
-    <pre>{{ _element | json }}</pre>
+    <div *ngIf="type === 'child' && _element && _element.data">
+      <div>Component</div>
+      <label>Name:</label>
+      <div>{{ _element.data.name }}</div>
+      <label>Description:</label>
+      <div>{{ _element.data.description }}</div>
+      <label>Sell:</label>
+      <div>{{ _element.data.sell | currency:'USD':true}}</div>
+      <label>Buy:</label>
+      <div>{{ _element.data.buy | currency:'USD':true}}</div>
+    </div>
   </div>
 </div>
