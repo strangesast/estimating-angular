@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ComponentElement, Child, FolderElement } from '../models/classes';
+import { ComponentElement, ChildElement, FolderElement } from '../models';
 
 @Pipe({
   name: 'typeToClass'
@@ -28,7 +28,7 @@ export class TypeToClassPipe implements PipeTransform {
         default:
           return 'fa-question';
       }
-    } else if (value instanceof Child) {
+    } else if (value instanceof ChildElement) {
       return 'fa-cubes';
     } else if (value instanceof ComponentElement) {
       return 'fa-cube';

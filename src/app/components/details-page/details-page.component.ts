@@ -10,7 +10,7 @@ import { Subscription } from 'rxjs';
 
 import { JobService } from '../../services/job.service';
 
-import { Collection } from '../../models/classes';
+import { Collection } from '../../models';
 
 
 @Component({
@@ -87,7 +87,7 @@ import { Collection } from '../../models/classes';
 
   onSubmit({ dirty, value, valid }: { dirty: boolean, value: Collection, valid: boolean}) {
     if(dirty && valid) {
-      let j = Collection.fromObject(Object.assign({}, this.job.toJSON(0), value))
+      let j = Collection.fromJSON(Object.assign({}, this.job.toJSON(), value))
       this.jobService.updateJob(j);
 
     } else if (!valid) {

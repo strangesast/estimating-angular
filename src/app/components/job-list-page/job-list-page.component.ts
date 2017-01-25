@@ -1,10 +1,22 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { FormBuilder, FormGroup } from '@angular/forms';
 
-import { ElementService } from '../../services/element.service';
+import { JobListService } from '../../services/job-list.service';
 import { SearchService } from '../../services/search.service';
+import { UserService } from '../../services/user.service';
 
-import { User, Collection } from '../../models/classes';
+import { User, Collection } from '../../models';
+
+interface CollectionRecord {
+  folderCount: number,
+  componentCount: number,
+  childCount: number,
+  buy: number,
+  sell: number,
+  collection: Collection
+}
 
 @Component({
   selector: 'app-job-list-page',
@@ -17,71 +29,42 @@ export class JobListPageComponent implements OnInit {
 
   editing: Collection = null;
 
+  newCollection: Collection;
+  newCollectionForm: FormGroup;
+
   aboutJob: any = {}; // { job: about }
 
   jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
-  constructor(private elementService: ElementService, private searchService: SearchService) { }
+  constructor(private route: ActivatedRoute, private formBuilder: FormBuilder, private jobListService: JobListService, private searchService: SearchService, public userService: UserService) { }
 
   ngOnInit() {
-   let handleAbout = (job) => {
-     let getAbout = this.elementService.aboutJob(job).map(about => {
-       job.about = about;
-     });
-     return Observable.of(job).concat(getAbout.ignoreElements().map(()=>job));
-   };
-   this.elementService.getJobs().then(bs => {
-     this.jobsSubject = bs;
-
-     let first = this.jobsSubject.take(1).flatMap(jobs => {
-       return Observable.combineLatest(...jobs.map(_bs => _bs.flatMap(handleAbout.bind(this))));
-     }).subscribe((jobs:Collection[]) => {
-       this.jobs = jobs;
-     });
-     
-     this.jobsSubject.pairwise().flatMap(([a, b]) => {
-       let forJob = b.map(_bs=> {
-         if (a.indexOf(_bs)==-1) {
-           return _bs.flatMap(handleAbout.bind(this))
-         } else {
-           return _bs;
-         }
-       });
-       return Observable.combineLatest(...forJob);
-
-     }).subscribe((jobs:Collection[]) => {
-       this.jobs = jobs;
-     });
-   });
-   this.searchService.setJob(null);
+    this.route.data.subscribe(({ jobs }) => {
+      this.jobs = jobs;
+    });
+    this.searchService.setJob(null);
   }
 
-  createNewJob():void {
-    // createJob(owner: User, shortname: string, name?: string, description?: string):Promise<Collection> {
-    let owner = new User('Sam Zagrobelny', 'sazagrobelny', 'Samuel.Zagrobelny@dayautomation.com');
+  createNewJob() {
+    let user = this.userService.currentUser;
+    let name = 'New Collection ' + Math.ceil(Math.random()*100);
+    let shortName = name.split(' ').join('_').replace(/[^\w-]/gi, '').toLowerCase().substring(0, 50);
+    let collection = new Collection(name, 'description', user, shortName, { order: ['phase', 'building'] }, 'job');
+    this.newCollectionForm = this.formBuilder.group({
+      name: collection.name,
+      description: collection.description,
+      kind: collection.kind
+    });
+    this.newCollection = collection;
 
-    let shortname = 'test_job_' + Math.floor(Math.random()*100);
+  }
 
-    let name = shortname.split('_').map((n)=>n[0].toUpperCase()+n.slice(1)).join(' ');
+  createNewJobSubmit(form) {
+    let collection = Object.assign(this.newCollection, form.value)
+    this.jobListService.createCollection(collection).then(() => this.newCollection = undefined);
+  }
 
-    let job;
-    let jobSubject = this.elementService.createJob(owner, shortname, name, 'blank description')
-    
-    jobSubject.takeWhile(job => !job.saveState.startsWith('saved')).subscribe(
-      res => {
-        if(job) {
-          this.jobs.splice(this.jobs.indexOf(job), 1, res);
-        } else {
-          this.jobs.push(res);
-        }
-        job = res;
-      }, (e)=>{
-        console.error(e);
-      }, () => {
-        this.elementService.saveJob(job, 'first').then(saveResult => {
-          this.elementService.compareTree(saveResult.commit.tree);
-        });
-      }
-    );
+  cancelNewJob() {
+    this.newCollection = undefined;
   }
 
   renameJob(job:Collection) {
@@ -89,14 +72,13 @@ export class JobListPageComponent implements OnInit {
   }
 
   finishRename(job: Collection) {
-    let jobs = this.jobsSubject.getValue();
-    let bs = jobs.find(j => j.value == job);
-    bs.next(job);
-    this.editing = null;
+    if(this.editing === job) {
+      this.jobListService.update(job.id, { name: job.name}).then(() => this.editing = undefined);
+    }
   }
 
-  deleteJob(job:Collection) {
-    this.elementService.removeJob(job.id);
+  removeJob(job:Collection) {
+    this.jobListService.remove(job);
   }
 
   filter(jobs: Collection[], filter?) {

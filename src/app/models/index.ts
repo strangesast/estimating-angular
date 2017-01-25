@@ -2,8 +2,8 @@
 export { ComponentElement } from './component-element';
 export { FolderElement } from './folder-element';
 export { Collection } from './collection';
-export { Location } from './location';
-export { Child } from './child';
+export { LocationElement } from './location-element';
+export { ChildElement } from './child-element';
 export { User } from './user';
 export { BasedOn } from './based-on';
 

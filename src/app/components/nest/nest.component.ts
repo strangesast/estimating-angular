@@ -14,15 +14,15 @@ import {
   Input
 } from '@angular/core';
 
-import { Subject, Observable, BehaviorSubject, Subscription } from 'rxjs';
+import { Subject, Observable, ReplaySubject, Subscription } from 'rxjs';
 import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
 import { waitForTransition } from '../../resources/util';
 import { SimpleTreeElementComponent } from '../simple-tree/simple-tree-element/simple-tree-element.component';
 
-import { ClassToStringPipe, TypeToClassPipe } from '../../pipes/pipes';
-import { Child } from '../../models/classes';
+import { ClassToStringPipe, TypeToClassPipe } from '../../pipes';
+import { ChildElement } from '../../models';
 
 const HEIGHT = 36;
 let cnt = 0;
@@ -58,7 +58,7 @@ export class NestComponent implements OnInit {
   @Output() dropEvt: Subject<any> = new Subject();
 
   // should be replaysubject
-  private nestSubject: BehaviorSubject<any>;
+  private nestSubject = new ReplaySubject();
 
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
   private host: Selection<any, any, any, any>;
@@ -112,8 +112,7 @@ export class NestComponent implements OnInit {
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('div');
     this.host = D3.select(this.htmlElement);
-    this.nodeSub = this.nest.switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
-    //this.update(this.nest);
+    this.nodeSub = this.nest.filter(x => !!x).switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
   }
 
   subjectUpdate({ entries, keys, config }) {
@@ -173,7 +172,7 @@ export class NestComponent implements OnInit {
 
     let selection = this.host.selectAll('.item').data(arr, (d) => {
       if(d.data instanceof D3.hierarchy) {
-        if (d.data.data instanceof Child) {
+        if (d.data.data instanceof ChildElement) {
           return d.data.ancestors().map(n => n.data.id).join('');
         }
         return d.data.data.id;
@@ -230,11 +229,11 @@ export class NestComponent implements OnInit {
     });
   }
 
+  /*
   ngOnChanges(changes: any) {
-    /*
     if('nest' in changes) {
-      this.update(this.nest);
+      this.nestSubject.next(this.nest);
     }
-    */
   }
+  */
 }

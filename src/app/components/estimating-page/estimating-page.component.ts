@@ -7,7 +7,7 @@ import { Selection, HierarchyNode } from 'd3';
 
 import { ElementService } from '../../services/element.service';
 import { JobService } from '../../services/job.service';
-import { Collection, Child } from '../../models/classes';
+import { Collection, ChildElement } from '../../models';
 
 @Component({
   selector: 'app-estimating-page',
@@ -92,13 +92,13 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .selectAll('g')
       .data((rootNode:any) => {
         rootNode.sum((d) => {
-          if(d instanceof Child) {
+          if(d instanceof ChildElement) {
             return groupBy == 'qty' ? d.qty : d.data[groupBy];
           }
           return 0;
         });
         rootNode.each(n => {
-          if(n.data instanceof Child) {
+          if(n.data instanceof ChildElement) {
             n._children = n.children;
             delete n.children;
           }

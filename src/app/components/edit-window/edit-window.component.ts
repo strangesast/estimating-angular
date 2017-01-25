@@ -11,7 +11,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Observable, Subscription, BehaviorSubject } from 'rxjs';
 
 import { ElementService } from '../../services/element.service';
-import { ComponentElement, Child, FolderElement } from '../../models/classes';
+import { ComponentElement, ChildElement, FolderElement } from '../../models';
 
 // for use in edit page in '.main' and on build / elsewhere in lower window
 
@@ -25,8 +25,8 @@ import { ComponentElement, Child, FolderElement } from '../../models/classes';
 })
 export class EditWindowComponent implements OnInit, OnChanges {
   @Input() config: any;
-  @Input() element: BehaviorSubject<ComponentElement|FolderElement|Child|null>;
-  public _element: ComponentElement|FolderElement|Child|null;
+  @Input() element: BehaviorSubject<ComponentElement|FolderElement|ChildElement|null>;
+  public _element: ComponentElement|FolderElement|ChildElement|null;
   public type: string = 'unknown';
   @Output() close = new EventEmitter();
 
@@ -46,7 +46,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
 
     let val:any = el ? el.getValue() : {};
 
-    if(val && val instanceof Child) {
+    if(val && val instanceof ChildElement) {
       this.form = this.formBuilder.group({
         name: [ val.name || '' ],
         description: val.description || '',
@@ -64,7 +64,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
 
   initElement(element) {
     this.elementSub = element.switchMap(_element => {
-      if (_element instanceof Child) {
+      if (_element instanceof ChildElement) {
         return Observable.fromPromise(this.elementService.retrieveElement(ComponentElement, _element.ref).then((data: ComponentElement) => {
           _element.data = data;
           return _element;
@@ -74,7 +74,7 @@ export class EditWindowComponent implements OnInit, OnChanges {
       }
     }).subscribe(_element => {
       this._element = _element;
-      this.type = _element instanceof FolderElement ? _element.type : _element instanceof ComponentElement ? 'component' : _element instanceof Child ? 'child' : 'unknown';
+      this.type = _element instanceof FolderElement ? _element.type : _element instanceof ComponentElement ? 'component' : _element instanceof ChildElement ? 'child' : 'unknown';
     });
   }
 

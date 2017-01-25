@@ -1,41 +1,45 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule }      from '@angular/core';
+import { HttpModule }    from '@angular/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { HttpModule } from '@angular/http';
 
-import { AppRoutingModule }           from './app-routing.module';
+import { AppRoutingModule } from './app-routing.module';
+import { CoreModule }       from './core/core.module';
 
-import { SearchService }  from './services/search.service';
-import { ElementService } from './services/element.service';
-import { DragService } from './services/drag.service';
+import {
+  SearchService,
+  ElementService,
+  DragService,
+  JobService,
+  UserService
+} from './services';
 
-import { AppComponent }               from './components/app.component';
-import { SearchResultsComponent }     from './components/search-results/search-results.component';
-import { SearchComponent }            from './components/search/search.component';
-import { EditPageComponent }          from './components/edit-page/edit-page.component';
-import { BuildPageComponent }         from './components/build-page/build-page.component';
-import { CreatePageComponent }        from './components/create-page/create-page.component';
-import { JobListPageComponent }       from './components/job-list-page/job-list-page.component';
-import { DetailsPageComponent }       from './components/details-page/details-page.component';
-import { EstimatingPageComponent }    from './components/estimating-page/estimating-page.component';
-import { UserListPageComponent }      from './components/user-list-page/user-list-page.component';
-import { EditWindowComponent }        from './components/edit-window/edit-window.component';
-import { NestComponent }              from './components/nest/nest.component';
-import { ProjectPageComponent }       from './components/project-page/project-page.component';
-import { SimpleTreeComponent }        from './components/simple-tree/simple-tree.component';
-import { SimpleTreeElementComponent } from './components/simple-tree/simple-tree-element/simple-tree-element.component';
-
-import { TypeToClassPipe }            from './pipes/type-to-class.pipe';
-import { ClassToStringPipe }          from './pipes/class-to-string.pipe';
-import { SettingsPageComponent } from './components/settings-page/settings-page.component';
-import { SearchPageComponent } from './components/search-page/search-page.component';
-import { WorkspaceComponent } from './components/workspace/workspace.component';
+import {
+  AppComponent,
+  SearchComponent,
+  EditPageComponent,
+  BuildPageComponent,
+  CreatePageComponent,
+  JobListPageComponent,
+  DetailsPageComponent,
+  EstimatingPageComponent,
+  UserListPageComponent,
+  EditWindowComponent,
+  NestComponent,
+  ProjectPageComponent,
+  SimpleTreeComponent,
+  SimpleTreeElementComponent,
+  SettingsPageComponent,
+  SearchPageComponent,
+  WorkspaceComponent } from './components'; import {
+  TypeToClassPipe,
+  ClassToStringPipe
+} from './pipes';
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    SearchResultsComponent,
     SearchComponent,
     EditPageComponent,
     BuildPageComponent,
@@ -60,12 +64,15 @@ import { WorkspaceComponent } from './components/workspace/workspace.component';
     FormsModule,
     ReactiveFormsModule,
     HttpModule,
-    AppRoutingModule
+    AppRoutingModule,
+    CoreModule
   ],
   providers: [
     SearchService,
     ElementService,
-    DragService
+    DragService,
+    JobService,
+    UserService
   ],
   entryComponents: [ SimpleTreeElementComponent ],
   bootstrap: [ AppComponent ]

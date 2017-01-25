@@ -4,33 +4,33 @@ indexedDB.webkitGetDatabaseNames().onsuccess = (res) =>\
 */
 import { Observable } from 'rxjs';
 import {
-  Child,
+  ChildElement,
   User,
   ComponentElement,
-  Location,
+  LocationElement,
   FolderElement,
   Collection
-} from '../models/classes';
+} from '../models';
 import { random } from './util';
 export const DB_NAME = 'estimating';
 export const DB_VERSION = 1;
 export const USER_COLLECTION = 'users';
 export const INVALID_FOLDER_TYPES = ['component', 'location'];
 export const STORES = [
-  { name: User.storeName,             keypath: 'username', indexes: [
+  { name: User.store,             keypath: 'username', indexes: [
     { on: 'name',      name: 'name',      unique: false },
     { on: 'email',     name: 'email',     unique: true  }
   ] },
-  { name: ComponentElement.storeName, keypath: 'id', indexes: [
+  { name: ComponentElement.store, keypath: 'id', indexes: [
     { on: 'children',  name: 'children',  unique: false, multiEntry: true },
     { on: 'job',       name: 'job',       unique: false }
   ] },
-  { name: FolderElement.storeName,    keypath: 'id', indexes: [
+  { name: FolderElement.store,    keypath: 'id', indexes: [
     { on: 'children',  name: 'children',  unique: false, multiEntry: true },
     { on: 'type',      name: 'type',      unique: false },
     { on: 'job',       name: 'job',       unique: false }
   ] },
-  { name: Location.storeName,         keypath: 'id', indexes: [
+  { name: LocationElement.store,         keypath: 'id', indexes: [
     { on: 'children',  name: 'children',  unique: false, multiEntry: true }, // creates an index for every child id
     { on: 'folder1',   name: 'folder1', unique: false },
     { on: 'folder2',   name: 'folder2', unique: false },
@@ -38,10 +38,10 @@ export const STORES = [
     { on: ['folder1', 'folder2'], name: 'folders', unique: true },
     { on: 'job',       name: 'job',       unique: false }
   ] },
-  { name: Collection.storeName,       keypath: 'id', indexes: [
+  { name: Collection.store,       keypath: 'id', indexes: [
     { on: 'shortname', name: 'shortname', unique: true  }
   ] },
-  { name: Child.storeName,            keypath: 'id', indexes: [
+  { name: ChildElement.store,     keypath: 'id', indexes: [
     { on: 'job',       name: 'job',       unique: false }
   ] }
 ];
@@ -55,7 +55,7 @@ export function saveRecord(db, storeName: string, obj: any) {
     let trans = db.transaction(storeName, 'readwrite');
     let store = trans.objectStore(storeName);
     let req;
-    if (obj.id === '') { // new objects have { id: '', ... }
+    if (obj.id === '' || obj.id == null) { // new objects have { id: '', ... }
       // need to check random() unique-ness
       obj.id = random();
       req = store.add(obj);
@@ -72,7 +72,7 @@ export function saveRecordSubject(db, storeName: string, obj: any): Observable<a
     let trans = db.transaction(storeName, 'readwrite');
     let store = trans.objectStore(storeName);
     let req;
-    if(obj.id === '') {
+    if(obj.id === '' || obj.id == null) {
       obj.id = random();
       req = store.add(obj);
     } else {
@@ -84,23 +84,23 @@ export function saveRecordSubject(db, storeName: string, obj: any): Observable<a
   });
 }
 
-export function saveRecordAs(db, obj: Location|Child|ComponentElement|FolderElement|Collection): Promise<string> {
-  if (typeof (<any>obj.constructor).storeName !== 'string' || typeof obj.toJSON !== 'function') {
+export function saveRecordAs(db, obj: LocationElement|ChildElement|ComponentElement|FolderElement|Collection): Promise<string> {
+  if (typeof (<any>obj.constructor).store !== 'string' || typeof obj.toJSON !== 'function') {
     throw new Error('improper instance of class');
   }
-  let storeName = (<any>obj.constructor).storeName;
+  let storeName = (<any>obj.constructor).store;
   return saveRecord(db, storeName, obj.toJSON());
 }
 
-export function saveRecordAsSubject(db, obj: Location|Child|ComponentElement|FolderElement|Collection): Observable<any> {
-  if (typeof (<any>obj.constructor).storeName !== 'string' || typeof obj.toJSON !== 'function') {
+export function saveRecordAsSubject(db, obj: LocationElement|ChildElement|ComponentElement|FolderElement|Collection): Observable<any> {
+  if (typeof (<any>obj.constructor).store !== 'string' || typeof obj.toJSON !== 'function') {
     return Observable.throw(new Error('improper instance of class'));
   }
-  let storeName = (<any>obj.constructor).storeName;
+  let storeName = (<any>obj.constructor).store;
   return saveRecordSubject(db, storeName, obj.toJSON());
 }
 
-export function retrieveRecord(db, storeName: string, id: string|string[], key?: string) {
+export function retrieveRecord(db, storeName: string, id: (string|number|(string|number)[]), key?: string) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction([storeName]);
     let req: any = trans.objectStore(storeName);
@@ -113,22 +113,22 @@ export function retrieveRecord(db, storeName: string, id: string|string[], key?:
   });
 }
 
-export function retrieveRecordAs(db, _class: any, id: string|string[], key?: string): Promise<Collection|FolderElement|ComponentElement|Location|Child> {
-  if (typeof _class.storeName !== 'string') {
+export function retrieveRecordAs(db, _class: any, id: string|number|(string|number)[], key?: string): Promise<Collection|FolderElement|ComponentElement|LocationElement|ChildElement> {
+  if (typeof _class.store !== 'string') {
     throw new Error('improper class or class definition');
   }
-  let storeName = _class.storeName;
+  let storeName = _class.store;
   return retrieveRecord(db, storeName, id, key).then(record => {
     if (record == null) {
       return null;
     }
-    let el = _class.fromObject(record);
+    let el = _class.fromJSON(record);
     el.saveState = 'saved:uncommitted';
     return el;
   });
 }
 
-export function retrieveRecordsIn(db, storeName: string, ids: string[], key?: string): Promise<any[]> {
+export function retrieveRecordsIn(db, storeName: string, ids: (string|number)[], key?: string): Promise<any[]> {
   return new Promise((resolve, reject) => {
     let arr = ids.sort(comparer);
     let i = 0;
@@ -166,13 +166,13 @@ export function retrieveRecordsIn(db, storeName: string, ids: string[], key?: st
 }
 
 export function retrieveRecordsAsWith(db, _class, id, indexName) {
-  if (typeof _class.storeName !== 'string') {
+  if (typeof _class.store !== 'string') {
     throw new Error('improper class or class definition');
   }
-  let storeName = _class.storeName;
+  let storeName = _class.store;
   return retrieveRecordsWith(db, storeName, id, indexName).then(records => {
     return records.map(el => {
-      let ob = _class.fromObject(el)
+      let ob = _class.fromJSON(el)
       ob.saveState = 'saved:uncommitted';
       return ob;
     });
@@ -200,14 +200,14 @@ export function retrieveRecordsWith(db, storeName, id, indexName): Promise<any[]
   });
 }
 
-export function retrieveRecordsInAs(db, _class: any, ids: string[], key?: string): Promise<Collection[]|Child[]|FolderElement[]|ComponentElement[]> {
-  if (typeof _class.storeName !== 'string') {
+export function retrieveRecordsInAs(db, _class: any, ids: (string|number)[], key?: string): Promise<Collection[]|ChildElement[]|FolderElement[]|ComponentElement[]> {
+  if (typeof _class.store !== 'string') {
     throw new Error('improper class or class definition');
   }
-  let storeName = _class.storeName;
+  let storeName = _class.store;
   return retrieveRecordsIn(db, storeName, ids, key).then(records => {
     return records.map(el => {
-      let ob = _class.fromObject(el)
+      let ob = _class.fromJSON(el)
       ob.saveState = 'saved:uncommitted';
       return ob;
     });
@@ -228,19 +228,19 @@ export function retrieveAllRecords(db, storeName: string, query?: IDBKeyRange, i
 }
 
 export function retrieveAllRecordsAs(db, _class: any, query?: IDBKeyRange, index?: string, max?: number): Promise<any[]> {
-  if (typeof _class.storeName !== 'string') {
+  if (typeof _class.store !== 'string') {
     throw new Error('improper class or class definition');
   }
-  let storeName = _class.storeName;
+  let storeName = _class.store;
   return retrieveAllRecords(db, storeName, query, index, max).then(records => {
-    return records.map(_class.fromObject.bind(_class)).map((el: any) => {
+    return records.map(_class.fromJSON.bind(_class)).map((el: any) => {
       el.saveState = 'saved:uncommitted';
       return el;
     });
   });
 }
 
-export function removeRecord(db, storeName: string, id: string, key?: string) {
+export function removeRecord(db, storeName: string, id: string|number, key?: string) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction(storeName, 'readwrite');
     let store: any = trans.objectStore(storeName);
@@ -253,15 +253,15 @@ export function removeRecord(db, storeName: string, id: string, key?: string) {
   });
 }
 
-export function removeRecordAs(db, obj: Location|Child|ComponentElement|FolderElement|Collection) {
-  let storeName = (<any>obj.constructor).storeName;
+export function removeRecordAs(db, obj: LocationElement|ChildElement|ComponentElement|FolderElement|Collection) {
+  let storeName = (<any>obj.constructor).store;
   if (typeof storeName !== 'string') {
     throw new Error('improper class or class definition');
   }
   return removeRecord(db, storeName, obj.id);
 }
 
-export function countRecords(db, storeName, id?: string, key?: string) {
+export function countRecords(db, storeName, id?: string|number, key?: string) {
   return new Promise((resolve, reject) => {
     let trans = db.transaction(storeName);
     let store: any = trans.objectStore(storeName);

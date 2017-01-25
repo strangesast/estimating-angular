@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Resolve } from '@angular/router';
 
 import {
   Subject,
@@ -20,21 +21,19 @@ import {
   readRef
 } from '../resources/git';
 
-import {
-  initObjectStore
-} from '../resources/util';
+import { initObjectStore } from '../resources/util';
 
 // import { diff } from 'deep-diff';
 
 import {
   ComponentElement,
-  Location,
+  LocationElement,
   FolderElement,
-  Child,
+  ChildElement,
   User,
   Collection,
   NestConfig
-} from '../models/classes';
+} from '../models';
 
 import {
   DB_VERSION,
@@ -55,6 +54,10 @@ import {
 
 import { HierarchyNode, Nest } from 'd3';
 import * as D3 from 'd3';
+
+import { DataService } from './data.service';
+
+import { ValidationError, NotImplementedError } from '../models/errors';
 
 function product(arr) {
   return arr.reduce((a, b) =>
@@ -87,13 +90,11 @@ indexedDB.webkitGetDatabaseNames().onsuccess = (res) =>\
 */
 
 @Injectable()
-export class ElementService {
+export class ElementService implements Resolve<any> {
   repo: Repo;
   gitdb: IDBDatabase;
-  db: IDBDatabase;
+  prevDb: IDBDatabase;
 
-  public _users: BehaviorSubject<User[]> = new BehaviorSubject([]);
-  public users: Observable<User[]> = this._users.asObservable();
   public isReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
   public jobMap: any;
@@ -106,16 +107,16 @@ export class ElementService {
   private updateSubject: Subject<BehaviorSubject<any>[]> = new Subject(); // array of loaded elements
   private updateSubjectSub: Subscription;
 
-  constructor() { }
+  constructor(private db: DataService) { }
 
   // int db
   resolve(): Promise<any>|boolean {
-    if (this.db == null || this.gitdb == null) {
+    if (this.prevDb == null || this.gitdb == null) {
       return Promise.all([
         <any>initObjectStore(DB_NAME, DB_VERSION, STORES), // w/ <any> hack
         createGitRepo()
       ]).then(([store, {repo, gitdb}]) => {
-        this.db = store;
+        this.prevDb = store;
         this.repo = repo;
         this.gitdb = gitdb;
         this.isReady.next(true);
@@ -123,7 +124,7 @@ export class ElementService {
         return { store, repo };
       });
     } else {
-      return Promise.resolve();
+      return Promise.resolve({ store: this.prevDb, repo: this.repo });
     }
   }
 
@@ -146,25 +147,36 @@ export class ElementService {
       // if updateSubjct updated before finishing save bad things happen
       return Observable.merge(...elements).flatMap(element => {
         // TODO: improve this.  should change save state, save, then reset to correct savestate
-        //return saveRecordAs(this.db, element);
-        return saveRecordAsSubject(this.db, element);
+        //return saveRecordAs(this.prevDb, element);
+        let storeName = element.constructor.store;
+        let db = this.db;
+        return Observable.fromPromise(db[storeName].put(element));
       });
     }).subscribe();
   }
 
-  getJobs(): Promise<BehaviorSubject<BehaviorSubject<Collection>[]>> {
-    return retrieveAllRecordsAs(this.db, Collection).then(collections => {
-      let arr = collections.map(collection => this.loaded[collection.id] || (this.loaded[collection.id] = new BehaviorSubject(collection)));
-      if (this.jobsSubject) {
-        this.jobsSubject.next(arr);
-        return this.jobsSubject;
-      }
-      return this.jobsSubject = new BehaviorSubject(arr);
+  getJobs(): Promise<Collection[]> {
+    let db = this.db;
+    return db.collections.toArray();
+  }
+
+  getJobStats(job) {
+    console.log('job', job);
+    let db = this.db;
+    return Observable.create(subscriber => {
+      db.transaction('r', db.componentElements, db.childElements, db.folderElements, () => {
+        let res = {};
+        return Promise.all([
+          db.componentElements.where('collection').equals(job.id).count().then(n => subscriber.next(Object.assign(res, { components: n}))),
+          db.childElements.where('collection').equals(job.id).count().then(n => subscriber.next(Object.assign(res, { children: n}))),
+          db.folderElements.where('collection').equals(job.id).count().then(n => subscriber.next(Object.assign(res, { folders: n})))
+        ]).then(() => subscriber.complete());
+      });
     });
   }
 
-  loadElement(_class, id?: string): Promise<BehaviorSubject<any>> {
-    if ([Location, Child, ComponentElement, FolderElement, Collection].some(cnstr => _class instanceof cnstr)) {
+  loadElement(_class, id?: string) {
+    if ([LocationElement, ChildElement, ComponentElement, FolderElement, Collection].some(cnstr => _class instanceof cnstr)) {
       let id = _class.id;
       if (id in this.loaded) {
         return Promise.resolve(this.loaded[id]);
@@ -177,7 +189,7 @@ export class ElementService {
       if (id in this.loaded) {
         return Promise.resolve(this.loaded[id]);
       }
-      return retrieveRecordAs(this.db, _class, id).then(result => {
+      return retrieveRecordAs(this.prevDb, _class, id).then(result => {
         if (result == null) {
           throw new Error('element with that id (' + id + ') does not exist');
         }
@@ -189,18 +201,26 @@ export class ElementService {
     }
   }
 
-  retrieveElement(_class, id: string) {
-    return retrieveRecordAs(this.db, _class, id);
+  retrieveElement(_class, id: string|number) {
+    return retrieveRecordAs(this.prevDb, _class, id);
   }
 
   loadJob(id: string): Promise<BehaviorSubject<Collection>> {
     if (id in this.loaded) {
       return Promise.resolve(this.loaded[id]);
     }
-    return this.retrieveJob(id).then(job => {
-      if (job == null) {
-        throw Error('there is no job with that id');
+    let db = this.db;
+    return db.collections.get({shortname: id}).then(job => {
+      if (job !== null) {
+        return job;
       }
+      return db.collections.get({id}).then(job => {
+        if (job == null) {
+          throw new Error('there is no job with that id');
+        }
+        return job;
+      });
+    }).then(job => {
       this.loaded[job.id] = new BehaviorSubject(job);
       this.updateLoaded();
       return this.loaded[job.id];
@@ -212,37 +232,37 @@ export class ElementService {
   }
 
   retrieveJob(id: string): Promise<Collection> {
-    return retrieveRecordAs(this.db, Collection, id).then(job => {
+    return retrieveRecordAs(this.prevDb, Collection, id).then(job => {
       if (job == null) { // check shortname too.  perhaps ugly
-        return retrieveRecordAs(this.db, Collection, id, 'shortname');
+        return retrieveRecordAs(this.prevDb, Collection, id, 'shortname');
       }
       return job;
     });
   }
 
   retrieveAllLocations(job) {
-    return retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(job.id), 'job');
+    return retrieveAllRecordsAs(this.prevDb, LocationElement, IDBKeyRange.only(job.id), 'job');
   }
 
-  retrieveComponent(id: string): Promise<ComponentElement> {
-    return retrieveRecordAs(this.db, ComponentElement, id);
+  retrieveComponent(id: string|number): Promise<ComponentElement> {
+    return retrieveRecordAs(this.prevDb, ComponentElement, id);
   }
 
-  retrieveChild(id: string): Promise<Child> {
-    return retrieveRecordAs(this.db, Child, id);
+  retrieveChildElement(id: string|number): Promise<ChildElement> {
+    return retrieveRecordAs(this.prevDb, ChildElement, id);
   }
 
-  retrieveChildrenIn(ids: string[]): Promise<Child[]> {
-    return ids.length ? retrieveRecordsInAs(this.db, Child, ids) : Promise.resolve([]);
+  retrieveChildrenIn(ids: (string|number)[]): Promise<ChildElement[]> {
+    return ids.length ? retrieveRecordsInAs(this.prevDb, ChildElement, ids) : Promise.resolve([]);
   }
 
-  retrieveComponentsIn(ids: string[], prev={}): Promise<ComponentElement[]> {
-    return ids.length ? retrieveRecordsInAs(this.db, ComponentElement, ids).then((components:ComponentElement[]) => {
+  retrieveComponentsIn(ids: (string|number)[], prev={}): Promise<ComponentElement[]> {
+    return ids.length ? retrieveRecordsInAs(this.prevDb, ComponentElement, ids).then((components:ComponentElement[]) => {
       let parents = {};
       components.forEach(component => Array.isArray(component.children) ? (<string[]>component.children).forEach(c => parents[c] = null) : null);
       return this.retrieveChildrenIn(Object.keys(parents)).then(arr => {
         arr.forEach(c => parents[c.id] = c);
-        components.forEach(c => c.children = (<string[]>c.children).map(_c => typeof _c === 'string' ? parents[_c] : _c));
+        components.forEach(c => c.children = (<(string|number)[]>c.children).map(_c => typeof _c === 'string' ? parents[_c] : _c));
         return components;
       })
     }) : Promise.resolve([]);
@@ -250,84 +270,106 @@ export class ElementService {
 
   retrieveLocationsWith(job:Collection, folderName:string, id:string) {
     let i = job.folders.order.indexOf(folderName);
-    if(i == -1) throw new Error('invalid folder name ' + folderName);
+    if(i == -1) throw new ValidationError('invalid folder name ' + folderName);
 
     let index = i == 0 ? 'folder1' : 'folder2';
-    return retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(id), index);
+    return retrieveAllRecordsAs(this.prevDb, LocationElement, IDBKeyRange.only(id), index);
   }
 
-  retrieveLocation(id: string[]): Promise<Location> {
-    return retrieveRecordAs(this.db, Location, id, 'folders');
+  retrieveLocation(id: string[]): Promise<LocationElement> {
+    return retrieveRecordAs(this.prevDb, LocationElement, id, 'folders');
   }
 
   retrieveCollectionComponents(collection: Collection, limit?:number): Promise<ComponentElement[]> {
-    return retrieveAllRecordsAs(this.db, ComponentElement, IDBKeyRange.only(collection.id), 'job', limit);
+    return retrieveAllRecordsAs(this.prevDb, ComponentElement, IDBKeyRange.only(collection.id), 'job', limit);
   }
 
-  createLocation(job, loc, children:string[] = []): Promise<Location> {
+  createLocation(job, loc, children:(string|number)[] = []): Promise<LocationElement> {
     let folders = job.folders.order.map(name => loc[name] || job.folders.roots[name]);
 
-    let _location = new Location(
-      '',
+    let _location = new LocationElement(
+      undefined, // name
+      undefined, // description
       job.id,
       children,
       folders
     );
-    return saveRecordAs(this.db, _location).then((locationId) => {
+    return saveRecordAs(this.prevDb, _location).then((locationId) => {
       _location.id = locationId;
       return _location;
     });
   }
 
-  retrieveLocationOrCreate(job, folders, children = []): Promise<Location> {
+  retrieveLocationOrCreate(job, folders, children = []): Promise<LocationElement> {
     return this.retrieveLocation(folders).then(loc => {
       if(loc) return loc;
       let ob = {};
       job.folders.order.forEach((name, i) => ob[name] = folders[i]);
-      return this.createLocation(job, ob);
+      return this.createLocation(job, ob, children);
     });
   }
 
-  createChild(job: Collection, componentId: string|ComponentElement, loc?, name?: string, description?: string, qty = 1): Promise<Child> {
-    return (typeof componentId === 'string' ? this.retrieveComponent(componentId) : Promise.resolve(componentId)).then(component => {
+  createChildElement(
+    job: Collection,
+    componentId: string|number|ComponentElement,
+    loc?,
+    name?: string,
+    description?: string,
+    qty = 1 
+  ): Promise<ChildElement> {
+    let db = this.db;
+
+    return db.transaction('rw', db.componentElements, db.childElements, async() => {
+      let component;
+      if (typeof componentId === 'string') {
+        component = await this.retrieveComponent(componentId);
+      } else if (component instanceof ComponentElement) {
+        component = componentId;
+      }
       if (component == null) {
-        throw new Error('cannot create child if component does not exist');
+        throw new ValidationError('cannot create child if component does not exist');
       }
 
-      // use component name, description.  should probably add (copy) or something
-      name = name || component.name;
-      description = description || component.description;
+      let child = new ChildElement(
+        name || component.name,
+        description || component.description,
+        job.id,
+        component.id,
+        qty
+      );
 
-      let child = new Child('', name, description, job.id, component.id, qty);
+      child.id = await db.childElements.add(child);
 
-      let saveChild = saveRecordAs(this.db, child).then(childId => {
-        child.id = childId;
+      if (loc === undefined) {
         return child;
-      });
 
-      // if loc is unspecified, create location manually
-      if(loc == undefined) {
-        return saveChild;
+      }
+
+      let folders = job.folders.order.map(name => loc[name] || job.folders.roots[name]);
+      console.log('folders', folders)
+
+      let location = await db.locationElements.get({folders: folders});
+      if (location == null) {
+        location = new LocationElement(
+          undefined, // name
+          undefined, // description
+          job.id,
+          [child.id],
+          folders
+        );
+        location.id = await db.locationElements.add(location)
 
       } else {
-        let folders = job.folders.order.map(name => loc[name] || job.folders.roots[name]);
-
-        return Promise.all([
-          <Promise<Child>>saveChild,
-          this.retrieveLocation(folders).then(_location => _location || this.createLocation(job, loc, []))
-        ]).then(([child, _location]:[any, any]) => {
-          _location.children = _location.children || [];
-          _location.children.push(child.id);
-
-          return saveRecordAs(this.db, _location).then(() => child);
-        });;
+        (<(string|number)[]>location.children).push(child.id);
+        await db.locationElements.put(location);
       }
+
+      return child;
     });
   }
 
   createComponent(job, name, description, parentId?): Promise<ComponentElement> {
     let component = new ComponentElement(
-      '',
       name,
       description,
       Math.ceil(Math.random()*100000)/100, // sell
@@ -336,14 +378,14 @@ export class ElementService {
       [] // children
     );
     return Promise.all([
-      saveRecordAs(this.db, component),
-      parentId ? retrieveRecordAs(this.db, ComponentElement, parentId) : Promise.resolve(null)
+      saveRecordAs(this.prevDb, component),
+      parentId ? retrieveRecordAs(this.prevDb, ComponentElement, parentId) : Promise.resolve(null)
     ]).then(([componentId, par]: [string, any]) => {
       component.id = componentId;
       if (par) {
         par.children = par.children || [];
         par.children.push(componentId);
-        return saveRecordAs(this.db, par);
+        return saveRecordAs(this.prevDb, par);
       }
     }).then(() => {
       return component;
@@ -351,86 +393,94 @@ export class ElementService {
   }
 
   createFolder(job, _type, name, description = '(no description)', children = [], parentId?): Promise<FolderElement> {
-    let folder = new FolderElement('', name, description, _type, job.id, children);
+    let folder = new FolderElement(name, description, _type, job.id, children);
 
-    let saveFolder = saveRecordAs(this.db, folder).then(folderId => {
+    /*
+    let saveFolder = saveRecordAs(this.prevDb, folder).then(folderId => {
       folder.id = folderId;
       return folder;
     });
+    */
 
-    if(parentId === undefined) {
-      return saveFolder;
+    let db = this.db;
+    return db.transaction('rw', db.folderElements, async() => {
+      folder.id = await db.folderElements.add(folder);
 
-    } else {
-      let getParentFolder:Promise<FolderElement> = retrieveRecordAs(this.db, FolderElement, parentId);
+      if (parentId === undefined) {
+        return folder;
+      }
 
-      return Promise.all([
-        saveFolder,
-        getParentFolder
-      ]).then(([child, _parent]) => {
-        _parent.children = _parent.children || [];
-        _parent.children.push(child.id);
+      let parentFolder = await db.folderElements.get(parentId);
 
-        return saveRecordAs(this.db, _parent).then(() => child);
-      });
-    }
+      if(parentFolder == null) {
+        throw new Error('parent folder with that id "'+parentId+'" does not exist');
+      }
+
+      parentFolder.children.push(folder.id);
+
+      await db.folderElements.put(parentFolder);
+
+      return folder;
+    });
   }
 
-  createExampleElements(job, n=4) {
-    let arr = Array.from(Array(n).keys());
-    let ret:any = {};
+  createExampleElements(collection, n=4) {
+    let arr = Array.from(Array(n).keys()); // array of length n;
+    let db = this.db;
 
-    let createFolders: Promise<FolderElement[]> = Promise.all(arr.map(i => {
-      let types = Object.keys(job.folders.roots);
-      let _type = types[i % types.length];
-      let name = ['Example Folder ', i, ' (', _type, ')'].join('');
-      return this.createFolder(
-        job,
-        _type,
-        name,
-        'description',
-      );
-    })).then(folders => {
-      let types = folders.map(f => f.type).filter((t, i, arr) => arr.indexOf(t) === i);
-      ret.folders = folders
-      return Promise.all(types.map(t => {
-        return retrieveRecordAs(this.db, FolderElement, job.folders.roots[t]).then((rootFolder:FolderElement) => {
-          rootFolder.children = rootFolder.children || [];
-          rootFolder.children.push(...folders.filter(f => f.type == t).map(f => f.id));
-          return saveRecordAs(this.db, rootFolder);
+    return db.transaction('rw', db.folderElements, db.componentElements, db.childElements, db.locationElements, async() => {
+        let folderTypes = Object.keys(collection.folders.roots);
+        let folders = arr.map(i => new FolderElement(
+          ['Example Folder ', i, ' (', folderTypes[i % folderTypes.length], ')'].join(''),
+          'description',
+          folderTypes[i % folderTypes.length],
+          collection.id
+        ));
+
+        let components = arr.map(i => new ComponentElement(
+          'Example Component ' + (i + 1),
+          'description',
+          (Math.random()*100000)/100, // sell
+          (Math.random()*10000)/100,  // buy
+          collection.id, // collection id
+          [] // children
+        ));
+
+        await Promise.all([
+          Promise.all(folders.map(folder => db.folderElements.add(folder).then(id => folder.id = id))),
+          Promise.all(components.map(component => db.componentElements.add(component).then(id => component.id = id)))
+        ]);
+
+        for(let i = 0; i < folderTypes.length; i++) {
+          let type = folderTypes[i];
+          let rootId = collection.folders.roots[type];
+          let children = folders.filter(f => f.type == type);
+          await db.folderElements.update(rootId, { children });
+        }
+
+        let children = components.map(component => arr.map(i => new ChildElement(
+          component.name + ' (ChildElement '+(i+1)+')',
+          component.description + ' (ChildElement '+(i+1)+')',
+          collection.id,
+          component.id,
+          Math.ceil(Math.random()*10) // qty 1 - 10
+        ))).reduce((a, b)=>a.concat(b));
+
+        await Promise.all(children.map(child => db.childElements.add(child).then(id => child.id = id)));
+
+        let groups = product(collection.folders.order.map(t => folders.filter((f:any) => f.type === t).map(f => f.id)));
+        let copy = children.map(c => c.id);
+        let s = Math.ceil(copy.length/groups.length);
+
+        let locations = groups.map((pair, i) => {
+          return new LocationElement(undefined, undefined, collection.id, copy.splice(0, s), pair);
         });
-      })).then(() => folders);
-    });
 
-    let createComponents = Promise.all(arr.map(i => this.createComponent(
-      job,
-      'Example Component ' + (i + 1),
-      'description'
-    ))).then(components => ret.components = components);
+        let locationIds = await Promise.all(locations.map(location => db.locationElements.add(location).then(id => location.id = id)));
 
-    let createChildren: Promise<Child[]> = createComponents.then(components => {
-      return Promise.all(components.map(component => arr.map(i => this.createChild(
-        job,
-        component,
-        undefined,
-        component.name + ' (Child '+(i+1)+')',
-        component.description + ' (Child '+(i+1)+')',
-        Math.ceil(Math.random()*4)
-      ))).reduce((a, b)=>a.concat(b)));
-    }).then(children => ret.children = children);
-
-    let createLocations = Promise.all([createFolders, createChildren]).then(([folders, children]) => {
-      let groups = product(job.folders.order.map(t => folders.filter((f:any) => f.type === t).map(f => f.id)));
-      let copy = children.map(c => c.id);
-      let s = Math.ceil(copy.length/groups.length);
-      return Promise.all(groups.map((pair, i) => {
-        let ob = {};
-        job.folders.order.forEach((name, j) => ob[name] = pair[j]);
-        return this.createLocation(job, ob, copy.splice(0, s));
-      }));
-    }).then(locations => ret.locations = locations);
-
-    return createLocations.then(() => ret);
+        return { folders, locations, children, components };
+      }
+    );
   }
 
   createJob(
@@ -446,7 +496,6 @@ export class ElementService {
     let folderDefinition = { order: folderNames };
 
     let job = new Collection(
-      '',
       name,
       description,
       owner,
@@ -457,34 +506,37 @@ export class ElementService {
 
     let bs = new BehaviorSubject(job);
 
-    if (!shortname) {
-      bs.error(new Error('invalid shortname'));
-    }
-    if (shortname.length < 4) {
-      bs.error(new Error('shortname must be at least 4 characters long'));
-    }
+    let db = this.db;
+    db.transaction('rw', db.collections, db.folderElements, db.componentElements, db.childElements, db.locationElements, async() => {
+      if (!shortname) {
+        throw new ValidationError('invalid shortname');
+      }
+      if (shortname.length < 4) {
+        throw new ValidationError('shortname must be at least 4 characters long');
+      }
 
-    saveRecordAs(this.db, job).then(jobId => {
-      job.id = jobId;
-      this.loaded[jobId] = bs;
+      job.id = await db.collections.add(job);
+
+      // save root folders
+      let folders = await Promise.all(folderNames.map(type => this.createFolder(job, type, 'root')));
 
       job.folders.roots = {};
-      return Promise.all(job.folders.order.map(_type => {
-        return this.createFolder(job, _type, 'root').then(folder => {
-          job.folders.roots[_type] = folder.id;
-        });
+      folders.forEach(folder => job.folders.roots[folder.type] = folder.id);
+      bs.next(job);
 
-      })).then(rootFolders => {
-        // add a few example components (folders, components, children)
-        return exampleElements ? this.createExampleElements(job) : Promise.resolve({});
+      // create example elements if
+      if (exampleElements) {
+        let elements = await this.createExampleElements(job)
+        console.log('elements', elements);
+      }
 
-      }).then((elements) => {
-        console.log('created', elements);
-        job.saveState = 'saved:uncommitted';
-        bs.next(job);
-        this.jobsSubject.next(this.jobsSubject.getValue().concat(bs));
-      });
-    }).catch(err => {
+      // save job with updated folder roots
+      await db.collections.put(job)
+      let jobs = this.jobsSubject.getValue();
+      this.jobsSubject.next(jobs.concat(bs));
+      bs.next(job);
+
+    }).catch((err) => {
       bs.error(err);
     });
 
@@ -495,7 +547,7 @@ export class ElementService {
     if (!root.children || root.children.length === 0) {
       return Promise.resolve(array);
     }
-    return Promise.all(root.children.map(id => retrieveRecordAs(this.db, root.constructor, id).then(child => {
+    return Promise.all(root.children.map(id => retrieveRecordAs(this.prevDb, root.constructor, id).then(child => {
       if (array.indexOf(child) === -1) {
         array.push(child);
       }
@@ -519,7 +571,7 @@ export class ElementService {
     // get root+descendant folders, save in folders/phase, folders/building
     let roots = collection.folders.roots;
     let createFoldersTree = Promise.all(Object.keys(roots).map(name => {
-      return retrieveRecordAs(this.db, FolderElement, roots[name]).then(folder => {
+      return retrieveRecordAs(this.prevDb, FolderElement, roots[name]).then(folder => {
         return this.retrieveElementChildren(folder).then(children => {
           return children.concat(folder);
         });
@@ -535,13 +587,13 @@ export class ElementService {
       });
       return saveToHash(this.repo, 'tree', folderObj);
     }).then(hash => {
-      baseObj[FolderElement.storeName] = { mode: gitModes.tree, hash: hash };
+      baseObj[FolderElement.store] = { mode: gitModes.tree, hash: hash };
     });
 
     // get locations, save in locations/.  should eventually identify empty/unused
-    let createLocationsTree = retrieveAllRecordsAs(this.db, Location, IDBKeyRange.only(collection.id), 'job').then(locations => {
+    let createLocationsTree = retrieveAllRecordsAs(this.prevDb, LocationElement, IDBKeyRange.only(collection.id), 'job').then(locations => {
       return folderHashFromArray(this.repo, locations).then(hash => {
-        baseObj[Location.storeName] = { mode: gitModes.tree, hash: hash };
+        baseObj[LocationElement.store] = { mode: gitModes.tree, hash: hash };
       });
     });
 
@@ -549,7 +601,7 @@ export class ElementService {
     // should only grab objects without commits.  modifying objects should remove commit attribute
     let createComponentsTree = this.retrieveCollectionComponents(collection).then(components => {
       return folderHashFromArray(this.repo, components).then(hash => {
-        baseObj[ComponentElement.storeName] = { mode: gitModes.tree, hash: hash };
+        baseObj[ComponentElement.store] = { mode: gitModes.tree, hash: hash };
       });
     });
 
@@ -584,7 +636,7 @@ export class ElementService {
       collection.commit = hash;
       return Promise.all(<any>[
         loadHashAs(this.repo, 'commit', hash),
-        saveRecordAs(this.db, collection),
+        saveRecordAs(this.prevDb, collection),
         updateRef(this.repo, collection.shortname, hash)
       ]).then(([commit]:[any]) => {
         return {
@@ -597,7 +649,7 @@ export class ElementService {
 
   removeJob(id: string): Promise<any> {
     if (id in this.loaded) {
-      return removeRecordAs(this.db, this.loaded[id].getValue()).then(res => {
+      return removeRecordAs(this.prevDb, this.loaded[id].getValue()).then(res => {
         let arr = this.jobsSubject.getValue();
         let i = arr.indexOf(this.loaded[id]);
         if (i > -1) {
@@ -609,7 +661,7 @@ export class ElementService {
       });
     }
     // this should almost never happen
-    return removeRecord(this.db, Collection.storeName, id);
+    return removeRecord(this.prevDb, Collection.store, id);
   }
 
   aboutJob(job: Collection): Observable<any> {
@@ -634,11 +686,11 @@ export class ElementService {
         subscriber.next(about);
       });
       */
-      let componentCount = countRecords(this.db, ComponentElement.storeName, job.id, 'job').then(val => {
+      let componentCount = countRecords(this.prevDb, ComponentElement.store, job.id, 'job').then(val => {
         about['components'] = val;
         subscriber.next(about);
       });
-      let folderCount = countRecords(this.db, FolderElement.storeName, job.id, 'job').then(val => {
+      let folderCount = countRecords(this.prevDb, FolderElement.store, job.id, 'job').then(val => {
         about['folders'] = val;
         subscriber.next(about);
       });
@@ -657,6 +709,7 @@ export class ElementService {
     }).debounceTime(100);
   }
 
+  /*
   resolveChildren(root) {
     if (!Array.isArray(root.children) || root.children.length === 0) {
       return root;
@@ -670,17 +723,34 @@ export class ElementService {
       return root;
     });
   }
+  */
+
+  async resolveChildren(root: FolderElement|ComponentElement|LocationElement) {
+    if(!root.children || !root.children.length) return root;
+    let db = this.db;
+    let children: any[] = root.children;
+    let store = (<any>root.constructor).store;
+    let table = db[store]; // i.e. folderElements, childElements
+    for(let i = 0; i < children.length; i++) {
+      if(typeof children[i] === 'string') { // child may have already been replaced with instance
+        let child = await table.get(children[i]);
+        children.splice(i, 1, child);
+        await this.resolveChildren(child); // recurse
+      }
+    }
+    return root;
+  }
 
   retrieveChildren(root) {
-    return Promise.all(root.children.filter(c => typeof c === 'string').map((id, i) => retrieveRecordAs(this.db, root.constructor, id).then(child => {
+    return Promise.all(root.children.filter(c => typeof c === 'string').map((id, i) => retrieveRecordAs(this.prevDb, root.constructor, id).then(child => {
       root.children.splice(i, 1, child);
       return this.retrieveChildren(child);
     }))).then(() => root);
   }
 
   // TODO: check for loop
-  retrieveChildChildren(rootId:string|Child) {
-    return (typeof rootId === 'string' ? this.retrieveChild(rootId) : Promise.resolve(rootId)).then((root:Child) => {
+  retrieveChildChildren(rootId:string|ChildElement) {
+    return (typeof rootId === 'string' ? this.retrieveChildElement(rootId) : Promise.resolve(rootId)).then((root:ChildElement) => {
       return this.retrieveComponent(root.ref).then(component => {
         root.data = component;
         return Promise.all((root.data.children || []).map(this.retrieveChildChildren.bind(this))).then((res) => {
@@ -692,12 +762,12 @@ export class ElementService {
   }
 
   // move child to specified location string or obj
-  moveChild(job:Collection, child:Child, loc: string[]|string|Location|ComponentElement) {
-    if(!(child instanceof Child)) throw new Error('invalid child');
+  moveChildElement(job:Collection, child:ChildElement, loc: string[]|string|LocationElement|ComponentElement) {
+    if(!(child instanceof ChildElement)) throw new Error('invalid child');
     // assumes that both elements exist
     let getCurrentLocation = Promise.all([
-      retrieveRecordsAsWith(this.db, Location,         child.id, 'children'),
-      retrieveRecordsAsWith(this.db, ComponentElement, child.id, 'children')
+      retrieveRecordsAsWith(this.prevDb, LocationElement,         child.id, 'children'),
+      retrieveRecordsAsWith(this.prevDb, ComponentElement, child.id, 'children')
     ])
     let getNewLocation = (Array.isArray(loc) ? this.retrieveLocationOrCreate(job, loc) : typeof loc === 'string' ? this.retrieveElement(ComponentElement, loc) : Promise.resolve(loc));
     
@@ -724,27 +794,28 @@ export class ElementService {
         // save component without child
       } else {
         console.log('locs', locs);
-        throw new Error('invalid state - child in more than one location/component');
+        throw new ValidationError('invalid state - child in more than one location/component');
       }
       let old = locs.concat(comps);
 
-      if (!(location instanceof Location || location instanceof ComponentElement)) throw new Error('invalid/nonexistant location/component');
-      if (location.job !== child.job) throw new Error('unsupported - must be of the same job');
+      if (!(location instanceof LocationElement || location instanceof ComponentElement)) throw new Error('invalid/nonexistant location/component');
+      if (location.collection !== child.collection) throw new NotImplementedError('unsupported - must be of the same job');
 
       location.children = location.children || [];
-      (<string[]>location.children).push(child.id);
-      return Promise.all(old.concat(location).map(el => saveRecordAs(this.db, el)));
+      (<(string|number)[]>location.children).push(child.id);
+      return Promise.all(old.concat(location).map(el => saveRecordAs(this.prevDb, el)));
 
     });
   }
 
-  addChild(job, to, what) {
-    if(what.job !== '' && what.job !== job.id) throw new Error('unsupported - clone child from second job');
+  addChildElement(job, to, what) {
+    if(to.id == what.id) return Promise.resolve();
+    if(what.collection !== '' && what.collection !== job.id) throw new NotImplementedError('unsupported - clone child from second job');
 
-    let getChild, getParent, getLocation;
-    if (to instanceof Child) {
-      getParent = this.retrieveElement(to.constructor, to.id).then((par: Child) => {
-        return retrieveRecordAs(this.db, ComponentElement, par.ref).then((comp:Child) => {
+    let getChildElement, getParent, getLocation;
+    if (to instanceof ChildElement) {
+      getParent = this.retrieveElement(to.constructor, to.id).then((par: ChildElement) => {
+        return retrieveRecordAs(this.prevDb, ComponentElement, par.ref).then((comp:ChildElement) => {
           par.data = comp;
           return par;
         });
@@ -754,7 +825,7 @@ export class ElementService {
       getParent = this.retrieveElement(to.constructor, to.id);
     }
     if (to instanceof FolderElement) {
-      let determineFolders = (what.id !== '' ? retrieveRecordsAsWith(this.db, Location, what.id, 'children') : Promise.resolve([])).then(locs => {
+      let determineFolders = (what.id !== '' ? retrieveRecordsAsWith(this.prevDb, LocationElement, what.id, 'children') : Promise.resolve([])).then(locs => {
         if(locs.length === 1) {
           let folders = locs[0].folders.slice()
           folders[job.folders.order.indexOf(to.type)] = to.id;
@@ -769,52 +840,52 @@ export class ElementService {
       getLocation = determineFolders.then(folders => this.retrieveLocationOrCreate(job, folders));
     }
     if (what instanceof FolderElement) {
-      getChild = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createFolder(job, what.type, what.name, what.description, what.children);
+      getChildElement = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createFolder(job, what.type, what.name, what.description, what.children);
     }
-    if (what instanceof Child) {
-      getChild = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createChild(job, what.ref, undefined, what.name, what.description, what.qty);
+    if (what instanceof ChildElement) {
+      getChildElement = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createChildElement(job, what.ref, undefined, what.name, what.description, what.qty);
 
     }
     if (what instanceof ComponentElement) {
-      getChild = (what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createComponent(job, what.name, what.description)).then((component: ComponentElement) => {
-        return this.createChild(job, component.id, undefined, component.name, component.description, 1);
+      getChildElement = (what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createComponent(job, what.name, what.description)).then((component: ComponentElement) => {
+        return this.createChildElement(job, component.id, undefined, component.name, component.description, 1);
       });
     }
-    if ((what instanceof Child || what instanceof ComponentElement) && to instanceof FolderElement) {
-      return Promise.all([getChild, getLocation]).then(([child, loc]: [any, any]) =>
-        this.moveChild(job, child, loc));
+    if ((what instanceof ChildElement || what instanceof ComponentElement) && to instanceof FolderElement) {
+      return Promise.all([getChildElement, getLocation]).then(([child, loc]: [any, any]) =>
+        this.moveChildElement(job, child, loc));
 
-    } else if (what instanceof Child && to instanceof Child) {
+    } else if (what instanceof ChildElement && to instanceof ChildElement) {
       if(what.id === to.id) return Promise.resolve(); // do nothing
-      return Promise.all([getChild, getParent]).then(([child, parent]: [Child, Child]) => {
+      return Promise.all([getChildElement, getParent]).then(([child, parent]: [ChildElement, ChildElement]) => {
         let component = parent.data;
-        return this.moveChild(job, child, component);
+        return this.moveChildElement(job, child, component);
       });
 
-    } else if ((what instanceof Child || what instanceof ComponentElement) && to instanceof ComponentElement) {
+    } else if ((what instanceof ChildElement || what instanceof ComponentElement) && to instanceof ComponentElement) {
       if(what.id === to.id) return Promise.resolve(); // do nothing
-      return Promise.all([getChild, getParent]).then(([child, parent]) => {
-        return this.moveChild(job, child, parent);
+      return Promise.all([getChildElement, getParent]).then(([child, parent]) => {
+        return this.moveChildElement(job, child, parent);
       });
 
     } else if (what instanceof FolderElement && to instanceof FolderElement) {
-      return getChild.then(child => {
-        return retrieveRecordsAsWith(this.db, FolderElement, child.id, 'children').then(folders => {
+      return getChildElement.then((child:any) => {
+        return retrieveRecordsAsWith(this.prevDb, FolderElement, <any>child.id, 'children').then((folders:any) => {
           to.children = to.children || [];
           to.children.push(child.id);
 
           if(folders.length == 1) {
-            folders[0].children.splice(folders[0].children.indexOf(child.id), 1)
+            folders[0].children.splice(folders[0].children.indexOf(<any>child.id), 1)
 
-            return Promise.all([
-              saveRecordAs(this.db, folders[0]),
-              saveRecordAs(this.db, to)
+            return <any>Promise.all([
+              saveRecordAs(this.prevDb, folders[0]),
+              saveRecordAs(this.prevDb, to)
             ]);
           } else if (folders.length == 0) {
-            return saveRecordAs(this.db, to)
+            return <any>saveRecordAs(this.prevDb, to)
 
           } else {
-            throw new Error('invalid state - child in more than one folder');
+            throw new ValidationError('invalid state - child in more than one folder');
 
           }
         });
@@ -822,7 +893,7 @@ export class ElementService {
 
     } else {
       // invalid drop
-      throw new Error('invalid parent child combination');
+      throw new ValidationError('invalid parent child combination');
 
     }
   }
@@ -834,20 +905,20 @@ export class ElementService {
     })
     // load locations for each folder in tree
     let i = job.folders.order.indexOf(rootFolder.type);
-    if (i == -1) throw new Error('invalid folder type for this job "'+rootFolder.type+'"');
-    let getLocations: Promise<Location[]> = getFolderTree.then(node => {
+    if (i == -1) throw new ValidationError('invalid folder type for this job "'+rootFolder.type+'"');
+    let getLocations: Promise<LocationElement[]> = getFolderTree.then(node => {
       let folderIds = node.descendants().map(f => f.data.id);
       let keyName = 'folder' + (i + 1);
-      return retrieveRecordsInAs(this.db, Location, folderIds, keyName);
+      return retrieveRecordsInAs(this.prevDb, LocationElement, folderIds, keyName);
     });
     // load children of those locations
     let childrenToFolder = {};
-    let getChildren = getLocations.then((locations:Location[]) => {
+    let getChildren = getLocations.then((locations:LocationElement[]) => {
       locations.forEach(loc => (<string[]>loc.children).forEach(cid => childrenToFolder[cid] = loc.folders[i]));
-      return retrieveRecordsInAs(this.db, Child, Object.keys(childrenToFolder));
+      return retrieveRecordsInAs(this.prevDb, ChildElement, Object.keys(childrenToFolder));
     });
     // load tree for each child
-    let getChildrenChildren = getChildren.then((children:Child[]) => {
+    let getChildrenChildren = getChildren.then((children:ChildElement[]) => {
       return Promise.all(children.map(child => this.retrieveChildChildren(child))).then(() => {
         let folderToChildren = {};
         children.forEach(child => {
@@ -868,23 +939,24 @@ export class ElementService {
         if (d instanceof FolderElement) {
           let more = ob[d.id] || [];
           return d.children.concat(more);
-        } else if (d instanceof Child) {
+        } else if (d instanceof ChildElement) {
           return d.data ? d.data.children : [];
         } else if (d instanceof ComponentElement) {
           return d.children;
         } else {
-          throw new Error('unexpected type');
+          console.error('unexpected type for', d);
+          throw new ValidationError('unexpected type');
         }
       });
       return node;
     })
   }
 
-  buildTree(job: Collection, root?:string|FolderElement): Promise<BehaviorSubject<HierarchyNode<any>>> {
+  buildTree(job: Collection, root?:string|FolderElement) {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
       let folder = folderSubject.getValue();
       if(!(folder instanceof FolderElement)) throw new Error('invalid folder');
-      if(folder.job != job.id) throw new Error('incompatible job/folder');
+      if(folder.collection != job.id) throw new ValidationError('incompatible job/folder');
       return this.resolveChildren(folder);
 
     }).then(folder => {
@@ -899,7 +971,7 @@ export class ElementService {
       let folderSubject = this.loadElement(FolderElement, root);
       return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
         if(!(folder instanceof FolderElement)) {
-          throw new Error('invalid folder root"' + root + '"');
+          throw new ValidationError('invalid folder root"' + root + '"');
         }
         return Observable.fromPromise(this.retrieveChildren(folder).then(()=>{
           let node =  D3.hierarchy(folder);
@@ -911,7 +983,7 @@ export class ElementService {
   }
 
   loadRootFolderNodes(folderIds): Promise<HierarchyNode<FolderElement>[]> {
-    return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.db, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
+    return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.prevDb, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
   }
   
   loadChildrenAtRoot(nodes, filters=[]): Promise<any[]> {
@@ -939,7 +1011,7 @@ export class ElementService {
           });
           return children.filter(child => {
             return filters.every(f => applyMethod(f.method, f.value, child[f.property]));
-          }).map((child:Child) => {
+          }).map((child:ChildElement) => {
             child.data = components[child.ref];
             return D3.hierarchy(child, (d) => d.data ? d.data.children : []);
           });
@@ -948,6 +1020,58 @@ export class ElementService {
     });
   }
 
+  buildNest(job: Collection, config: NestConfig) {
+    let db = this.db;
+    return db.transaction('r', db.folderElements, db.locationElements, db.childElements, db.componentElements, async() => {
+      let rootIds = config.folders.order.map(name => config.folders.roots[name]||job.folders.roots[name]);
+      let roots = await Promise.all(rootIds.map(id => db.folderElements.get(id)));
+      if(roots.some(root => root == undefined)) throw new Error('one or more root folders missing');
+
+      for(let i = 0; i < roots.length; i++) {
+        let root = roots[i];
+        await this.resolveChildren(root)
+      }
+
+      let nodes = roots.map(root => D3.hierarchy(root));
+
+      // get all combinations of folders of type
+      let pairs = product(nodes.map(node => node.descendants().map(n => n.data.id)));
+
+      // key name like "[folder0+folder1]"
+      let key = '[' + job.folders.order.map((n, i) => 'folder' + i).reduce((a, b) => a + '+' + b) + ']';
+
+      // get locations at those intersections
+      let locations = (<LocationElement[]>(await Promise.all(pairs.map(pair =>
+        db.locationElements.where({ [key] : pair }).toArray())))).reduce((a, b) => a.concat(b), []);
+
+      // resolve children for each location, assign 'folders' property for nest
+      let children = (<ChildElement[]>(await Promise.all(locations.map(location =>
+        db.childElements.where('id').anyOf(location.children).toArray().then(_children =>
+          _children.map(child =>
+            Object.assign(child, { folders: location.folders})
+          )
+       )
+      )))).reduce((a, b) => a.concat(b), []);
+
+      // load referenced component
+      for(let i = 0; i < children.length; i++) {
+        let child = children[i];
+        child.data = await db.componentElements.get(child.ref);
+        children[i] = D3.hierarchy(child, (n) => n.data.children);
+      }
+
+      let keys = nodes.filter(n => config.folders.enabled[n.data.type]);
+      return { keys, entries: children, config };
+    });
+  }
+
+  buildNestSubject(_collection: BehaviorSubject<Collection>, _config: BehaviorSubject<NestConfig>) {
+    return _config.withLatestFrom(_collection).switchMap(([config, collection]) => {
+      return this.buildNest(collection, config);
+    });
+  }
+
+  /*
   buildNest(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<NestConfig>) {
     return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
       let rootFolderIds = config.folders.order.map(name => config.folders.roots[name]||job.folders.roots[name]);
@@ -964,6 +1088,7 @@ export class ElementService {
       return Observable.fromPromise(promise);
     });
   }
+  */
 
   buildTrees(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
     let subject = new ReplaySubject(1);

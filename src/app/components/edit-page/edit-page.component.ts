@@ -5,7 +5,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Observable, BehaviorSubject } from 'rxjs'
 
 import { JobService } from '../../services/job.service';
-import { Child, ComponentElement, FolderElement } from '../../models/classes';
+import { ChildElement, ComponentElement, FolderElement } from '../../models';
 
 @Component({
   selector: 'app-edit-page',
@@ -49,7 +49,7 @@ export class EditPageComponent implements OnInit, OnChanges {
   }
 
   typeOf(element) {
-    return element instanceof FolderElement ? element.type : element instanceof ComponentElement ? 'component' : element instanceof Child ? 'child' : 'unknown';
+    return element instanceof FolderElement ? element.type : element instanceof ComponentElement ? 'component' : element instanceof ChildElement ? 'child' : 'unknown';
   }
 
   setCreateNew() {

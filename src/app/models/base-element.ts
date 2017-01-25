@@ -1,12 +1,15 @@
 // root 'element' of phase, building, component, job, etc
 export class BaseElement {
-  static excluded: string[] = [];
-  _id?: string|null;   // server id.  may be null if unsaved
+  _id?: string|number; // server id.  may be null if unsaved
+  id:   string|number;
 
   constructor(
-    public id: string,
     public name: string,
     public description: string
   ) { }
+
+  toJSON() {
+    return Object.assign({}, this);
+  }
 
 }

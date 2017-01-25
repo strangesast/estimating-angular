@@ -16,7 +16,7 @@ import {
 } from '@angular/core';
 
 import { Subscription, Subject, Observable, ReplaySubject, BehaviorSubject } from 'rxjs';
-import { ClassToStringPipe } from '../../pipes/pipes';
+import { ClassToStringPipe } from '../../pipes';
 
 import {
   SIMPLE_TREE_ELEMENT_SELECTOR,

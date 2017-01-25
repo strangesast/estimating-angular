@@ -13,24 +13,27 @@
     padding-left: 0;
     list-style-type: none;
     margin: 0;
-    li, li > * {
+    li > * {
       white-space: nowrap;
       text-overflow: ellipsis;
       line-height: 30px;
     }
-    li.name, li > .name {
+    li.name, li .name {
       width: 35%;
+      overflow: hidden;
     }
-    li.description, li > .description {
+    li.description, li .description {
       width: 25%;
+      overflow: hidden;
     }
-    li.settings, li > .settings {
+    li.settings, li .settings {
       width: 5%;
     }
-    li.owner, li > .owner {
+    li.owner, li .owner {
       width: 15%;
+      overflow: hidden;
     }
-    li.type, li > .type, li.folders-cnt, li > .folders-cnt, li.components-cnt, li > .components-cnt {
+    li.type, li .type, li.folders-cnt, li .folders-cnt, li.components-cnt, li .components-cnt {
       justify-content: center;
       text-align: center;
       width: 5%;
@@ -127,5 +130,11 @@
 .settings.dropdown {
   .dropdown-content {
     top: 95%;
+  }
+}
+form.inline {
+  width: 100%;
+  & > div {
+    display: inline-block;
   }
 }

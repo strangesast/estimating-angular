@@ -23,18 +23,16 @@ import * as D3 from 'd3';
 
 import { SimpleTreeComponent } from '../simple-tree/simple-tree.component';
 
-import { ClassToStringPipe } from '../../pipes/pipes';
+import { ClassToStringPipe } from '../../pipes';
 
 import {
   ComponentElement,
   FolderElement,
   TreeConfig,
   Collection
-} from '../../models/classes';
+} from '../../models';
 
-import { ElementService } from '../../services/element.service';
-import { SearchService } from '../../services/search.service';
-import { JobService }     from '../../services/job.service';
+import { ElementService, SearchService, JobService } from '../../services';
 
 @Component({
   selector: 'app-project-page',
@@ -65,6 +63,10 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ) { }
 
   ngOnInit() {
+    this.route.data.subscribe(({ job: { collection } }) => {
+      this.job = collection;
+    });
+    /*
     this.route.data.subscribe(({job: { job: jobSubject, openElements, nest, nestConfig, trees }}) => {
       this.jobSubject = jobSubject;
       this.jobSubscription = this.jobSubject.subscribe(job => {
@@ -73,6 +75,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
       });
 
       this.openElementsSubject = openElements;
+      console.log('openelements', openElements)
       this.openElementsSubject.subscribe(els => {
         this.openElements = els;
         this.openElementIds = Object.keys(els).reverse();
@@ -103,6 +106,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.stats.componentCnt = 0;
       })
     });
+    */
 
     this.route.fragment.subscribe((frag) => {
       if(frag) {

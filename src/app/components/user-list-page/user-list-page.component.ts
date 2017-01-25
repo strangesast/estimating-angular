@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 
 import { ElementService } from '../../services/element.service';
 
-import { User } from '../../models/classes';
+import { User } from '../../models';
 
 @Component({
   selector: 'app-user-list-page',

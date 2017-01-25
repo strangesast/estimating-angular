@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ComponentElement, Child, FolderElement, Collection } from '../models/classes';
+import { ComponentElement, ChildElement, FolderElement, Collection } from '../models';
 
 @Pipe({
   name: 'classToString'
@@ -12,7 +12,7 @@ export class ClassToStringPipe implements PipeTransform {
         case 'component':
           return ComponentElement;
         case 'child':
-          return Child;
+          return ChildElement;
         case 'folder':
           return FolderElement;
         case 'collection':
@@ -25,7 +25,7 @@ export class ClassToStringPipe implements PipeTransform {
       switch(value.constructor) {
         case ComponentElement:
           return 'component';
-        case Child:
+        case ChildElement:
           return 'child';
         case FolderElement:
           return 'folder';

@@ -1,20 +1,22 @@
-export class User {
-  static readonly storeName = 'users';
+export interface IUser {
+  _id?: string|number;
+  username: string;
+  name: string;
+}
 
-  public _id?: string;
+export class User implements IUser {
+  static readonly store = 'users';
 
-  static fromObject(obj) {
-    let user = new User(obj.name, obj.username, obj.email);
-    if (obj._id) {
-      user._id = obj._id;
-    }
-    return user;
+  static fromJSON(obj) {
+    let user = Object.create(User.prototype);
+    return Object.assign(user, obj);
   }
 
+  toJSON() {
+    return Object.assign({}, this);
+  }
 
-  constructor(
-    public name: string,
-    public username: string,
-    public email: string
-  ) { }
+  public _id: string|number;
+
+  constructor(public name: string, public username: string, public email: string) { }
 }

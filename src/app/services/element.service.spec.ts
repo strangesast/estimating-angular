@@ -8,13 +8,13 @@ import { Observable } from 'rxjs';
 import {
   ComponentElement,
   FolderDefinition,
-  Location,
+  LocationElement,
   BasedOn,
   FolderElement,
-  Child,
+  ChildElement,
   User,
   Collection
-} from '../models/classes';
+} from '../models';
 
 import { initObjectStore } from '../resources/util';
 import { DB_NAME, DB_VERSION, STORES } from '../resources/indexedDB';

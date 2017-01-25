@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Optional, Injectable } from '@angular/core';
 
 import {
   Router,
@@ -13,15 +13,17 @@ import {
 } from 'rxjs';
 
 import {
-  Child,
+  ChildElement,
   ComponentElement,
   FolderElement,
   Collection,
   TreeConfig,
-  Filter
-} from '../models/classes';
+  Filter,
+  NestConfig
+} from '../models';
 
 import { ElementService } from './element.service';
+import { DataService } from './data.service';
 
 import {
   hierarchy,
@@ -31,73 +33,103 @@ import {
 import * as D3 from 'd3';
 import { Nest } from 'd3';
 
+// may change if collection format changes
+const INIT_CONFIG = {
+  folders: {
+    order: ['phase', 'building'],
+    roots: {},
+    enabled: { phase: true, building: true },
+    filters: { phase: [], building: [] }
+  },
+  component: {
+    enabled: true,
+    filters: []
+  },
+  filters: []
+}
+
 @Injectable()
 export class JobService implements Resolve<Promise<any>> {
-  public jobSubject: BehaviorSubject<Collection>;
+  nestConfigSubject: BehaviorSubject<NestConfig>;
+
+  public collectionSubject: BehaviorSubject<Collection>;
 
   public trees; // { 'phase': BehaviorSubject, 'building': BehaviorSubject }
   public nestSubject: BehaviorSubject<Nest<any, any>>
-  public nestConfigSubject: BehaviorSubject<any>;
 
   private openElements: BehaviorSubject<any> = new BehaviorSubject({});
 
-  constructor(private elementService: ElementService, private router: Router) { }
+  constructor(private db: DataService, private elementService: ElementService, private router: Router) { }
 
-  resolve(route: ActivatedRouteSnapshot): Promise<{job, tree, treeConfig}> {
-    // TODO: validate username, redirect if incorrect
-    // let username = route.params['username'];
+  async resolve(route: ActivatedRouteSnapshot) {
+    let username = route.params['username'];
     let shortname = route.params['shortname'];
 
-    return this.elementService.loadJob(shortname).then(jobSubject => {
-      // build trees
-      // build nest
-      this.jobSubject = jobSubject;
-      let nestConfig = new BehaviorSubject({
-        folders: {
-          order: ['phase', 'building'],
-          roots: {},
-          enabled: { phase: true, building: true },
-          filters: { phase: [], building: [] }
-        },
-        component: {
-          enabled: true,
-          filters: []
-        },
-        filters: []
-      });
-      this.nestConfigSubject = nestConfig;
-      //let filteredConfig:any = nestConfig.switchMap(config => config.component.enabled ? Observable.of(config) : Observable.never());
-      let buildNest = this.elementService.buildNest(jobSubject, nestConfig);
-      let buildTrees = this.elementService.buildTrees(jobSubject, nestConfig);
-      return {
-        job: jobSubject,
-        nest: buildNest,
-        nestConfig,
-        trees: buildTrees,
-        openElements: this.openElements
-      };
+    let db = this.db;
 
-    }).catch(err => {
-      if (err.message === 'invalid/nonexistant job') { // 404
-        this.router.navigate(['/jobs']);
-        return false;
-      }
-      throw err;
+    // need extra await for different dexie promise
+    let collection = await db.collections.get({ '[owner.username+shortname]': [username, shortname] });
+
+    if (!collection) {
+      this.router.navigate(['/jobs']); // 404
+      return false;
+    }
+
+    if (!collection.initialized) {
+      await this.init(collection);
+    }
+
+    let collectionSubject = new BehaviorSubject(collection);
+
+    this.collectionSubject = collectionSubject;
+    this.collectionSubject.subscribe(collection => {
+      db.collections.put(collection, <any>collection.id);
     });
+
+    let nestConfigSubject = new BehaviorSubject(INIT_CONFIG);
+    this.nestConfigSubject = nestConfigSubject;
+
+    let nestSubject = this.elementService.buildNestSubject(collectionSubject, nestConfigSubject);
+
+    return { collection, collectionSubject, nestConfigSubject, nestSubject };
+  }
+
+  async init(collection: Collection, createNExampleElements = 4) {
+    let db = this.db;
+    // if any root already defined
+    if (collection.initialized) throw new Error('collection already initialized');
+
+    collection.folders.roots = {};
+    // create root folders, add ids to job
+    let rootFolders = collection.folders.order.map(type => new FolderElement('root', '', type, collection.id));
+    for(let i = 0; i < rootFolders.length; i++) {
+      let folder = rootFolders[i];
+      let id = await db.folderElements.add(folder);
+      folder.id = id;
+      collection.folders.roots[folder.type] = id;
+    }
+    await db.collections.put(collection); // update new roots
+
+    if (createNExampleElements > 0) {
+      let elements = await this.elementService.createExampleElements(collection, createNExampleElements);
+      console.log('elements', elements);
+    }
+
+    return collection;
   }
 
   updateJob(job: Collection) {
     // should return observable that completes when observable is finished saving, errors if invalid
-    this.jobSubject.next(job);
+    this.collectionSubject.next(job);
   }
 
-  openElement(element: Child|ComponentElement|FolderElement) {
+  openElement(element: ChildElement|ComponentElement|FolderElement) {
     let elements = this.openElements.getValue();
     if (element.id in elements) {
       elements[element.id].config.open = true;
       return Promise.resolve(elements[element.id]);
     }
-    return this.elementService.loadElement(element.constructor, element.id).then(bs => {
+    return this.elementService.loadElement(element.constructor, <any>element.id).then(bs => {
       Object.keys(elements).forEach(id => {
         elements[id].config.open = false;
       });
@@ -118,14 +150,14 @@ export class JobService implements Resolve<Promise<any>> {
     return this.elementService.loadElement(_class, id);
   }
 
-  addChild(to, what) {
-    return this.elementService.addChild(this.jobSubject.getValue(), to, what).then(() => {
-      this.nestConfigSubject.next(this.nestConfigSubject.getValue()); // touch the config to trigger recalc
+  addChildElement(to, what) {
+    return this.elementService.addChildElement(this.collectionSubject.getValue(), to, what).then((res) => {
+      if(res !== undefined) this.nestConfigSubject.next(this.nestConfigSubject.getValue()); // touch the config to trigger recalc
     });
   }
 
   createFolder(el, parentId) {
-    let job = this.jobSubject.getValue();
+    let job = this.collectionSubject.getValue();
     return this.elementService.createFolder(job.id, el.type, el.name, el.description || '(no description)', [], parentId);
   }
 

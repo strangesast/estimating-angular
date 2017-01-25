@@ -3,6 +3,7 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  OnChanges,
   ViewChild
 } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
@@ -20,7 +21,7 @@ import { Nest } from 'd3';
 import { NestComponent } from '../nest/nest.component';
 
 import { JobService } from '../../services/job.service';
-import { Child, FolderElement, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models/classes';
+import { ChildElement, FolderElement, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models';
 
 function methodToSymbol(name: string) {
   switch(name) {
@@ -57,19 +58,14 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
   public filters: Filter[];
 
+  public nest: { entries: any[], keys: any[], config: NestConfig };
   private nestConfig: NestConfig;
   private nestConfigSubject: BehaviorSubject<NestConfig>;
-  private nestSubject: BehaviorSubject<Nest<any, any>>;
+  private nestSubject: BehaviorSubject<any>
 
   private filterForm: FormGroup;
 
   @ViewChild(NestComponent) nestComponent: NestComponent;
-
-  public FOLDER_ICONS = {
-    phase: 'fa fa-bookmark-o fa-lg',
-    building: 'fa fa-building-o fa-lg',
-    component: 'fa fa-cubes fa-lg'
-  };
 
   constructor(
     private jobService: JobService,
@@ -78,8 +74,40 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    this.route.parent.data.subscribe(({ job: { collection, collectionSubject, nestConfigSubject, nestSubject } }) => {
+      this.jobSubject = collectionSubject;
+      this.job = collection;
+      this.jobSubject.skip(1).subscribe(job => this.job = job);
+
+      this.nestConfigSubject = nestConfigSubject;
+      this.nestConfigSubject.subscribe(nestConfig => {
+        let aa = nestConfig.filters.map(f => Object.assign({}, f, { affects: ['all'] }));
+        let af = (<any>nestConfig.folders).order(name => nestConfig.folders.filters[name].map(f => Object.assign({}, f, { affects: [name] })));
+        let ac = nestConfig.component.filters.map(f => Object.assign({}, f, { affects: ['all'] }));
+
+        let filters = [].concat(aa, ...af, ac);
+        for(let i = 0; i < filters.length; i++) {
+          let f = filters[i];
+          let other = filters.filter(_f => (_f != f) && (_f.type == f.type && _f.value == f.value));
+          for(let j = 0; j < other.length; j ++) {
+            let v = other[j];
+            f.affects.push(v.affects[0]);
+            filters.splice(i, 1)
+            i--;
+          }
+        }
+        console.log('filters', filters);
+        this.nestConfig = nestConfig;
+      });
+
+      this.nestSubject = nestSubject;
+      this.nestSubject.subscribe(nest => this.nest = nest);
+    });
+    /*
+    console.log('data', this.route.parent.data);
     this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig, trees }}) =>{
       this.nestConfigSubject = nestConfig;
+      console.log('nestconfig', nestConfig);
       this.nestConfigSubject.subscribe(config => {
         let folderFilters = config.folders.order.map(name => config.folders.filters[name].map(f => {
           f.affects = [name];
@@ -111,6 +139,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
         this.nestConfigSubject
       ).switchMap(this.queryFilter.bind(this)).subscribe(this.filterSuggestionsSubject)
 
+      console.log('fsubject', this.filterSuggestionsSubject);
       this.filterSuggestionsSubject.subscribe(arr => this.filterSuggestions = arr);
 
       this.nestSubject = nestSubject;
@@ -122,6 +151,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
         this.trees = trees;
       });
     });
+    */
   }
 
   ngOnDestroy() {
@@ -129,58 +159,57 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   toggleFolderVisibility(folderName: string, multiple=false) {
-    let val = this.nestConfigSubject.getValue();
-    let isEnabled = val.folders.enabled[folderName];
-    let otherFolderEnabled = Object.keys(val.folders.enabled).filter(n=>n !== folderName ? val.folders.enabled[n] : false).length;
-    let componentEnabled = val.component.enabled;
+    let config = this.nestConfigSubject.getValue();
+    let isEnabled = config.folders.enabled[folderName];
+    let otherFolderEnabled = Object.keys(config.folders.enabled).filter(n=>n !== folderName ? config.folders.enabled[n] : false).length;
+    let componentEnabled = config.component.enabled;
 
     // if other folder or component is enabled, enable this
 
     if(!multiple) {
       if(otherFolderEnabled || componentEnabled) {
-        Object.keys(val.folders.enabled).forEach(n => val.folders.enabled[n] = false);
-        val.component.enabled = false;
-        val.folders.enabled[folderName] = true;
-        this.nestConfigSubject.next(val);
+        Object.keys(config.folders.enabled).forEach(n => config.folders.enabled[n] = false);
+        config.component.enabled = false;
+        config.folders.enabled[folderName] = true;
       }
-      return;
-    }
 
-    if (!isEnabled || otherFolderEnabled || componentEnabled) {
-      // disable other folders if enabling this one
-      if(!isEnabled && !componentEnabled) Object.keys(val.folders.enabled).forEach(n=>folderName != val.folders.enabled[n] ? val.folders.enabled[n] = false : false);
-      // toggle this
-      val.folders.enabled[folderName] = !isEnabled;
-      this.nestConfigSubject.next(val);
+    } else {
+      if (!isEnabled || otherFolderEnabled || componentEnabled) {
+        // disable other folders if enabling this one
+        if(!isEnabled && !componentEnabled) Object.keys(config.folders.enabled).forEach(n=>folderName != config.folders.enabled[n] ? config.folders.enabled[n] = false : false);
+        // toggle this
+        config.folders.enabled[folderName] = !isEnabled;
+      }
     }
+    this.nestConfigSubject.next(config);
   }
 
   toggleComponentVisibility(multiple=false) {
-    let val = this.nestConfigSubject.getValue();
-    let isEnabled = val.component.enabled;
-    let foldersEnabled = Object.keys(val.folders.enabled).filter(n=>val.folders.enabled[n]).length;
+    let config = this.nestConfigSubject.getValue();
+    let isEnabled = config.component.enabled;
+    let foldersEnabled = Object.keys(config.folders.enabled).filter(n=>config.folders.enabled[n]).length;
     if(!multiple) {
-      Object.keys(val.folders.enabled).forEach(n => val.folders.enabled[n] = false) // always disable folders
+      Object.keys(config.folders.enabled).forEach(n => config.folders.enabled[n] = false) // always disable folders
       if(!isEnabled && foldersEnabled) {
-        val.component.enabled = !isEnabled;
+        config.component.enabled = !isEnabled;
       }
-      this.nestConfigSubject.next(val);
-      return;
+
+    } else {
+      config.component.enabled = foldersEnabled ? !isEnabled : true;
+      // if disabling components, exactly one folder must be enabled
+      if (!config.component.enabled && !foldersEnabled) return;
+      if (!config.component.enabled && foldersEnabled > 1) {
+        Object.keys(config.folders.enabled).forEach(n=>config.folders.enabled[n] = false);
+        // enable at least one folder
+        config.folders.enabled[this.job.folders.order[0]] = true;
+      }
     }
-    val.component.enabled = foldersEnabled ? !isEnabled : true;
-    // if disabling components, exactly one folder must be enabled
-    if (!val.component.enabled && !foldersEnabled) return;
-    if (!val.component.enabled && foldersEnabled > 1) {
-      Object.keys(val.folders.enabled).forEach(n=>val.folders.enabled[n] = false);
-      // enable at least one folder
-      val.folders.enabled[this.job.folders.order[0]] = true;
-    }
-    this.nestConfigSubject.next(val);
+    this.nestConfigSubject.next(config);
   }
 
   filterActive(filter) {
     let types = filter.affects;
-    let config = this.nestConfig;
+    let config = this.nestConfigSubject.getValue();
     let enabledFolders = Object.keys(config.folders.enabled).filter(n=>config.folders.enabled[n])
     let enabledComponent = config.component.enabled ? ['component'] : [];
     return types.some(type => type == 'all' || [].concat(enabledFolders, enabledComponent).indexOf(type) > -1);
@@ -245,6 +274,6 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   handleDrop({dropped, on}) {
-    return this.jobService.addChild(on, dropped)
+    return this.jobService.addChildElement(on, dropped)
   }
 }

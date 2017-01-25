@@ -2,67 +2,77 @@ import { FolderDefinition } from './folder-definition';
 import { BaseElement } from './base-element';
 import { SaveState } from './save-state';
 import { BasedOn } from './based-on';
-import { User } from './user';
+import { User, IUser } from './user';
 
-export class Collection extends BaseElement {
-  static readonly storeName = 'collections';
+type CollectionType = 'job' | 'library';
+
+export interface ICollection {
+  _id?: string|number,
+  id?: string|number,
+  name: string,
+  description: string,
+  owner: User,
+  shortname: string,
+  folders: FolderDefinition,
+  kind: CollectionType,
+  basedOn?: BasedOn|null;
+  commit?: string;
+  hash?: string;
+  saveState?: SaveState;
+  stats?: any;
+}
+
+export class Collection extends BaseElement implements ICollection {
+  static readonly store = 'collections';
+
   static excluded: string[] = ['commit', 'hash', 'saveState'];
 
-  static fromObject(obj, commit?) {
-    if (!obj.owner) {
-      throw new Error('object owner required');
-    }
-    let owner = User.fromObject(obj.owner);
-    ['id', 'name', 'description', 'owner', 'shortname', 'folders'].forEach((t) => {
-      if (obj[t] == null) {
-        throw new Error('key ' + t + ' required');
-      }
-    });
-    return new Collection(
-      obj.id,
-      obj.name,
-      obj.description,
-      owner,
-      obj.shortname,
-      obj.folders,
-      obj.kind,
-      obj.basedOn,
-      commit || obj.commit,
-      obj.has
-    );
+  static fromJSON(obj) {
+    let collection = Object.create(Collection.prototype);
+    return Object.assign(collection, obj);
+  }
+  public stats;
+
+  get initialized(): boolean {
+    return this.folders.roots ? this.folders.order.some(name => typeof this.folders.roots[name] === 'string') : false;
   }
 
   constructor(
-    id,
     name,
     description,
-    public owner: User,
-    public shortname: string,
-    public folders: FolderDefinition,
-    public kind: 'job'|'library' = 'job',
-    public basedOn?: BasedOn|null,
-    public commit?: string,
-    public hash?: string,
+    public owner,
+    public shortname,
+    public folders,
+    public kind: CollectionType = 'job',
+    public basedOn?,
+    public commit?,
+    public hash?,
     public saveState: SaveState = 'unsaved'
   ) {
-    super(id, name, description);
-  }
-
-
-  toJSON(removeExcluded = 1) {
-    let copy = Object.assign({}, this);
-    if (removeExcluded) {
-      Collection.excluded.forEach((e) => {
-        if (e in copy) {
-          delete copy[e];
-        }
-      });
-    }
-    return copy;
+    super(name, description);
   }
 
   getURL(): string {
     return [this.owner.username, this.shortname, 'build'].join('/');
   }
 
+}
+
+export interface CollectionRecord {
+  id: string;
+  name: string;
+  description: string;
+  owner: IUser;
+  folders: FolderDefinition;
+  kind: CollectionType;
+  basedOn: BasedOn;
+}
+
+export interface CollectionPlus {
+  collection: Collection;
+  stats: {
+    folders: number;
+    components: number;
+    children: number;
+  };
 }

@@ -1,4 +1,4 @@
 <div class="body">
   <h1>Settings</h1>
-  <button (click)="resetEverything()">Reset Everything</button>
+  <button [disabled]="locked" (click)="resetEverything()">Reset Everything</button>
 </div>

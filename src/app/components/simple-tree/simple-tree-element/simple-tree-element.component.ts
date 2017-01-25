@@ -11,7 +11,7 @@ import {
 
 import { ClassToStringPipe } from '../../../pipes/class-to-string.pipe';
 import { nameStringToClass, classToNameString } from '../../../resources/util';
-import { Child, FolderElement } from '../../../models/classes';
+import { ChildElement, FolderElement } from '../../../models';
 
 export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
 
@@ -62,7 +62,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() {
-    if((this.data.data instanceof FolderElement || this.data.data instanceof Child) && (this.data.data && this.data.data.id)) {
+    if((this.data.data instanceof FolderElement || this.data.data instanceof ChildElement) && (this.data.data && this.data.data.id)) {
       this.fragment = [this.classToStringPipe.transform(this.data.data), this.data.data.id].join('/');
     }
   }
@@ -100,7 +100,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
     this.dragover = false;
     let data = JSON.parse(evt.dataTransfer.getData('text'));
     if(data.object !== undefined && typeof data.type === 'string') {
-      let obj = this.classToStringPipe.transform(data.type).fromObject(data.object);
+      let obj = this.classToStringPipe.transform(data.type).fromJSON(data.object);
       this.dropEvt.emit({dropped: obj, on: this.data.data});
     }
   }

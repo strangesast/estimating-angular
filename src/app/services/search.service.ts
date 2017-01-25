@@ -22,7 +22,7 @@ class PartCatalog {
 }
 */
 
-import { FolderElement, ComponentElement, Collection } from '../models/classes';
+import { FolderElement, ComponentElement, Collection } from '../models';
 
 @Injectable()
 export class SearchService implements Resolve<HierarchyNode<any>> {
@@ -57,9 +57,9 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
           return [D3.hierarchy(root)];
         });
         let prom2 = Promise.resolve([
-          new ComponentElement('', 'New Component', '', 0, 0, ''),
-          new FolderElement('', 'New Folder (phase)', '', 'phase', '', []),
-          new FolderElement('', 'New Folder (building)', '', 'building', '', [])
+          new ComponentElement('New Component', '', 0, 0, ''),
+          new FolderElement('New Folder (phase)', '', 'phase', '', []),
+          new FolderElement('New Folder (building)', '', 'building', '', [])
         ].map(n=>D3.hierarchy(n)));
         return <any>Observable.fromPromise(<any>Promise.all([prom, prom2]).then((results:any) => results.reduce((a, b)=>a.concat(b))));
 
@@ -98,7 +98,9 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
   }
 
   resolve() {
+    /*
     if(!this.jobSub) this.startListening();
+    */
     return Promise.resolve();
   }
 

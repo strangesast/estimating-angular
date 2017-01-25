@@ -20,7 +20,7 @@
           <span class="triangle"></span>
           <span (click)="renameJob(job)"class="hoverunderline">Rename</span>
           <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Details</a>
-          <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Remove</a>
+          <span (click)="removeJob(job)" class="hoverunderline">Remove</span>
         </div>
       </div>
       <span class="owner">{{ job.owner.name }}</span>
@@ -28,12 +28,19 @@
       <span class="folders-cnt">{{ 0 }}</span>
       <span class="components-cnt">{{ 0 }}</span>
     </li>
-    <li *ngIf="!jobs || !jobs.length">
+    <li *ngIf="(!jobs || !jobs.length) && !newCollection">
       <span class="name">None</span>
+    </li>
+    <li *ngIf="newCollection">
+      <form class="inline" novalidate (ngSubmit)="createNewJobSubmit(newCollectionForm)" [formGroup]="newCollectionForm">
+        <div class="name"><input formControlName="name"></div><div class="description"><input formControlName="description"></div><div class="settings"></div><div class="owner">{{ userService.currentUser.username }}</div><div class="type"><select formControlName="kind"><option value="job">Job</option><option value="library">Library</option></select></div><div class="folders-cnt"></div><div class="components-cnt"></div>
+      </form>
     </li>
   </ul>
   <div>
-    <button (click)="createNewJob()">Create New</button>
+    <button *ngIf="!newCollection" (click)="createNewJob()">Create New</button>
+    <button *ngIf="newCollection" (click)="createNewJobSubmit(newCollectionForm)">Save</button>
+    <button *ngIf="newCollection" (click)="cancelNewJob()">Cancel</button>
   </div>
 </div>
 <div class="table">

@@ -7,6 +7,7 @@ import { ActivatedRoute } from '@angular/router';
   styleUrls: ['./settings-page.component.less']
 })
 export class SettingsPageComponent implements OnInit {
+  locked = false;
 
   constructor(private route: ActivatedRoute) { }
 
@@ -14,8 +15,20 @@ export class SettingsPageComponent implements OnInit {
   }
 
   resetEverything() {
-    (<any>indexedDB).webkitGetDatabaseNames().onsuccess = (res) => [].slice.call(res.target.result).forEach((db) => indexedDB.deleteDatabase(db));
-
+    return new Promise((resolve, reject) => {
+      (<any>indexedDB).webkitGetDatabaseNames().onsuccess = (res) => {
+        let dbs = [].slice.call(res.target.result)
+        let result = [];
+        let complete = (e) => {
+          result.push(e.target.result);
+          if(result.length == dbs.length) resolve(result);
+        }
+        // doesn't call success but works
+        dbs.forEach((db) => indexedDB.deleteDatabase(db).onsuccess = complete);
+      }
+      this.locked = true;
+      setTimeout(() => window.location.reload(), 500)
+    })
   }
 
 }

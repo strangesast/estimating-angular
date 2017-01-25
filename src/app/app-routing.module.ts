@@ -15,6 +15,7 @@ import { WorkspaceComponent }      from './components/workspace/workspace.compon
 import { ElementService } from './services/element.service';
 import { SearchService }  from './services/search.service';
 import { JobService }     from './services/job.service';
+import { JobListService } from './services/job-list.service';
 
 const routes: Routes = [
   {
@@ -73,8 +74,7 @@ const routes: Routes = [
         path: 'jobs',
         component: JobListPageComponent,
         resolve: {
-          elements: ElementService,
-          search: SearchService
+          jobs: JobListService
         }
       },
       {
@@ -115,7 +115,8 @@ const routes: Routes = [
   ],
   providers: [
     ElementService,
-    JobService
+    JobService,
+    JobListService
   ]
 })
 export class AppRoutingModule { }

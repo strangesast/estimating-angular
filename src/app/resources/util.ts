@@ -1,5 +1,5 @@
 // d3
-import { Collection, ComponentElement, Child, FolderElement } from '../models/classes';
+import { Collection, ComponentElement, ChildElement, FolderElement } from '../models';
 
 import { Observable } from 'rxjs';
 export function waitForTransition(_transition) {
@@ -97,7 +97,7 @@ export function classToNameString(_class): string {
   switch(_class) {
     case ComponentElement:
       return 'component';
-    case Child:
+    case ChildElement:
       return 'child';
     case FolderElement:
       return 'folder';
@@ -112,7 +112,7 @@ export function nameStringToClass(name):any {
     case 'component':
       return ComponentElement;
     case 'child':
-      return Child;
+      return ChildElement;
     case 'folder':
       return FolderElement;
     case 'collection':
