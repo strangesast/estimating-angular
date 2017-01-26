@@ -12,4 +12,7 @@ export class BaseElement {
     return Object.assign({}, this);
   }
 
+  clean() {
+    return this;
+  }
 }

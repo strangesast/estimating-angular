@@ -6,7 +6,7 @@ import {
   Validators 
 } from '@angular/forms';
 
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 
 import { JobService } from '../../services/job.service';
 
@@ -22,6 +22,8 @@ import { Collection } from '../../models';
   private jobForm: FormGroup;
   private jobUpdateSub: Subscription;
 
+  private jobSubject: BehaviorSubject<Collection>;
+
   private status: any[] = [];
   private exampleDate: Date = new Date();
 
@@ -36,28 +38,29 @@ import { Collection } from '../../models';
   ) { }
 
   ngOnInit() {
-    this.route.parent.data.subscribe(({ job: { job: jobSubject }}) => {
-      jobSubject.first().subscribe(job => {
-        this.job = job;
-        this.jobForm = this.formBuilder.group({
-          name: [job.name, [
-            Validators.minLength(5),
-            Validators.required]
-          ],
-          description: job.description,
-          owner: this.formBuilder.group({
-            name: [job.owner.name, Validators.required],
-            username: [job.owner.username, [Validators.required, Validators.pattern('^[A-Za-z0-9]+$')]],
-            email: [job.owner.email, Validators.required],
-          }),
-          shortname: [job.shortname, [
-            Validators.required,
-            Validators.minLength(3),
-            Validators.pattern('^[A-Za-z0-9-_]+$')]
-          ]
-        });
+    this.route.parent.data.subscribe(({ job: { collection, collectionSubject, editWindowsEnabled }}) => {
+      editWindowsEnabled.next(true); // enable window visibility
+
+      this.job = collection;
+      this.jobForm = this.formBuilder.group({
+        name: [collection.name, [
+          Validators.minLength(5),
+          Validators.required]
+        ],
+        description: collection.description,
+        owner: this.formBuilder.group({
+          name: [collection.owner.name, Validators.required],
+          username: [collection.owner.username, [Validators.required, Validators.pattern('^[A-Za-z0-9]+$')]],
+          email: [collection.owner.email, Validators.required],
+        }),
+        shortname: [collection.shortname, [
+          Validators.required,
+          Validators.minLength(3),
+          Validators.pattern('^[A-Za-z0-9-_]+$')]
+        ]
       });
-      this.jobUpdateSub = jobSubject.skip(1).subscribe(job => {
+
+      this.jobUpdateSub = (this.jobSubject = collectionSubject).skip(1).subscribe(job => {
         this.jobForm.patchValue(job)
         this.jobForm.markAsPristine();
         this.job = job;
@@ -87,8 +90,7 @@ import { Collection } from '../../models';
 
   onSubmit({ dirty, value, valid }: { dirty: boolean, value: Collection, valid: boolean}) {
     if(dirty && valid) {
-      let j = Collection.fromJSON(Object.assign({}, this.job.toJSON(), value))
-      this.jobService.updateJob(j);
+      this.jobSubject.next(Object.assign(this.jobSubject.getValue(), value))
 
     } else if (!valid) {
       alert('invalid');

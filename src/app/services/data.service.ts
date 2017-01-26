@@ -19,8 +19,8 @@ const DB_VERSION = 1;
 const STORES = {
   users:             'username, name',
   collections:       '$$id, &[owner.username+shortname]',
-  componentElements: '$$id, collection, &*children',
-  childElements:     '$$id, collection',
+  componentElements: '$$id, collection, &*children, buy, sell',
+  childElements:     '$$id, collection, qty',
   folderElements:    '$$id, collection, &*children, type',
   locationElements:  '$$id, collection, &*children, [folder0+folder1], [folder0+folder2], [folder1+folder2], folder0, folder1, folder2'
 };

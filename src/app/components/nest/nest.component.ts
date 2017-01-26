@@ -136,8 +136,11 @@ export class NestComponent implements OnInit {
     let nest = D3.nest();
     // sort keys by position in hierarchy
     keys.forEach(key => nest = nest.key((d:any) =>
-      d.data.folders[this.order.indexOf(key.data.type)]).sortKeys((a, b) =>
-        folderOrders[key.data.type].indexOf(a) < folderOrders[key.data.type].indexOf(b) ? -1 : 1));
+      d.data.folders[this.order.indexOf(key.data.type)]).sortKeys((a, b) => {
+        let i = folderOrders[key.data.type].indexOf(a);
+        let j = folderOrders[key.data.type].indexOf(b);
+        return i < j ? -1 : i > j ? 1 : a < b ? -1 : 1;
+      }));
 
     let data = nest.entries(entries);
 
@@ -184,6 +187,7 @@ export class NestComponent implements OnInit {
     let t = D3.transition(undefined).duration(500);
 
     this.host.transition(t).style('height', arr.length * HEIGHT + 'px');
+    //let width = this.host.node().getBoundingClientRect().width;
 
     let toRemove = selection.exit()
       .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
@@ -193,7 +197,9 @@ export class NestComponent implements OnInit {
       .remove();
 
     let toAdjust = selection
+      .style('opacity', 1)
       .transition(t)
+      //.style('width', (d:any) => (width - d.y + HEIGHT) + 'px')
       .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
       .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
 
@@ -209,6 +215,7 @@ export class NestComponent implements OnInit {
         }
       })
       .attr('class', 'item')
+      //.style('width', (d:any) => (width - d.y + HEIGHT) + 'px')
       .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
       .style('transform', (d:any) => 'translate(' + (d.y - HEIGHT - HEIGHT) + 'px' + ',' + d.x + 'px' + ')')
       .transition(t)

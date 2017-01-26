@@ -31,4 +31,11 @@ export class ChildElement extends BaseElement {
     super(name, description);
   }
 
+  clean() {
+    let child = Object.create(ChildElement.prototype);
+    ['id', 'name', 'description', 'collection', 'ref', 'qty', '_ref', '_id'].forEach((name) => {
+      child[name] = this[name];
+    });
+    return child;
+  }
 }

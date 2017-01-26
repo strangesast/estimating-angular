@@ -43,7 +43,7 @@ export class LocationElement extends BaseElement {
     name,
     description,
     public collection: string|number,
-    public children: (number|string)[]|ChildElement[],
+    public children: (number|string|ChildElement)[],
     folders: string[], // same order as collection.folders.order
     public hash?: string,
     public saveState: SaveState = 'unsaved'

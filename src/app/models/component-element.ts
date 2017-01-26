@@ -27,4 +27,18 @@ export class ComponentElement extends BaseElement {
   ) {
     super(name, description);
   }
+
+  clean() {
+    let component = Object.create(ComponentElement.prototype);
+    ['id', 'name', 'description', 'collection', '_id'].forEach((name) => {
+      component[name] = this[name];
+    });
+    component.children = (<any[]>this.children).filter(child => typeof child === 'string' || child instanceof ChildElement).map(child => {
+      if (typeof child === 'string') return child;
+      if (!child.id) throw new Error('cant save child on component without id');
+      return child.id;
+    });
+    return component;
+  }
+
 }

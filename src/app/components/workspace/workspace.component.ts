@@ -12,6 +12,8 @@ import { Subject, BehaviorSubject } from 'rxjs';
 })
 export class WorkspaceComponent implements OnInit {
   results = new Subject();
+  defaults = new Subject();
+
   searchForm: FormGroup;
 
   searchFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);

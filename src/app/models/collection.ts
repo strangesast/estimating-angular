@@ -31,10 +31,16 @@ export class Collection extends BaseElement implements ICollection {
     let collection = Object.create(Collection.prototype);
     return Object.assign(collection, obj);
   }
+
   public stats;
 
   get initialized(): boolean {
     return this.folders.roots ? this.folders.order.some(name => typeof this.folders.roots[name] === 'string') : false;
+  }
+
+  get orderedFolders(): string[] {
+    if (!this.folders.roots) return [];
+    return this.folders.order.map(n => this.folders.roots[n]);
   }
 
   constructor(
@@ -56,6 +62,13 @@ export class Collection extends BaseElement implements ICollection {
     return [this.owner.username, this.shortname, 'build'].join('/');
   }
 
+  clean() {
+    let collection = Object.create(Collection.prototype);
+    ['id', 'name', 'description', 'owner', 'shortname', 'folders', 'kind', 'basedOn'].forEach((name) => {
+      collection[name] = this[name];
+    });
+    return collection;
+  }
 }
 
 export interface CollectionRecord {

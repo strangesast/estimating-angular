@@ -15,6 +15,7 @@ import { ChildElement, ComponentElement, FolderElement } from '../../models';
 
 export class EditPageComponent implements OnInit, OnChanges {
   public selectedElement: any = null;
+  public selectedElementSubject: BehaviorSubject<any>;
   public openElements: any;
   public openElementIds: string[];
   private openElementsSubject: BehaviorSubject<any[]>;
@@ -29,20 +30,24 @@ export class EditPageComponent implements OnInit, OnChanges {
   ) { }
 
   ngOnInit():void{
-    this.route.parent.data.subscribe(({ job: { openElements }}) => {
+    this.route.parent.data.subscribe(({ job: { openElements, editWindowsEnabled, selectedElementSubject }}) => {
+      editWindowsEnabled.next(false);
       this.openElementsSubject = openElements;
       this.openElementsSubject.subscribe(elements => {
+        /*
         this.openElementIds = Object.keys(elements);
         if(this.selectedElement == null || this.openElementIds.map(id=>elements[id]).indexOf(this.selectedElement) === -1) {
           this.selectedElement = this.openElementIds.length ? elements[this.openElementIds[0]].element : null;
         }
+        */
         this.openElements = elements;
       });
+      (this.selectedElementSubject = selectedElementSubject).subscribe(element => this.selectedElement = element);
     });
   }
 
   backToBuild() {
-    this.router.navigate(['build'], {relativeTo: this.route.parent});
+    this.router.navigate(['build'], { relativeTo: this.route.parent });
   }
 
   ngOnDestroy() {
@@ -53,7 +58,7 @@ export class EditPageComponent implements OnInit, OnChanges {
   }
 
   setCreateNew() {
-    this.selectedElement = this.newElement;
+    this.selectedElementSubject.next(this.newElement);
   }
 
   setSelectedElement(element) {

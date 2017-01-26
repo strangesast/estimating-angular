@@ -72,7 +72,8 @@ import {
     ElementService,
     DragService,
     JobService,
-    UserService
+    UserService,
+    ClassToStringPipe
   ],
   entryComponents: [ SimpleTreeElementComponent ],
   bootstrap: [ AppComponent ]

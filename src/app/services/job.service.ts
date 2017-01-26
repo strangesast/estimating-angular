@@ -15,6 +15,7 @@ import {
 import {
   ChildElement,
   ComponentElement,
+  LocationElement,
   FolderElement,
   Collection,
   TreeConfig,
@@ -25,6 +26,8 @@ import {
 import { ElementService } from './element.service';
 import { DataService } from './data.service';
 
+import { ClassToStringPipe } from '../pipes';
+
 import {
   hierarchy,
   HierarchyNode
@@ -33,33 +36,25 @@ import {
 import * as D3 from 'd3';
 import { Nest } from 'd3';
 
-// may change if collection format changes
-const INIT_CONFIG = {
-  folders: {
-    order: ['phase', 'building'],
-    roots: {},
-    enabled: { phase: true, building: true },
-    filters: { phase: [], building: [] }
-  },
-  component: {
-    enabled: true,
-    filters: []
-  },
-  filters: []
-}
-
 @Injectable()
 export class JobService implements Resolve<Promise<any>> {
   nestConfigSubject: BehaviorSubject<NestConfig>;
 
   public collectionSubject: BehaviorSubject<Collection>;
 
-  public trees; // { 'phase': BehaviorSubject, 'building': BehaviorSubject }
-  public nestSubject: BehaviorSubject<Nest<any, any>>
+  public nestSubject: BehaviorSubject<any>;
 
-  private openElements: BehaviorSubject<any> = new BehaviorSubject({});
+  public editWindowsEnabled: BehaviorSubject<boolean>;
 
-  constructor(private db: DataService, private elementService: ElementService, private router: Router) { }
+  private openElements: BehaviorSubject<any>;
+  public  selectedElementSubject: BehaviorSubject<any>;
+
+  constructor(
+    private db: DataService,
+    private elementService: ElementService,
+    private router: Router,
+    private pipe: ClassToStringPipe
+  ) { }
 
   async resolve(route: ActivatedRouteSnapshot) {
     let username = route.params['username'];
@@ -75,23 +70,61 @@ export class JobService implements Resolve<Promise<any>> {
       return false;
     }
 
+    // create example elements for uninitialized job (no roots defined)
     if (!collection.initialized) {
       await this.init(collection);
     }
 
-    let collectionSubject = new BehaviorSubject(collection);
+    let collectionSubject = this.collectionSubject = new BehaviorSubject(collection);
 
-    this.collectionSubject = collectionSubject;
-    this.collectionSubject.subscribe(collection => {
-      db.collections.put(collection, <any>collection.id);
+    // catch updates to collection and save them
+    // TODO: add undo
+    collectionSubject.subscribe(collection => {
+      db.collections.put(collection.clean(), <any>collection.id);
     });
 
-    let nestConfigSubject = new BehaviorSubject(INIT_CONFIG);
-    this.nestConfigSubject = nestConfigSubject;
+    // begin with basic config with no filters and everything enabled
+    // TODO: alternatively use localstorage
+    let config = {
+      folders: {
+        order: collection.folders.order.slice(),
+        roots: {},
+        enabled: {},
+        filters: {}
+      },
+      component: {
+        enabled: true,
+        filters: []
+      },
+      filters: []
+    }
+    collection.folders.order.forEach(n => {
+      config.folders.enabled[n] = true;
+      config.folders.filters[n] = [];
+    });
+
+    let nestConfigSubject = this.nestConfigSubject = new BehaviorSubject(config);
+
+    let trees = this.elementService.buildTreesSubject(collectionSubject, nestConfigSubject);
 
     let nestSubject = this.elementService.buildNestSubject(collectionSubject, nestConfigSubject);
 
-    return { collection, collectionSubject, nestConfigSubject, nestSubject };
+    // for windowed elements
+    let openElements = this.openElements = new BehaviorSubject({});
+    let selectedElementSubject = this.selectedElementSubject = new BehaviorSubject(null);
+
+    let editWindowsEnabled = this.editWindowsEnabled = new BehaviorSubject(false);
+
+    return {
+      editWindowsEnabled,
+      collectionSubject,
+      nestConfigSubject,
+      selectedElementSubject,
+      openElements,
+      nestSubject,
+      collection,
+      trees
+    };
   }
 
   async init(collection: Collection, createNExampleElements = 4) {
@@ -108,51 +141,158 @@ export class JobService implements Resolve<Promise<any>> {
       folder.id = id;
       collection.folders.roots[folder.type] = id;
     }
-    await db.collections.put(collection); // update new roots
+    await db.collections.put(collection.clean()); // update new roots
 
     if (createNExampleElements > 0) {
       let elements = await this.elementService.createExampleElements(collection, createNExampleElements);
-      console.log('elements', elements);
     }
 
     return collection;
   }
 
-  updateJob(job: Collection) {
-    // should return observable that completes when observable is finished saving, errors if invalid
-    this.collectionSubject.next(job);
-  }
+  async openElement(elementId: string|ChildElement|ComponentElement|FolderElement, kind?) {
+    let db = this.db;
+    let element;
+    if(typeof elementId === 'string') {
+      let Class = this.pipe.transform(kind);
+      let collection = db[Class.store];
+      element = await collection.get(elementId);
 
-  openElement(element: ChildElement|ComponentElement|FolderElement) {
+    } else {
+      element = elementId;
+
+    }
+    if(!element) throw new Error('that element does not exist');
+
     let elements = this.openElements.getValue();
+
     if (element.id in elements) {
       elements[element.id].config.open = true;
-      return Promise.resolve(elements[element.id]);
+      return elements[element.id];
     }
-    return this.elementService.loadElement(element.constructor, <any>element.id).then(bs => {
-      Object.keys(elements).forEach(id => {
-        elements[id].config.open = false;
-      });
-      elements[element.id] = {
-        config: { open: true },
-        element: bs
-      }
-      this.openElements.next(elements);
-      return bs;
+
+    // use this to update changes in the window
+    let bs = new BehaviorSubject(element);
+    let subscription = bs.subscribe(val => {
+      db[val.constructor.store].put(val.clean());
     });
-  }
 
-  retrieveElement(elementId, _class?) {
-    return this.elementService.retrieveElement(typeof elementId === 'string' ? _class : elementId.constructor, typeof elementId === 'string' ? elementId : elementId.id);
-  }
+    // close other windows
+    Object.keys(elements).forEach(id => {
+      elements[id].config.open = false;
+    });
 
-  loadElement(_class, id) {
-    return this.elementService.loadElement(_class, id);
+    elements[element.id] = {
+      subscription,
+      config: { open: true },
+      element: bs
+    }
+    this.openElements.next(elements);
+    this.selectedElementSubject.next(bs);
+    return bs;
   }
 
   addChildElement(to, what) {
-    return this.elementService.addChildElement(this.collectionSubject.getValue(), to, what).then((res) => {
+    let db = this.db;
+    let job = this.collectionSubject.getValue();
+
+    if(to.id === what.id) return;
+
+    return db.transaction('rw', db.folderElements, db.locationElements, db.childElements, db.componentElements, async() => {
+      let currentPosition;
+      if (what instanceof ChildElement || what instanceof FolderElement) {
+        if (!what.id) {
+          currentPosition = null;
+        } else {
+          currentPosition = await db.locationElements.get({ children: what.id });
+        }
+      }
+      if (what instanceof FolderElement) {
+        if (!what.id) {
+          currentPosition = null;
+        } else {
+          currentPosition = await db.folderElements.get({ children: what.id });
+        }
+      }
+
+      if (to instanceof FolderElement) {
+        if (what instanceof ChildElement) {
+          let i = job.folders.order.indexOf(to.type);
+          let id = to.id;
+
+          if (currentPosition) {
+            let folders = currentPosition.folders;
+            folders[i] = id;
+            let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
+            let newPosition: LocationElement = await db.locationElements.get({ [keyName]: folders });
+            if (!newPosition) {
+              newPosition = new LocationElement(undefined, undefined, job.id, [], folders);
+              await db.locationElements.add(newPosition);
+            }
+
+            // already in desired position
+            if (currentPosition.id == newPosition.id) return;
+
+            newPosition.children.push(what.id);
+            currentPosition.children.splice(currentPosition.children.indexOf(what.id), 1);
+
+            // save previous first (else children key error)
+            await db.locationElements.put(currentPosition.clean());
+
+            await db.locationElements.put(newPosition.clean());
+
+            return true;
+
+          } else {
+            let folders = job.folders.order.map(name => job.folders.roots[name]);
+            folders[i] = id;
+            let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
+            let newPosition = await db.locationElements.get({ [keyName]: folders });
+            if (!newPosition) {
+              newPosition = new LocationElement(undefined, undefined, job.id, [], folders);
+              await db.locationElements.add(newPosition);
+            }
+
+            if(!what.id) {
+              let id = await db.childElements.add(what);
+              what.id = id;
+            }
+
+            newPosition.children.push(what.id);
+            await db.locationElements.put(newPosition.clean());
+
+            return true;
+          }
+        } else if (what instanceof FolderElement) {
+          if (currentPosition) {
+            // already in desired position
+            if (currentPosition.id == to.id) return;
+
+            currentPosition.children.splice(currentPosition.children.indexOf(what.id), 1);
+            to.children.push(what.id);
+
+            await db.folderElements.put(currentPosition.clean());
+            await db.folderElements.put(to.clean());
+            
+          } else {
+            if(!what.id) {
+              let id = await db.folderElements.add(what);
+              what.id = id;
+            }
+            to.children.push(what.id);
+            await db.folderElements.put(to.clean());
+
+            return true;
+
+          }
+        }
+      }
+
+    }).then((res) => {
       if(res !== undefined) this.nestConfigSubject.next(this.nestConfigSubject.getValue()); // touch the config to trigger recalc
+    }).catch(err => {
+      console.error('drag error', err);
+      alert('drag error');
     });
   }
 
@@ -165,6 +305,8 @@ export class JobService implements Resolve<Promise<any>> {
     let elements = this.openElements.getValue();
     let id = both.element.getValue().id;
     if(id in elements) {
+      elements[id].subscription.unsubscribe();
+      this.selectedElementSubject.next(null);
       delete elements[id];
       this.openElements.next(elements);
     }

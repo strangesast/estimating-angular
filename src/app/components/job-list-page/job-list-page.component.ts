@@ -29,7 +29,7 @@ export class JobListPageComponent implements OnInit {
 
   editing: Collection = null;
 
-  newCollection: Collection;
+  newCollection: boolean;
   newCollectionForm: FormGroup;
 
   aboutJob: any = {}; // { job: about }
@@ -45,26 +45,29 @@ export class JobListPageComponent implements OnInit {
   }
 
   createNewJob() {
-    let user = this.userService.currentUser;
-    let name = 'New Collection ' + Math.ceil(Math.random()*100);
-    let shortName = name.split(' ').join('_').replace(/[^\w-]/gi, '').toLowerCase().substring(0, 50);
-    let collection = new Collection(name, 'description', user, shortName, { order: ['phase', 'building'] }, 'job');
     this.newCollectionForm = this.formBuilder.group({
-      name: collection.name,
-      description: collection.description,
-      kind: collection.kind
+      name: 'New Collection ' + Math.ceil(Math.random()*100),
+      description: 'description',
+      kind: 'job'
     });
-    this.newCollection = collection;
+    this.newCollection = true;
 
   }
 
   createNewJobSubmit(form) {
-    let collection = Object.assign(this.newCollection, form.value)
-    this.jobListService.createCollection(collection).then(() => this.newCollection = undefined);
+    let user = this.userService.currentUser;
+
+    let description = 'description';
+
+    let kind = form.value.kind;
+    let shortName = form.value.name.split(' ').join('_').replace(/[^\w-]/gi, '').toLowerCase().substring(0, 50);
+    let order = ['phase', 'building'].slice(kind == 'job' ? 0 : 1)
+    let collection = new Collection(form.value.name, form.value.description, user, shortName, { order }, kind); 
+    this.jobListService.createCollection(collection).then(() => this.newCollection = false);
   }
 
   cancelNewJob() {
-    this.newCollection = undefined;
+    this.newCollection = false;
   }
 
   renameJob(job:Collection) {

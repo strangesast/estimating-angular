@@ -34,20 +34,25 @@ import {
 
 import { ElementService, SearchService, JobService } from '../../services';
 
+const fragRe = /^(\w*)\/([\w-]*)$/;
+const STATS_INIT = { buy: 0, sell: 0, childCnt: 0, componentCnt: 0, folderCnt: 0 };
+
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
   styleUrls: ['./project-page.component.less'],
-  providers: [ SimpleTreeComponent, ClassToStringPipe ]
+  providers: [ SimpleTreeComponent ]
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private job: Collection;
   private jobSubject: BehaviorSubject<Collection>;
   private jobSubscription: Subscription;
 
+  private nestSubscription: Subscription;
+
   public editWindowsEnabled: boolean = true;
 
-  private stats:any = { componentCnt: 0, folderCnt: 0 };
+  private stats:any = STATS_INIT;
 
   private openElementsSubject: BehaviorSubject<any>;
   private openElementIds: string[] = [];
@@ -58,67 +63,47 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
     private searchService: SearchService,
     private jobService: JobService,
     private route: ActivatedRoute,
-    private router: Router,
-    private classToStringPipe: ClassToStringPipe
+    private router: Router
   ) { }
 
   ngOnInit() {
-    this.route.data.subscribe(({ job: { collection } }) => {
-      this.job = collection;
-    });
-    /*
-    this.route.data.subscribe(({job: { job: jobSubject, openElements, nest, nestConfig, trees }}) => {
-      this.jobSubject = jobSubject;
-      this.jobSubscription = this.jobSubject.subscribe(job => {
-        this.searchService.setJob(job);
-        this.job = job;
-      });
+    this.route.data.subscribe(({ job: { collectionSubject, openElements, nestSubject, editWindowsEnabled } }) => {
+      editWindowsEnabled.subscribe(enabled => this.editWindowsEnabled = enabled);
+      this.searchService.setJob(collectionSubject.getValue());
+      this.jobSubscription = (this.jobSubject = collectionSubject).subscribe(collection => this.job = collection);
 
-      this.openElementsSubject = openElements;
-      console.log('openelements', openElements)
-      this.openElementsSubject.subscribe(els => {
+      (this.openElementsSubject = openElements).subscribe(els => {
         this.openElements = els;
         this.openElementIds = Object.keys(els).reverse();
       });
 
-
-      let [folderCount, nestCount] = nestConfig.map(config => {
-        if(config.component.enabled) return ''
-        return config.folders.order.find(n => config.folders.enabled[n]);
-      }).distinctUntilChanged().partition(x=>x!=='');
-
-      nestCount.switchMap(x => nest).subscribe(({ keys, entries }) => {
+      this.nestSubscription = nestSubject.subscribe(({ keys, entries, config }) => {
+        // TODO: improve efficiency of the following
         let nest = D3.nest();
-        this.stats.folderCnt = keys.map(k => k.descendants()).reduce((a, b)=> a+b.length, 0);
-        this.stats.childCnt = entries.length;
-        this.stats.componentCnt = (<any>nest).rollup((d:any) => D3.map(d, (e:any)=> e.data.ref).size()).entries(entries)
+        this.stats.folderCnt = keys.map(k => k.descendants().slice(1)).reduce((a, b)=> a+b.length, 0);
 
+        if (config.component.enabled) {
+          this.stats.childCnt = entries.length;
+          this.stats.componentCnt = (<any>nest).rollup((d:any) => D3.map(d, (e:any)=> e.data.ref).size()).entries(entries)
+        } else {
+          Object.assign(this.stats, { childCnt: 0, componentCnt: 0 });
+        }
         // could be done in the same rollup
         this.stats.buy =  nest.rollup(leaves => leaves.map((n:any) => n.sum(m => m.data ? m.data.buy  : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
         this.stats.sell = nest.rollup(leaves => leaves.map((n:any) => n.sum(m => m.data ? m.data.sell : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
       });
 
-      folderCount.withLatestFrom(trees).switchMap(([folder, trees]) => {
-        return trees[folder];
-      }).subscribe(res => {
-        this.stats.folderCnt = res.descendants().length;
-        this.stats.childCnt = 0;
-        this.stats.componentCnt = 0;
-      })
-    });
-    */
 
+    });
+
+    // open window on fragment change
     this.route.fragment.subscribe((frag) => {
-      if(frag) {
-        let [kind, id] = frag.split('/');
-        let _class = this.classToStringPipe.transform(kind);
-        return this.jobService.retrieveElement(id, _class).then((element: any) => {
-          if(element) {
-            return this.jobService.openElement(element);
-          } else {
-            // removed / doesn't exist
-          }
-        });
+      let match = fragRe.exec(frag);
+      if(match) {
+        let [_, kind, id] = match;
+        return this.jobService.openElement(id, kind);
+      } else if (typeof frag === 'string' && frag.startsWith('new')) {
+        return this.jobService.selectedElementSubject.next(null);
       }
     });
   }
@@ -131,6 +116,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
 
   ngOnDestroy() {
     this.jobSubscription.unsubscribe();
+    this.nestSubscription.unsubscribe();
   }
 
   closeOpenElement(element) {

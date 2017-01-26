@@ -25,7 +25,7 @@ class PartCatalog {
 import { FolderElement, ComponentElement, Collection } from '../models';
 
 @Injectable()
-export class SearchService implements Resolve<HierarchyNode<any>> {
+export class SearchService implements Resolve<any> {
   public query: string;
   
   // used here because value may not be immediately available.  could use behaviorsubject([]) instead
@@ -65,29 +65,25 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
 
       } else {
         let getJobs = this.elementService.getJobs();
-        return Observable.fromPromise(getJobs).flatMap(subject => {
-          return subject.flatMap(jobs => {
-            return Observable.combineLatest(...jobs).map(_jobs => {
-              let root = {
-                name: 'Create New Job',
+        return Observable.fromPromise(getJobs).map(jobs => {
+          let root = {
+            name: 'Create New Job',
+            url: {
+              path: '/jobs'
+            },
+            type: 'job',
+            children: jobs.map(_job => {
+              return {
+                name: '... based on ' + _job.name,
                 url: {
-                  path: '/jobs'
+                  path: '/jobs',
+                  fragment: _job.id
                 },
-                type: 'job',
-                children: _jobs.map(_job => {
-                  return {
-                    name: '... based on ' + _job.name,
-                    url: {
-                      path: '/jobs',
-                      fragment: _job.id
-                    },
-                    type: 'job'
-                  };
-                })
+                type: 'job'
               };
-              return D3.hierarchy(root);
-            });
-          });
+            })
+          };
+          return D3.hierarchy(root);
         });
       }
     });
@@ -98,9 +94,7 @@ export class SearchService implements Resolve<HierarchyNode<any>> {
   }
 
   resolve() {
-    /*
     if(!this.jobSub) this.startListening();
-    */
     return Promise.resolve();
   }
 

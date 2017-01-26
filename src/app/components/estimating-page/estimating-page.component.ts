@@ -39,9 +39,8 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       this.jobSubject = jobSubject;
       this.nestSubject = nestSubject;
 
-      this.treesSubject = treesSubject;
-
-      this.hostReady.switchMap(ready => ready ? this.treesSubject.switchMap(this.treesSubjectUpdate.bind(this)): Observable.never()).subscribe();
+      (this.treesSubject = treesSubject).withLatestFrom(this.groupBySubject).take(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
+      Observable.combineLatest(this.treesSubject, this.groupBySubject).skip(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
       
     });
   }
@@ -52,7 +51,9 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
     this.hostReady.next(true);
   }
 
-  treesSubjectUpdate(trees) {
+  treesSubjectUpdate([nodes, groupBy]) {
+    return this.treeUpdate(nodes, groupBy);
+    /*
     if(this.host == null) return Observable.never();
     return Observable.zip(...Object.keys(trees).map(name => trees[name].filter(x=>x))).combineLatest(this.jobSubject).switchMap(([nodes, job]:[HierarchyNode<any>[], Collection]) => {
 
@@ -68,6 +69,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       });
 
     });
+    */
   }
 
   treeUpdate(data, groupBy) {

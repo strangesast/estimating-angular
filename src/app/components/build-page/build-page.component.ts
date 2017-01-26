@@ -1,7 +1,7 @@
 import {
   Input,
-  Component,
   OnInit,
+  Component,
   OnDestroy,
   OnChanges,
   ViewChild
@@ -18,10 +18,9 @@ import {
 
 import { Nest } from 'd3';
 
+import { NestConfig, Collection, Filter } from '../../models';
 import { NestComponent } from '../nest/nest.component';
-
 import { JobService } from '../../services/job.service';
-import { ChildElement, FolderElement, ComponentElement, NestConfig, Collection, TreeConfig, Filter } from '../../models';
 
 function methodToSymbol(name: string) {
   switch(name) {
@@ -34,6 +33,25 @@ function methodToSymbol(name: string) {
     default:
       return name;
   }
+}
+
+function flattenFilters(config) {
+  let aa = config.filters.map(f => Object.assign({}, f, { affects: ['all'] }));
+  let af = config.folders.order.map(name => config.folders.filters[name].map(f => Object.assign({}, f, { affects: [name] })));
+  let ac = config.component.filters.map(f => Object.assign({}, f, { affects: ['component'] }));
+
+  let filters = [].concat(aa, ...af, ac);
+  for(let i = 0; i < filters.length; i++) {
+    let f = filters[i];
+    let other = filters.filter(_f => (_f != f) && (_f.type == f.type && _f.value == f.value));
+    for(let j = 0; j < other.length; j ++) {
+      let v = other[j];
+      f.affects.push(v.affects[0]);
+      filters.splice(i, 1)
+      i--;
+    }
+  }
+  return filters;
 }
 
 @Component({
@@ -50,16 +68,10 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private filterSuggestionsSubject: BehaviorSubject<any[]> = new BehaviorSubject([]);
   private filterFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  //private nestEnabled: boolean = false;
-  private folderEnabled: string = '';
-
-  private trees: any[];
-  private treesSubject: BehaviorSubject<any>;
-
   public filters: Filter[];
 
   public nest: { entries: any[], keys: any[], config: NestConfig };
-  private nestConfig: NestConfig;
+  public nestConfig: NestConfig;
   private nestConfigSubject: BehaviorSubject<NestConfig>;
   private nestSubject: BehaviorSubject<any>
 
@@ -74,84 +86,29 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.route.parent.data.subscribe(({ job: { collection, collectionSubject, nestConfigSubject, nestSubject } }) => {
-      this.jobSubject = collectionSubject;
+    this.route.parent.data.subscribe(({ job: { collection, collectionSubject, nestConfigSubject, nestSubject, editWindowsEnabled } }) => {
+      editWindowsEnabled.next(true);
+
       this.job = collection;
-      this.jobSubject.skip(1).subscribe(job => this.job = job);
+      this.jobSubscription = (this.jobSubject = collectionSubject).skip(1).subscribe(job => this.job = job);
 
-      this.nestConfigSubject = nestConfigSubject;
-      this.nestConfigSubject.subscribe(nestConfig => {
-        let aa = nestConfig.filters.map(f => Object.assign({}, f, { affects: ['all'] }));
-        let af = (<any>nestConfig.folders).order(name => nestConfig.folders.filters[name].map(f => Object.assign({}, f, { affects: [name] })));
-        let ac = nestConfig.component.filters.map(f => Object.assign({}, f, { affects: ['all'] }));
-
-        let filters = [].concat(aa, ...af, ac);
-        for(let i = 0; i < filters.length; i++) {
-          let f = filters[i];
-          let other = filters.filter(_f => (_f != f) && (_f.type == f.type && _f.value == f.value));
-          for(let j = 0; j < other.length; j ++) {
-            let v = other[j];
-            f.affects.push(v.affects[0]);
-            filters.splice(i, 1)
-            i--;
-          }
-        }
-        console.log('filters', filters);
+      // filter / config
+      (this.nestConfigSubject = nestConfigSubject).subscribe(nestConfig => {
+        this.filters = flattenFilters(nestConfig);
         this.nestConfig = nestConfig;
       });
+      this.filterForm = this.formBuilder.group({ query: '' });
 
-      this.nestSubject = nestSubject;
-      this.nestSubject.subscribe(nest => this.nest = nest);
-    });
-    /*
-    console.log('data', this.route.parent.data);
-    this.route.parent.data.subscribe(({job: { job: jobSubject, nest: nestSubject, nestConfig, trees }}) =>{
-      this.nestConfigSubject = nestConfig;
-      console.log('nestconfig', nestConfig);
-      this.nestConfigSubject.subscribe(config => {
-        let folderFilters = config.folders.order.map(name => config.folders.filters[name].map(f => {
-          f.affects = [name];
-          return f;
-        })).reduce((a, b) => a.concat(b), []);
-        let componentFilters = config.component.filters.map(f => {
-          f.affects = ['component'];
-          return f;
-        });
-        let generalFilters = config.filters.map(f => {
-          f.affects = ['all'];
-          return f;
-        });
-        this.filters = [].concat(
-          componentFilters,
-          folderFilters,
-          generalFilters
-        );
-        this.nestConfig = config
-      });
+      let delayFilterFocused = this.filterFocused.switchMap(b => b ? Observable.of(b) : Observable.of(b).delay(500)).distinctUntilChanged(); // delay a bit if unfocusing
+      let filterInput = this.filterForm.valueChanges.debounceTime(100);
+      Observable.combineLatest(delayFilterFocused, filterInput, nestConfigSubject).switchMap(this.queryFilter.bind(this)).subscribe(this.filterSuggestionsSubject)
 
-      this.filterForm = this.formBuilder.group({
-        query: ''
-      });
-
-      Observable.combineLatest(
-        this.filterFocused.switchMap(b => b ? Observable.of(b) : Observable.of(b).delay(500)).distinctUntilChanged(), // delay a bit if unfocusing
-        this.filterForm.valueChanges.debounceTime(100),
-        this.nestConfigSubject
-      ).switchMap(this.queryFilter.bind(this)).subscribe(this.filterSuggestionsSubject)
-
-      console.log('fsubject', this.filterSuggestionsSubject);
       this.filterSuggestionsSubject.subscribe(arr => this.filterSuggestions = arr);
 
-      this.nestSubject = nestSubject;
-      this.jobSubject = jobSubject;
-      this.jobSubscription = this.jobSubject.subscribe(job => {
-        this.job = job;
-      }); this.treesSubject = trees;
-      this.treesSubject.subscribe((trees) => {
-        this.trees = trees;
-      });
+
+      // nest
+      (this.nestSubject = nestSubject).subscribe(nest => this.nest = nest);
     });
-    */
   }
 
   ngOnDestroy() {
@@ -246,10 +203,10 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
       arr.unshift(...props.map(prop => ['greaterThan', 'lessThan', 'equal'].map(method => {
         return { type: 'property', property: prop, method, value: query, affects: ['component'], display: [prop, methodToSymbol(method)].join(' ') }
-      })).reduce((a, b)=>a.concat(b)));
+      })).reduce((a, b) => a.concat(b)));
     }
 
-    let emptyFolders = { type: 'emptyFolders', display: 'show empty folders', value: true, affects: config.folders.order };
+    let emptyFolders = { type: 'emptyFolders', display: 'show empty folders', value: true, affects: config.folders.order.filter(n => config.folders.enabled[n]) };
     if(emptyFolders.display.includes(query)) arr.unshift(emptyFolders);
 
     return Observable.of(arr);

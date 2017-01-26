@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ComponentElement, ChildElement, FolderElement, Collection } from '../models';
+import { ComponentElement, ChildElement, FolderElement, LocationElement, Collection } from '../models';
 
 @Pipe({
   name: 'classToString'
@@ -9,6 +9,8 @@ export class ClassToStringPipe implements PipeTransform {
   transform(value: any, args?: any): any {
     if (typeof value === 'string') {
       switch(value) {
+        case 'location':
+          return LocationElement;
         case 'component':
           return ComponentElement;
         case 'child':

@@ -145,13 +145,16 @@ export class ElementService implements Resolve<any> {
     if(this.updateSubjectSub) throw new Error('already initialized');
     this.updateSubjectSub = this.updateSubject.switchMap(elements => {
       // if updateSubjct updated before finishing save bad things happen
+      return Observable.never();
+      /*
       return Observable.merge(...elements).flatMap(element => {
         // TODO: improve this.  should change save state, save, then reset to correct savestate
         //return saveRecordAs(this.prevDb, element);
         let storeName = element.constructor.store;
         let db = this.db;
-        return Observable.fromPromise(db[storeName].put(element));
+        return Observable.fromPromise(db[storeName].put(element.clean()));
       });
+      */
     }).subscribe();
   }
 
@@ -361,7 +364,7 @@ export class ElementService implements Resolve<any> {
 
       } else {
         (<(string|number)[]>location.children).push(child.id);
-        await db.locationElements.put(location);
+        await db.locationElements.put(location.clean());
       }
 
       return child;
@@ -418,7 +421,7 @@ export class ElementService implements Resolve<any> {
 
       parentFolder.children.push(folder.id);
 
-      await db.folderElements.put(parentFolder);
+      await db.folderElements.put(parentFolder.clean());
 
       return folder;
     });
@@ -454,7 +457,7 @@ export class ElementService implements Resolve<any> {
         for(let i = 0; i < folderTypes.length; i++) {
           let type = folderTypes[i];
           let rootId = collection.folders.roots[type];
-          let children = folders.filter(f => f.type == type);
+          let children = folders.filter(f => f.type == type).map(f => f.id);
           await db.folderElements.update(rootId, { children });
         }
 
@@ -480,7 +483,10 @@ export class ElementService implements Resolve<any> {
 
         return { folders, locations, children, components };
       }
-    );
+    ).catch(err => {
+      console.error(err);
+      throw err;
+    });
   }
 
   createJob(
@@ -531,7 +537,7 @@ export class ElementService implements Resolve<any> {
       }
 
       // save job with updated folder roots
-      await db.collections.put(job)
+      await db.collections.put(job.clean())
       let jobs = this.jobsSubject.getValue();
       this.jobsSubject.next(jobs.concat(bs));
       bs.next(job);
@@ -709,22 +715,6 @@ export class ElementService implements Resolve<any> {
     }).debounceTime(100);
   }
 
-  /*
-  resolveChildren(root) {
-    if (!Array.isArray(root.children) || root.children.length === 0) {
-      return root;
-    }
-    return Promise.all(root.children.filter(child=>typeof child === 'string').map(childId => this.loadElement(FolderElement, childId).then(child => {
-      let val = child.getValue();
-      let i = root.children.indexOf(val.id);
-      root.children.splice(i, 1, val);
-      return this.resolveChildren(val);
-    }))).then(() => {
-      return root;
-    });
-  }
-  */
-
   async resolveChildren(root: FolderElement|ComponentElement|LocationElement) {
     if(!root.children || !root.children.length) return root;
     let db = this.db;
@@ -736,6 +726,49 @@ export class ElementService implements Resolve<any> {
         let child = await table.get(children[i]);
         children.splice(i, 1, child);
         await this.resolveChildren(child); // recurse
+      }
+    }
+    return root;
+  }
+
+  async resolveChildElements(job: Collection, root: FolderElement|ComponentElement|ChildElement, maxDepth = 10) {
+    if(maxDepth < 1) return root;
+    let db = this.db;
+    if (root instanceof FolderElement) {
+      // get folder children and children of locations matching folder
+      if(root.children && root.children.length) {
+        root.children = (await db.folderElements
+          .where('id')
+          .anyOf(root.children.filter(c => typeof c === 'string'))
+          .toArray()).concat(root.children.filter(c => typeof c !== 'string'))
+      }
+
+      let i = job.folders.order.indexOf(root.type);
+      if (i == -1) throw new Error('invalid folder type for this job');
+      let keyName = 'folder' + i;
+      let locs = await db.locationElements
+        .where({ [keyName]: root.id })
+        .filter(loc => !!loc.children && !!loc.children.length)
+        .toArray();
+      let childIds: string[] = locs.map(loc => <string[]>loc.children).reduce((a, b) => a.concat(b), []);
+
+      let children = await db.childElements.where('id').anyOf(childIds).toArray();
+
+      root.children.push(...children);
+      await Promise.all(root.children.map(child => this.resolveChildElements(job, child, maxDepth - 1)));
+
+    } else if (root instanceof ChildElement) {
+      // resolve data ref
+      root.data = await db.componentElements.get(<any>root.ref);
+      await this.resolveChildElements(job, root.data, maxDepth-1);
+
+    } else if (root instanceof ComponentElement) {
+      if(root.children && root.children.length) {
+        root.children = (await db.childElements
+          .where('id')
+          .anyOf((<any[]>root.children).filter(c => typeof c === 'string'))
+          .toArray()).concat((<any[]>root.children).filter(c => typeof c !== 'string'))
+        await Promise.all(root.children.map(child => this.resolveChildElements(job, child, maxDepth - 1)));
       }
     }
     return root;
@@ -908,7 +941,7 @@ export class ElementService implements Resolve<any> {
     if (i == -1) throw new ValidationError('invalid folder type for this job "'+rootFolder.type+'"');
     let getLocations: Promise<LocationElement[]> = getFolderTree.then(node => {
       let folderIds = node.descendants().map(f => f.data.id);
-      let keyName = 'folder' + (i + 1);
+      let keyName = 'folder' + i;
       return retrieveRecordsInAs(this.prevDb, LocationElement, folderIds, keyName);
     });
     // load children of those locations
@@ -965,6 +998,7 @@ export class ElementService implements Resolve<any> {
     });
   }
 
+  /*
   buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
     let subject = new BehaviorSubject(null);
     rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
@@ -981,6 +1015,7 @@ export class ElementService implements Resolve<any> {
     }).subscribe(subject);
     return subject;
   }
+  */
 
   loadRootFolderNodes(folderIds): Promise<HierarchyNode<FolderElement>[]> {
     return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.prevDb, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
@@ -1020,6 +1055,24 @@ export class ElementService implements Resolve<any> {
     });
   }
 
+  buildTreesSubject(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<NestConfig>) {
+    return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
+      return this.buildTrees(job, config);
+    });
+  }
+
+  async buildTrees(job: Collection, config: NestConfig) {
+    let ids = config.folders.order.filter(n => config.folders.enabled[n]).map(n => config.folders.roots[n]||job.folders.roots[n]);
+    let db = this.db;
+    let nodes = await Promise.all(ids.map(async(id) => {
+      let rootFolder = await db.folderElements.get(id);
+      await this.resolveChildElements(job, rootFolder);
+      return D3.hierarchy(rootFolder);
+    }));
+
+    return nodes;
+  }
+
   buildNest(job: Collection, config: NestConfig) {
     let db = this.db;
     return db.transaction('r', db.folderElements, db.locationElements, db.childElements, db.componentElements, async() => {
@@ -1038,15 +1091,48 @@ export class ElementService implements Resolve<any> {
       let pairs = product(nodes.map(node => node.descendants().map(n => n.data.id)));
 
       // key name like "[folder0+folder1]"
-      let key = '[' + job.folders.order.map((n, i) => 'folder' + i).reduce((a, b) => a + '+' + b) + ']';
+      let folders = job.folders.order;
+      let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + 0;
 
       // get locations at those intersections
       let locations = (<LocationElement[]>(await Promise.all(pairs.map(pair =>
-        db.locationElements.where({ [key] : pair }).toArray())))).reduce((a, b) => a.concat(b), []);
+        db.locationElements.where({ [keyName] : pair.length > 1 ? pair : pair[0] }).toArray())))).reduce((a, b) => a.concat(b), []);
 
       // resolve children for each location, assign 'folders' property for nest
       let children = (<ChildElement[]>(await Promise.all(locations.map(location =>
-        db.childElements.where('id').anyOf(location.children).toArray().then(_children =>
+        db.childElements.where('id').anyOf(location.children).filter(child => {
+          return config.component.filters.every(f => {
+            switch (f.type) {
+              case 'property':
+                let prop = f.property;
+                if (child[prop] === undefined) {
+                  return false;
+                }
+                // TODO: replace these with dexie methods
+                switch (f.method) {
+                  case 'startsWith':
+                    return child[prop].startsWith(f.value);
+                  case 'includes':
+                    return child[prop].includes(f.value);
+                  case 'endsWith':
+                    return child[prop].endsWith(f.value);
+                  case 'greaterThan':
+                    if (isNaN(f.value)) return false;
+                    return Number(f.value) < Number(child[prop]);
+                  case 'lessThan':
+                    if (isNaN(f.value)) return false;
+                    return Number(f.value) > Number(child[prop]);
+                  case 'equal':
+                    if (isNaN(f.value)) return false;
+                    return Number(f.value) == Number(child[prop]);
+                  default:
+                    return true;
+                }
+              default:
+                return true;
+            }
+          });
+        }).toArray().then(_children =>
           _children.map(child =>
             Object.assign(child, { folders: location.folders})
           )
@@ -1069,51 +1155,5 @@ export class ElementService implements Resolve<any> {
     return _config.withLatestFrom(_collection).switchMap(([config, collection]) => {
       return this.buildNest(collection, config);
     });
-  }
-
-  /*
-  buildNest(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<NestConfig>) {
-    return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
-      let rootFolderIds = config.folders.order.map(name => config.folders.roots[name]||job.folders.roots[name]);
-      let promise = this.loadRootFolderNodes(rootFolderIds).then(nodes => {
-        return this.loadChildrenAtRoot(nodes, config.filters.concat(config.component.filters).filter(f => f.type == 'property')).then(children => {
-          let nodesEnabled = config.folders.order.map(name => config.folders.enabled[name]);
-          return {
-            keys: nodes.filter((n, i) => nodesEnabled[i]),
-            entries: children,
-            config
-          };
-        });
-      });
-      return Observable.fromPromise(promise);
-    });
-  }
-  */
-
-  buildTrees(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<any>) {
-    let subject = new ReplaySubject(1);
-    let roots = {};
-    configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
-      // detect root prop add/remove
-      let n = Object.keys(Object.assign({}, job.folders.roots, config.folders.roots));
-      let m = Object.keys(roots);
-      let rootPropsChanged = n.some(el=>m.indexOf(el) === -1) || m.some(el=>n.indexOf(el) === -1);
-      if(rootPropsChanged) {
-        n.forEach(name => {
-          let idSubject = configSubject.map(_config => _config.folders.roots[name]||job.folders.roots[name]);
-          roots[name] = this.buildTreeSubject(jobSubject, idSubject);
-        });
-        Object.keys(roots).forEach(_n => {
-          if(n.indexOf(_n) == -1) {
-            delete roots[_n];
-          }
-        });
-        return Observable.of(roots);
-
-      } else {
-        return Observable.never();
-      }
-    }).subscribe(subject);
-    return subject;
   }
 }
