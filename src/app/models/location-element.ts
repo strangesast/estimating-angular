@@ -13,6 +13,17 @@ const FOLDER_NAMES = ['folder1', 'folder2'];
  */
 export class LocationElement extends BaseElement {
   static readonly store = 'locationElements';
+  static readonly keys = [
+    '$$id',
+    'collection',
+    '&*children',
+    '[folder0+folder1]',
+    '[folder0+folder2]',
+    '[folder1+folder2]',
+    'folder0',
+    'folder1',
+    'folder2'
+  ];
   static excluded: string[] = ['commit', 'open', 'saveState'];
 
   static fromJSON(obj) {
@@ -20,7 +31,7 @@ export class LocationElement extends BaseElement {
     return Object.assign(location, obj);
   }
 
-  get folders() {
+  get folders(): (string|number)[] {
     let i = 0, folders = [];
     while(i < 10) {
       let id = this['folder' + i];
@@ -33,7 +44,7 @@ export class LocationElement extends BaseElement {
     return folders;
   }
 
-  set folders(arr: string[]) {
+  set folders(arr: (string|number)[]) {
     for(let i = 0; i < arr.length; i++) {
       this['folder' + i] = arr[i];
     }
@@ -44,7 +55,7 @@ export class LocationElement extends BaseElement {
     description,
     public collection: string|number,
     public children: (number|string|ChildElement)[],
-    folders: string[], // same order as collection.folders.order
+    folders: (string|number)[], // same order as collection.folders.order
     public hash?: string,
     public saveState: SaveState = 'unsaved'
   ) {
@@ -52,5 +63,18 @@ export class LocationElement extends BaseElement {
     for(let i = 0; i < folders.length; i++) {
       this['folder' + i] = folders[i];
     }
+  }
+
+  clean() {
+    let location = Object.create(LocationElement.prototype);
+    ['id', 'name', 'description', 'collection', 'folders'].forEach((name) => {
+      location[name] = this[name];
+    });
+    location.children = this.children ? this.children.filter(child => (typeof child === 'string') || (child instanceof ChildElement)).map((child:any) => {
+      if (typeof child === 'string') return child;
+      if (!child.id) throw new Error('cant save child on location without id');
+      return child.id;
+    }) : [];
+    return location;
   }
 }

@@ -1,8 +1,14 @@
 @off-white: #D5D8DD;
 :host {
-  display: block;
-  background: white;
+  //background: white;
   color: black;
+  top: 0;
+  left: 0;
+  width: 100%;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  display: block;
 }
 :host:first-child > li {
   //border-top: 1px solid @off-white;
@@ -68,9 +74,7 @@
 [hidden] {
   visibility: hidden;
 }
-
 :host-context(.dragging) {
-  background: blue;
   * {
     pointer-events: none;
   }

@@ -47,7 +47,7 @@ export class JobService implements Resolve<Promise<any>> {
   public editWindowsEnabled: BehaviorSubject<boolean>;
 
   private openElements: BehaviorSubject<any>;
-  public  selectedElementSubject: BehaviorSubject<any>;
+  public selectedElementSubject: BehaviorSubject<string>;
 
   constructor(
     private db: DataService,
@@ -111,7 +111,7 @@ export class JobService implements Resolve<Promise<any>> {
 
     // for windowed elements
     let openElements = this.openElements = new BehaviorSubject({});
-    let selectedElementSubject = this.selectedElementSubject = new BehaviorSubject(null);
+    let selectedElementSubject = this.selectedElementSubject = new BehaviorSubject(undefined);
 
     let editWindowsEnabled = this.editWindowsEnabled = new BehaviorSubject(false);
 
@@ -166,8 +166,10 @@ export class JobService implements Resolve<Promise<any>> {
 
     let elements = this.openElements.getValue();
 
+
     if (element.id in elements) {
       elements[element.id].config.open = true;
+      this.selectedElementSubject.next(element.id);
       return elements[element.id];
     }
 
@@ -188,7 +190,7 @@ export class JobService implements Resolve<Promise<any>> {
       element: bs
     }
     this.openElements.next(elements);
-    this.selectedElementSubject.next(bs);
+    this.selectedElementSubject.next(element.id);
     return bs;
   }
 
@@ -200,13 +202,14 @@ export class JobService implements Resolve<Promise<any>> {
 
     return db.transaction('rw', db.folderElements, db.locationElements, db.childElements, db.componentElements, async() => {
       let currentPosition;
-      if (what instanceof ChildElement || what instanceof FolderElement) {
+      if (what instanceof ChildElement) {
         if (!what.id) {
           currentPosition = null;
         } else {
           currentPosition = await db.locationElements.get({ children: what.id });
         }
       }
+
       if (what instanceof FolderElement) {
         if (!what.id) {
           currentPosition = null;
@@ -216,9 +219,12 @@ export class JobService implements Resolve<Promise<any>> {
       }
 
       if (to instanceof FolderElement) {
+
         if (what instanceof ChildElement) {
           let i = job.folders.order.indexOf(to.type);
+          if (i == -1) throw new Error('invalid job folder state');
           let id = to.id;
+
 
           if (currentPosition) {
             let folders = currentPosition.folders;
@@ -234,7 +240,9 @@ export class JobService implements Resolve<Promise<any>> {
             if (currentPosition.id == newPosition.id) return;
 
             newPosition.children.push(what.id);
-            currentPosition.children.splice(currentPosition.children.indexOf(what.id), 1);
+            let childIndex = currentPosition.children.indexOf(what.id);
+            if(childIndex == -1) throw new Error('malformed');
+            currentPosition.children.splice(childIndex, 1);
 
             // save previous first (else children key error)
             await db.locationElements.put(currentPosition.clean());
@@ -254,8 +262,7 @@ export class JobService implements Resolve<Promise<any>> {
             }
 
             if(!what.id) {
-              let id = await db.childElements.add(what);
-              what.id = id;
+              what.id = await db.childElements.add(what);
             }
 
             newPosition.children.push(what.id);
@@ -263,12 +270,39 @@ export class JobService implements Resolve<Promise<any>> {
 
             return true;
           }
+        } else if (what instanceof ComponentElement) {
+          if (!what.id) {
+            what.collection = to.collection;
+            what.id = await db.componentElements.add(what);
+          }
+
+          let child = new ChildElement(what.name, what.description, what.collection, what.id);
+          child.id = await db.childElements.add(child);
+
+          let folders = job.orderedFolders;
+          let i = job.folders.order.indexOf(to.type);
+          folders[i] = to.id;
+
+          let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
+          let newPosition = await db.locationElements.get({ [keyName]: folders });
+          if (!newPosition) {
+            newPosition = new LocationElement(undefined, undefined, job.id, [], folders);
+            await db.locationElements.add(newPosition);
+          }
+
+          newPosition.children.push(child.id);
+          await db.locationElements.put(newPosition.clean());
+
+          return true;
+
         } else if (what instanceof FolderElement) {
           if (currentPosition) {
             // already in desired position
             if (currentPosition.id == to.id) return;
 
-            currentPosition.children.splice(currentPosition.children.indexOf(what.id), 1);
+            let childIndex = currentPosition.children.indexOf(what.id);
+            if(childIndex == -1) throw new Error('malformed');
+            currentPosition.children.splice(childIndex, 1);
             to.children.push(what.id);
 
             await db.folderElements.put(currentPosition.clean());
@@ -276,8 +310,9 @@ export class JobService implements Resolve<Promise<any>> {
             
           } else {
             if(!what.id) {
-              let id = await db.folderElements.add(what);
-              what.id = id;
+              what.type = to.type;
+              what.collection = to.collection;
+              what.id = await db.folderElements.add(what);
             }
             to.children.push(what.id);
             await db.folderElements.put(to.clean());
@@ -285,6 +320,48 @@ export class JobService implements Resolve<Promise<any>> {
             return true;
 
           }
+        }
+      } else if (to instanceof ChildElement) {
+        if(!(what instanceof ChildElement || what instanceof ComponentElement)) throw new Error('invalid drag');
+
+        let desiredPosition: LocationElement|ComponentElement = (await db.locationElements.get({ children: to.id })) || (await db.componentElements.get({ children: to.id }));
+        if(!desiredPosition) {
+          throw new Error('invalid or malformed destination');
+        }
+
+        if (what instanceof ChildElement) {
+          if (!what.id) {
+            what.collection = to.collection;
+            what.id = await db.childElements.add(what);
+          }
+          
+          if (currentPosition.id == desiredPosition.id) return;
+
+          if (currentPosition) {
+            let childIndex = currentPosition.children.indexOf(what.id);
+            if(childIndex == -1) throw new Error('malformed');
+            currentPosition.children.splice(childIndex, 1)
+            await db[(<any>currentPosition.constructor).store].put(currentPosition);
+          }
+
+          (<(string|number)[]>desiredPosition.children).push(what.id);
+          await db[(<any>desiredPosition.constructor).store].put(desiredPosition);
+
+          return true;
+
+        } else if (what instanceof ComponentElement) {
+          if(!what.id) {
+            what.collection = to.collection;
+            what.id = await db.componentElements.add(what);
+          }
+
+          let child = new ChildElement(what.name, what.description, what.collection, what.id);
+          child.id = await db.childElements.add(child);
+
+          (<(string|number)[]>desiredPosition.children).push(child.id);
+          await db[(<any>desiredPosition.constructor).store].put(desiredPosition);
+
+          return true;
         }
       }
 
@@ -404,5 +481,55 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   search(query) {
+  }
+
+  async getParentFolderCandidates() {
+    let db = this.db;
+    let folders = await db.folderElements.toArray()
+
+    return folders.map(f => ({ value: f.id, key: f.name, type: f.type }));
+  }
+
+  async getParentChildCandidates() {
+    let db = this.db;
+    let children = await db.childElements.toArray();
+
+    return children.map(f => ({ value: f.id, key: f.name }));
+  }
+
+  async getComponentCandidates() {
+    let db = this.db;
+    let components = await db.componentElements.toArray();
+
+    return components.map(c => ({ value: c.id, key: c.name }));
+  }
+
+  async createElement(props, Class) {
+    let job = this.collectionSubject.getValue();
+    let db = this.db;
+    let parent;
+    if (Class === FolderElement) {
+      if (props.parent != null) {
+        parent = await db.folderElements.get(props.parent);
+        if(parent == null) throw new Error('parent with that id does not exist');
+        if(parent.type !== props.type) throw new Error('incompatible parent folder type');
+      }
+    } else if (Class === ComponentElement) {
+      if (props.parent != null) {
+        parent = await db.childElements.get(props.parent);
+        if(parent == null) throw new Error('parent with that id does not exist');
+      }
+    }
+    let instance = Class.fromJSON(props).clean();
+    instance.collection = job.id;
+
+    instance.id = await db[Class.store].add(instance);
+
+    if (parent) {
+      parent.children.push(instance.id);
+      await db[parent.constructor.store].put(parent);
+    }
+
+    return instance;
   }
 }

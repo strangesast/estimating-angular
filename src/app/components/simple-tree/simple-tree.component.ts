@@ -43,6 +43,7 @@ let cnt = 0;
 })
 export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() rootNode: ReplaySubject<HierarchyNode<any>|HierarchyNode<any>[]>;
+  @Input() config: any;
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
 
   //private nodesSubject: ReplaySubject<HierarchyNode<any>[]> = new ReplaySubject(1);
@@ -84,14 +85,6 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.dropEvt))).subscribe(this.dropEvt);
 
-    /*
-    this.childComponents.switchMap(
-      (components:any[])=>Observable.merge(...components.map(
-        ({instance: component})=>component.dragEmitter
-      )))
-      .subscribe(this.drag); // on childcomponents update, update drag listeners
-    */
-
     this.componentCollapse.withLatestFrom(this.rootNode).subscribe(([el, node]: [any, any]) => {
       let par = getNodeParent(el);
       if(Array.isArray(node)) {
@@ -123,6 +116,9 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     let inputProviders = [{
       provide: 'data',
       useValue: data
+    }, {
+      provide: 'config',
+      useValue: this.config
     }];
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
     let injector = ReflectiveInjector.fromResolvedProviders(resolvedInputs, this._parent.parentInjector);

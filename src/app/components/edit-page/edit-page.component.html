@@ -1,17 +1,55 @@
 <div class="navigation">
   <ul class="tabs">
-    <li class="hoverlink" [class.active]="openElements[id].element == selectedElement" *ngFor="let id of openElementIds" [routerLink]="" [fragment]="(openElements[id].element.getValue() | classToString) + '/' + id">
-      <span class="fa fa-remove"></span>
+    <li class="hoverlink" [class.active]="id == selectedElement" *ngFor="let id of openElementIds" [routerLink]="" [fragment]="(openElements[id].element.getValue() | classToString) + '/' + id">
+      <span class="fa fa-remove hoverlink" (click)="closeOpenElement(openElements[id])"></span>
       <span class="fa fa-lg" [ngClass]="typeOf(openElements[id].element | async) | typeToClass"></span>
       <span>{{ (openElements[id].element | async).name }}</span>
-    <li class="hoverlink" [class.active]="selectedElement == newElement" [routerLink]="" fragment="new">
+    <li class="hoverlink" [class.active]="selectedElement === null" [routerLink]="" fragment="new">
       <span class="fa fa-lg fa-plus"></span>
       <span>Create New</span>
   </ul>
 </div>
 <div class="main">
-  <div *ngIf="!selectedElement">
+  <div *ngIf="selectedElement === undefined">
     <p>No element has been selected.  Search for one in on the left or create a new one.</p>
   </div>
-  <app-edit-window *ngIf="selectedElement" [isWindow]="false" [element]="selectedElement"></app-edit-window>
+  <app-edit-window *ngIf="selectedElement" [isWindow]="false" [element]="openElements[selectedElement].element"></app-edit-window>
+  <!--<app-edit-window *ngIf="selectedElement === null" [isWindow]="false" [element]="newElement"></app-edit-window>-->
+  <div *ngIf="selectedElement === null">
+    <h1>Create New</h1>
+    <p>Choose one of the following types.</p>
+
+    <div class="new-types">
+      <button [disabled]="newElementType == 'folder'" (click)="setNewElementType('folder')">Folder</button>
+      <button [disabled]="newElementType == 'component'" (click)="setNewElementType('component')">Component</button>
+      <button [disabled]="newElementType == 'child'" (click)="setNewElementType('child')">Child</button>
+      <button (click)="cancelNew()">Cancel</button>
+    </div>
+    <form *ngIf="newElementForm" [formGroup]="newElementForm" (ngSubmit)="onSubmit(newElementForm)">
+      <div class="form-group">
+        <div class="form-group-title">New {{ newElementType[0].toUpperCase() + newElementType.slice(1) }}</div>
+        <div class="form-control">
+          <label>Name:</label>
+          <input formControlName="name" type="text">
+          <small class="about">Identifying string.</small>
+        </div>
+        <div class="form-control">
+          <label>Description:</label>
+          <textarea formControlName="description"></textarea>
+          <small class="about">A useful description of the element.</small>
+        </div>
+        <div class="form-control" *ngFor="let input of inputs">
+          <label>{{ input.label }}</label>
+          <input *ngIf="input.type" [formControlName]="input.key" [type]="input.type">
+          <select *ngIf="input.options" [formControlName]="input.key">
+            <option *ngFor="let option of input.options" [value]="option.value">{{ option.key }}</option>
+          </select>
+          <small class="about" *ngIf="input.description">{{ input.description }}</small>
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty">Save</button>
+      <pre>{{ newElement | async | json }}</pre>
+    </form>
+  </div>
 </div>

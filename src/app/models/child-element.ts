@@ -1,5 +1,6 @@
 import { BaseElement } from './base-element';
 import { SaveState } from './save-state';
+import { IComponent } from './component-element';
 
 /*
  * ChildElement elements contain a reference to a ComponentElement and contextual information
@@ -7,8 +8,9 @@ import { SaveState } from './save-state';
  *
  */
 
-export class ChildElement extends BaseElement {
+export class ChildElement extends BaseElement implements IComponent {
   static readonly store = 'childElements';
+  static readonly keys = ['$$id', 'collection', 'name', 'qty', 'buy', 'sell'];
 
   static excluded: string[] = ['data', 'folders', 'saveState'];
 
@@ -17,12 +19,16 @@ export class ChildElement extends BaseElement {
     return Object.assign(child, obj);
   }
 
+  public sell = 0;
+  public buy = 0;
+
+
   constructor(
     name,
     description,
     public collection: string|number,
     public ref: string|number,
-    public qty: number,
+    public qty: number = 1,
     public _ref?: string|number,
     public data?: any,
     public folders?: string[], // location
@@ -33,7 +39,7 @@ export class ChildElement extends BaseElement {
 
   clean() {
     let child = Object.create(ChildElement.prototype);
-    ['id', 'name', 'description', 'collection', 'ref', 'qty', '_ref', '_id'].forEach((name) => {
+    ['id', 'name', 'description', 'collection', 'ref', 'qty', '_ref', '_id', 'buy', 'sell'].forEach((name) => {
       child[name] = this[name];
     });
     return child;

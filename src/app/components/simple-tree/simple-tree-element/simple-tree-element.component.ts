@@ -43,10 +43,13 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
 export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Input() public data: any = {};
   @Input() startAt: number = 0;
+  @Input() config: any;
   @Output() nameClicked = new EventEmitter();
   @Output() drag = new EventEmitter();
   @Output() collapse = new EventEmitter();
   @Output() dropEvt = new EventEmitter();
+
+  props: string[];
 
   fragment: string = null;
   draggable: boolean = false;
@@ -59,9 +62,13 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
     public classToStringPipe: ClassToStringPipe
   ) {
     this.data = this.injector.get('data');
+    this.config = this.injector.get('config');
   }
 
   ngOnInit() {
+    if(this.config && this.config.properties) {
+      this.props = this.config.properties;
+    }
     if((this.data.data instanceof FolderElement || this.data.data instanceof ChildElement) && (this.data.data && this.data.data.id)) {
       this.fragment = [this.classToStringPipe.transform(this.data.data), this.data.data.id].join('/');
     }

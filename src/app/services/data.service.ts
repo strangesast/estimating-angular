@@ -16,6 +16,8 @@ import {
 
 const DB_VERSION = 1;
 // use uuid ($$) for id
+let STORES = {};
+/*
 const STORES = {
   users:             'username, name',
   collections:       '$$id, &[owner.username+shortname]',
@@ -24,6 +26,10 @@ const STORES = {
   folderElements:    '$$id, collection, &*children, type',
   locationElements:  '$$id, collection, &*children, [folder0+folder1], [folder0+folder2], [folder1+folder2], folder0, folder1, folder2'
 };
+*/
+[User, Collection, ComponentElement, ChildElement, FolderElement, LocationElement].forEach(Class => {
+  STORES[Class.store] = Class.keys.join(', ');
+});
 
 // data retrieval, storage, undo/redo
 

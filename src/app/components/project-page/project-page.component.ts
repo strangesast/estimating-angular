@@ -92,8 +92,6 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.stats.buy =  nest.rollup(leaves => leaves.map((n:any) => n.sum(m => m.data ? m.data.buy  : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
         this.stats.sell = nest.rollup(leaves => leaves.map((n:any) => n.sum(m => m.data ? m.data.sell : 0)).reduce((a, b) => a + b.value, 0)).entries(entries);
       });
-
-
     });
 
     // open window on fragment change
@@ -104,6 +102,8 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         return this.jobService.openElement(id, kind);
       } else if (typeof frag === 'string' && frag.startsWith('new')) {
         return this.jobService.selectedElementSubject.next(null);
+      } else {
+        this.jobService.selectedElementSubject.next(undefined);
       }
     });
   }

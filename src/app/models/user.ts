@@ -6,6 +6,7 @@ export interface IUser {
 
 export class User implements IUser {
   static readonly store = 'users';
+  static readonly keys = ['username', 'name'];
 
   static fromJSON(obj) {
     let user = Object.create(User.prototype);

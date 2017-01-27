@@ -2,6 +2,7 @@ import {
   EventEmitter,
   OnChanges,
   Component,
+  OnDestroy,
   OnInit,
   Output,
   Input
@@ -23,13 +24,14 @@ import { ComponentElement, ChildElement, FolderElement } from '../../models';
     '[class.isWindow]': 'isWindow'
   }
 })
-export class EditWindowComponent implements OnInit, OnChanges {
+export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   @Input() config: any;
   @Input() element: BehaviorSubject<ComponentElement|FolderElement|ChildElement|null>;
   public _element: ComponentElement|FolderElement|ChildElement|null;
   public type: string = 'unknown';
   @Output() close = new EventEmitter();
 
+  @Input() isNew: boolean;
 
   private form: FormGroup;
   
@@ -41,40 +43,27 @@ export class EditWindowComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     let el = this.element;
-
     if(el) this.initElement(el);
-
-    let val:any = el ? el.getValue() : {};
-
-    if(val && val instanceof ChildElement) {
-      this.form = this.formBuilder.group({
-        name: [ val.name || '' ],
-        description: val.description || '',
-        qty: [ val.qty || null ]
-      });
-
-    } else {
-      this.form = this.formBuilder.group({
-        name: [ val.name || '' ],
-        description: val.description || ''
-      });
-
-    }
   }
 
   initElement(element) {
-    this.elementSub = element.switchMap(_element => {
-      if (_element instanceof ChildElement) {
-        return Observable.fromPromise(this.elementService.retrieveElement(ComponentElement, _element.ref).then((data: ComponentElement) => {
-          _element.data = data;
-          return _element;
-        }));
-      } else {
-        return Observable.of(_element)
-      }
-    }).subscribe(_element => {
+    return this.elementSub = element.subscribe(_element => {
       this._element = _element;
       this.type = _element instanceof FolderElement ? _element.type : _element instanceof ComponentElement ? 'component' : _element instanceof ChildElement ? 'child' : 'unknown';
+
+      if(_element && _element instanceof ChildElement) {
+        this.form = this.formBuilder.group({
+          name: [ _element.name || '' ],
+          description: _element.description || '',
+          qty: [ _element.qty || null ]
+        });
+
+      } else {
+        this.form = this.formBuilder.group({
+          name: [ _element.name || '' ],
+          description: _element.description || ''
+        });
+      }
     });
   }
 
@@ -106,6 +95,10 @@ export class EditWindowComponent implements OnInit, OnChanges {
   reset() {
     this.form.reset();
     this.form.patchValue(this.element.getValue());
+  }
+
+  ngOnDestroy() {
+    this.elementSub.unsubscribe();
   }
 
 }

@@ -14,6 +14,10 @@ export class WorkspaceComponent implements OnInit {
   results = new Subject();
   defaults = new Subject();
 
+  treeConfig = {
+    properties: ['name']
+  };
+
   searchForm: FormGroup;
 
   searchFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);
@@ -25,7 +29,7 @@ export class WorkspaceComponent implements OnInit {
       query: ''
     });
 
-    this.searchForm.valueChanges.debounceTime(100).startWith({query: ''}).switchMap(({query}) => {
+    this.searchForm.valueChanges.debounceTime(10).startWith({query: ''}).switchMap(({query}) => {
       if(query) {
         return this.searchService.search(query);
       } else {

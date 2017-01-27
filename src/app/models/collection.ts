@@ -24,6 +24,7 @@ export interface ICollection {
 
 export class Collection extends BaseElement implements ICollection {
   static readonly store = 'collections';
+  static readonly keys = ['$$id', '&[owner.username+shortname]', 'name'];
 
   static excluded: string[] = ['commit', 'hash', 'saveState'];
 
@@ -38,7 +39,7 @@ export class Collection extends BaseElement implements ICollection {
     return this.folders.roots ? this.folders.order.some(name => typeof this.folders.roots[name] === 'string') : false;
   }
 
-  get orderedFolders(): string[] {
+  get orderedFolders(): (string|number)[] {
     if (!this.folders.roots) return [];
     return this.folders.order.map(n => this.folders.roots[n]);
   }

@@ -6,6 +6,7 @@ import { HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
 import { ElementService } from '../services/element.service';
+import { DataService } from '../services/data.service';
 
 /*
 import { Http, Response, Headers } from '@angular/http';
@@ -32,11 +33,13 @@ export class SearchService implements Resolve<any> {
   public results: ReplaySubject<HierarchyNode<any>[]> = new ReplaySubject(1);
 
   private currentJob: BehaviorSubject<Collection> = new BehaviorSubject(null);
+  // TODO: replace with default filters for page
+  public currentTypes: BehaviorSubject<string[]> = new BehaviorSubject([]);
 
   private jobSub: Subscription;
   private resultObservable: Observable<any>;
 
-  constructor(private elementService: ElementService) { }
+  constructor(private elementService: ElementService, private db: DataService) { }
 
   startListening(): void {
     let jobPageSwitch:Observable<any> = this.currentJob.switchMap((job:Collection) => {
@@ -57,7 +60,7 @@ export class SearchService implements Resolve<any> {
           return [D3.hierarchy(root)];
         });
         let prom2 = Promise.resolve([
-          new ComponentElement('New Component', '', 0, 0, ''),
+          new ComponentElement('New Component', '', 0.0, 0.0, ''),
           new FolderElement('New Folder (phase)', '', 'phase', '', []),
           new FolderElement('New Folder (building)', '', 'building', '', [])
         ].map(n=>D3.hierarchy(n)));
@@ -102,12 +105,16 @@ export class SearchService implements Resolve<any> {
     this.currentJob.next(job);
   }
 
-  search(query) {
-    let arr = query.split('').map(str => {
-      return D3.hierarchy({
-        name: str
-      });
+  async search(query) {
+    let db = this.db;
+
+    let types = this.currentTypes.getValue();
+    let arr = (await Promise.all(types.map(name => db[name].where('name').startsWithIgnoreCase(query).distinct().toArray()))).reduce((a, b) => a.concat(b), []).sort((a, b) => {
+      return a.name.length > b.name.length ? 1 : -1;
+    }).map(element => {
+      return D3.hierarchy(element);
     });
-    return Observable.of(arr);
+
+    return arr;
   }
 }

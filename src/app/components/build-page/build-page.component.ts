@@ -20,6 +20,7 @@ import { Nest } from 'd3';
 
 import { NestConfig, Collection, Filter } from '../../models';
 import { NestComponent } from '../nest/nest.component';
+import { SearchService } from '../../services/search.service';
 import { JobService } from '../../services/job.service';
 
 function methodToSymbol(name: string) {
@@ -82,10 +83,12 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   constructor(
     private jobService: JobService,
     private route: ActivatedRoute,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private searchService: SearchService
   ) { }
 
   ngOnInit() {
+    this.searchService.currentTypes.next(['componentElements']);
     this.route.parent.data.subscribe(({ job: { collection, collectionSubject, nestConfigSubject, nestSubject, editWindowsEnabled } }) => {
       editWindowsEnabled.next(true);
 
@@ -100,7 +103,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
       this.filterForm = this.formBuilder.group({ query: '' });
 
       let delayFilterFocused = this.filterFocused.switchMap(b => b ? Observable.of(b) : Observable.of(b).delay(500)).distinctUntilChanged(); // delay a bit if unfocusing
-      let filterInput = this.filterForm.valueChanges.debounceTime(100);
+      let filterInput = this.filterForm.valueChanges.debounceTime(10);
       Observable.combineLatest(delayFilterFocused, filterInput, nestConfigSubject).switchMap(this.queryFilter.bind(this)).subscribe(this.filterSuggestionsSubject)
 
       this.filterSuggestionsSubject.subscribe(arr => this.filterSuggestions = arr);

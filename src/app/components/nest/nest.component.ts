@@ -53,6 +53,7 @@ export class NestComponent implements OnInit {
   @Input() nest: any;
   @Input() roots: any;
   @Input() data: any[];
+  @Input() config: any = {};
   @Input() order: string[];
   @Output() drag: Subject<any> = new Subject();
   @Output() dropEvt: Subject<any> = new Subject();
@@ -90,6 +91,9 @@ export class NestComponent implements OnInit {
     let inputProviders = [{
       provide: 'data',
       useValue: data
+    }, {
+      provide: 'config',
+      useValue: this.config
     }];
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
     let injector = ReflectiveInjector.fromResolvedProviders(resolvedInputs, this._parent.parentInjector);
@@ -198,6 +202,7 @@ export class NestComponent implements OnInit {
 
     let toAdjust = selection
       .style('opacity', 1)
+      .order()
       .transition(t)
       //.style('width', (d:any) => (width - d.y + HEIGHT) + 'px')
       .style('width', (d:any) => 'calc(100% - ' + (d.y - HEIGHT) + 'px' + ')')
@@ -230,7 +235,8 @@ export class NestComponent implements OnInit {
       let remaining = [].concat(adjusted, added)
       return remaining.map(({element, data, index}) => {
         let component = this.elementComponentRefMap.get(element);
-        //component.instance.data = data;
+        // TODO: fix this
+        //component.instance.data = data.data instanceof D3.hierarchy ? data.data : data;
         return component;
       });
     });

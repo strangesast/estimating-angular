@@ -15,7 +15,8 @@ export interface IFolderElement {
 }
 
 export class FolderElement extends BaseElement {
-  static store = 'folderElements';
+  static readonly store = 'folderElements';
+  static readonly keys = ['$$id', 'collection', 'name', '&*children', 'type'];
 
   static excluded: string[] = ['commit', 'open', 'saveState'];
 
@@ -39,14 +40,14 @@ export class FolderElement extends BaseElement {
 
   clean() {
     let folder = Object.create(FolderElement.prototype);
-    ['id', 'name', 'description', 'collection', '_id'].forEach((name) => {
+    ['id', 'name', 'description', 'type', 'collection', '_id'].forEach((name) => {
       folder[name] = this[name];
     });
-    folder.children = this.children.filter(child => typeof child === 'string' || child instanceof FolderElement).map(child => {
+    folder.children = this.children ? this.children.filter(child => typeof child === 'string' || child instanceof FolderElement).map(child => {
       if (typeof child === 'string') return child;
       if (!child.id) throw new Error('cant save child on folder without id');
       return child.id;
-    });
+    }) : [];
     return folder;
   }
 }

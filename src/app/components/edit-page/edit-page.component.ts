@@ -5,6 +5,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Observable, BehaviorSubject } from 'rxjs'
 
 import { JobService } from '../../services/job.service';
+import { SearchService } from '../../services/search.service';
+import { ClassToStringPipe } from '../../pipes';
 import { ChildElement, ComponentElement, FolderElement } from '../../models';
 
 @Component({
@@ -14,41 +16,44 @@ import { ChildElement, ComponentElement, FolderElement } from '../../models';
 })
 
 export class EditPageComponent implements OnInit, OnChanges {
-  public selectedElement: any = null;
-  public selectedElementSubject: BehaviorSubject<any>;
+  public selectedElement: string = undefined;
+  public selectedElementSubject: BehaviorSubject<string>;
   public openElements: any;
   public openElementIds: string[];
   private openElementsSubject: BehaviorSubject<any[]>;
 
   public newElement = new BehaviorSubject(null);
+  public newElementType: string;
+  public newElementForm: FormGroup;
+
+  public inputs: any[] = [];
 
   constructor(
     private jobService: JobService,
+    private searchService: SearchService,
     private route: ActivatedRoute,
     private router: Router,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private pipe: ClassToStringPipe
   ) { }
 
   ngOnInit():void{
+    this.searchService.currentTypes.next(['componentElements', 'childElements']);
     this.route.parent.data.subscribe(({ job: { openElements, editWindowsEnabled, selectedElementSubject }}) => {
       editWindowsEnabled.next(false);
       this.openElementsSubject = openElements;
       this.openElementsSubject.subscribe(elements => {
-        /*
-        this.openElementIds = Object.keys(elements);
-        if(this.selectedElement == null || this.openElementIds.map(id=>elements[id]).indexOf(this.selectedElement) === -1) {
-          this.selectedElement = this.openElementIds.length ? elements[this.openElementIds[0]].element : null;
-        }
-        */
         this.openElements = elements;
+        this.openElementIds = Object.keys(elements);
       });
-      (this.selectedElementSubject = selectedElementSubject).subscribe(element => this.selectedElement = element);
+      (this.selectedElementSubject = selectedElementSubject).subscribe(element => {
+        this.selectedElement = element
+      });
     });
   }
 
   backToBuild() {
-    this.router.navigate(['build'], { relativeTo: this.route.parent });
-  }
+    this.router.navigate(['build'], { relativeTo: this.route.parent }); }
 
   ngOnDestroy() {
   }
@@ -57,15 +62,162 @@ export class EditPageComponent implements OnInit, OnChanges {
     return element instanceof FolderElement ? element.type : element instanceof ComponentElement ? 'component' : element instanceof ChildElement ? 'child' : 'unknown';
   }
 
-  setCreateNew() {
-    this.selectedElementSubject.next(this.newElement);
+  cancelNew() {
+    this.newElementType = undefined;
+    this.newElementForm = null;
+    this.inputs = [];
+    this.router.navigate([], { fragment: null });
+  }
+
+  async setNewElementType(type) {
+    let job = this.jobService.collectionSubject.getValue();
+    this.newElementType = type;
+    
+    let group:any = {};
+
+    if(type == 'folder') {
+      let folderTypes = job.folders.order.map(name => ({ key: name[0].toUpperCase() + name.slice(1), value: name }));
+      let parentFolders = await this.jobService.getParentFolderCandidates();
+      let form = this.newElementForm;
+
+      this.inputs = [ 
+        {
+          key: 'type',
+          label: 'Folder Type',
+          options: folderTypes,
+          required: true,
+          description: 'The type of new folder.'
+        },
+        {
+          key: 'parent',
+          label: 'Parent Folder',
+          options: parentFolders,
+          required: true,
+          description: 'Choose where to add this folder.'
+        }
+      ];
+      Object.assign(group, { type: [undefined, Validators.required], parent: [undefined, Validators.required] });
+
+    } else if (type == 'component') {
+      let parentElements = await this.jobService.getParentChildCandidates();
+      parentElements.unshift({ value: null, key: 'No parent'});
+      this.inputs = [
+        {
+          key: 'sell',
+          label: 'Sell Price',
+          value: 0,
+          type: 'number',
+          required: true,
+          description: 'Override the sell price specified in core'
+        },
+        {
+          key: 'buy',
+          label: 'Buy Price',
+          value: 0,
+          type: 'number',
+          required: true,
+          description: 'Override the buy price specified in core'
+        },
+        {
+          key: 'qty',
+          label: 'Core Part Qty',
+          value: 1,
+          type: 'number',
+          required: true,
+          description: 'How many core parts are included in this representation.  Typically 1.'
+        },
+        {
+          key: 'parent',
+          label: 'Parent Element',
+          options: parentElements,
+          required: false,
+          description: 'Optionally immediately add this component as a child of another component'
+        },
+        {
+          key: 'catalog',
+          label: 'Core Part',
+          type: 'text',
+          required: false,
+          description: 'Reference a (single) existing core part.'
+        }
+        // children
+      ];
+
+      Object.assign(group, { parent: undefined, sell: [undefined, Validators.required], buy: [undefined, Validators.required], qty: [1, Validators.required], catalog: undefined });
+
+    } else if (type == 'child') {
+      let componentElements = await this.jobService.getComponentCandidates();
+      this.inputs = [
+        {
+          key: 'ref',
+          label: 'Component',
+          options: componentElements,
+          required: true,
+          description: 'The existing component would you like to add.'
+        },
+        {
+          key: 'sell',
+          label: 'Sell Price',
+          type: 'number',
+          required: false,
+          description: 'Override sell price of descendant component/child elements.  If left undefined, use the computed value for each.'
+        },
+        {
+          key: 'buy',
+          label: 'Buy Price',
+          type: 'number',
+          required: false,
+          description: 'Override buy price of descendant component/child elements.  If left undefined, use the computed value for each.'
+        },
+        {
+          key: 'qty',
+          label: 'Component Qty',
+          value: 1,
+          type: 'number',
+          required: 'true',
+          description: 'The quantity of components to add'
+        }
+      ];
+
+      Object.assign(group, { ref: [undefined, Validators.required], sell: undefined, buy: undefined, qty: [1, Validators.required] });
+
+    } else {
+      throw new Error('invalid type "'+type+'"');
+    }
+
+    Object.assign(group, {
+      name: 'New ' + type[0].toUpperCase() + type.slice(1),
+      description: 'description'
+    });
+
+    this.newElementForm = this.formBuilder.group(group);
   }
 
   setSelectedElement(element) {
     this.selectedElement = element;
   }
 
+  onSubmit(form) {
+    let val = form.value;
+    let Class = this.pipe.transform(this.newElementType);
+    this.jobService.createElement(val, Class).then(element => {
+      this.newElement.next(element);
+      this.newElementType = undefined;
+      this.newElementForm = null;
+      this.inputs = [];
+      this.router.navigate([], { fragment: [this.pipe.transform(element), element.id].join('/') });
+
+    }).catch(err => {
+      console.error(err);
+    });
+  }
+
   ngOnChanges(changes) {
+  }
+
+  closeOpenElement(element) {
+    this.jobService.closeOpenElement(element);
+    this.router.navigate([], { fragment: null });
   }
 
 }
