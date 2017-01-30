@@ -93,15 +93,15 @@ export class JobService implements Resolve<Promise<any>> {
         filters: {}
       },
       component: {
-        enabled: true,
+        enabled: false,
         filters: []
       },
       filters: []
     }
     collection.folders.order.forEach(n => {
-      config.folders.enabled[n] = true;
       config.folders.filters[n] = [];
     });
+    config.folders.enabled[config.folders.order[0]] = true;
 
     let nestConfigSubject = this.nestConfigSubject = new BehaviorSubject(config);
 

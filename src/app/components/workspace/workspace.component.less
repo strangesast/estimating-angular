@@ -2,15 +2,18 @@
 
 :host {
   display: block;
+  height: ~"calc(100% - " @nav-height + 16px ~")";
 }
 
 .body {
   display: flex;
   flex-direction: row;
+  height: 100%;
 
   & > .side {
     width: 320px;
     flex-direction: column;
+    overflow: auto;
   
     .search {
       position: relative;

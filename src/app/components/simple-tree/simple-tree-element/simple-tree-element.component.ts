@@ -19,17 +19,6 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
   selector: SIMPLE_TREE_ELEMENT_SELECTOR,
   templateUrl: './simple-tree-element.component.html',
   styleUrls: ['./simple-tree-element.component.less'],
-  /*
-  host: {
-    '(dragstart)': 'this.dragging = true; drag.emit({event: $event, component: this})',
-    '(dragover)':  'drag.emit({event: $event, component: this})',
-    '(dragleave)': 'drag.emit({event: $event, component: this})',
-    '(dragenter)': 'drag.emit({event: $event, component: this})',
-    '(dragend)':   'this.dragging = false; drag.emit({event: $event, component: this})',
-    '(drop)':      'drag.emit({event: $event, component: this})',
-    '[attr.draggable]': 'draggable'
-  }
-  */
   host: {
     '(dragstart)': 'onDragStart($event)',
     '(dragover)':  'onDragOver($event)',

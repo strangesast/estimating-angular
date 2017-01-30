@@ -6,6 +6,7 @@ export { LocationElement } from './location-element';
 export { ChildElement } from './child-element';
 export { User } from './user';
 export { BasedOn } from './based-on';
+export { CatalogPart } from './catalog-part';
 
 /* interfaces */
 export { TreeConfig } from './tree-config';

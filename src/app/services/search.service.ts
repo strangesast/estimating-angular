@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Resolve } from '@angular/router';
+import { Http, Response, Headers } from '@angular/http';
 
 import { Observable, ReplaySubject, BehaviorSubject, Subscription } from 'rxjs';
 import { HierarchyNode } from 'd3';
@@ -7,23 +8,7 @@ import * as D3 from 'd3';
 
 import { ElementService } from '../services/element.service';
 import { DataService } from '../services/data.service';
-
-/*
-import { Http, Response, Headers } from '@angular/http';
-
-class PartCatalog {
-  _boost: number;
-  active: boolean;
-  description: string;
-  id: string;
-  kind: string;
-  label: string;
-  summary: string;
-  type: string;
-}
-*/
-
-import { FolderElement, ComponentElement, Collection } from '../models';
+import { FolderElement, ComponentElement, Collection, CatalogPart } from '../models';
 
 @Injectable()
 export class SearchService implements Resolve<any> {
@@ -39,7 +24,7 @@ export class SearchService implements Resolve<any> {
   private jobSub: Subscription;
   private resultObservable: Observable<any>;
 
-  constructor(private elementService: ElementService, private db: DataService) { }
+  constructor(private elementService: ElementService, private db: DataService, private http: Http) { }
 
   startListening(): void {
     let jobPageSwitch:Observable<any> = this.currentJob.switchMap((job:Collection) => {
@@ -105,16 +90,22 @@ export class SearchService implements Resolve<any> {
     this.currentJob.next(job);
   }
 
-  async search(query) {
+  search(query) {
+    let clean = query.replace(/[^\w\s-&#@]/gi, '');
     let db = this.db;
 
     let types = this.currentTypes.getValue();
-    let arr = (await Promise.all(types.map(name => db[name].where('name').startsWithIgnoreCase(query).distinct().toArray()))).reduce((a, b) => a.concat(b), []).sort((a, b) => {
-      return a.name.length > b.name.length ? 1 : -1;
-    }).map(element => {
-      return D3.hierarchy(element);
-    });
 
-    return arr;
+    let observables = types.map((tableName) => Observable.fromPromise(db[tableName].where('name').startsWithIgnoreCase(clean).distinct().toArray().then(arr => arr.map(element => D3.hierarchy(element)))).startWith([]));
+
+    console.log('clean', clean);
+    let uri = 'http://10.0.20.33:9200/production_part_catalogs/_search?size=100&q="' + clean + '"';
+
+    let net = this.http.get(uri).map(res => {
+      let json = res.json();
+      return json.hits.hits.map(el => D3.hierarchy(CatalogPart.fromJSON(el._source)));
+    }).startWith([]);
+
+    return Observable.combineLatest(...observables, net).map(arr => arr.reduce((a, b) => a.concat(b)));
   }
 }
