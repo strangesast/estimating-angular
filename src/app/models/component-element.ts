@@ -31,7 +31,7 @@ export class ComponentElement extends BaseElement implements IComponent {
     public buy: number,
     public collection: string|number,
     public children: (number|string)[]|ChildElement[] = [],
-    public qty = 1,
+    public qty: number = 1,
     public catalog: string,
     public basedOn?: BasedOn|null,
     public hash?: string,

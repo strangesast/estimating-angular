@@ -10,7 +10,7 @@
     <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
   </ul>
   <ul class="jobs">
-    <li *ngFor="let job of filter(jobs)" class="list-item" tabindex="0">
+    <li *ngFor="let job of localJobs" class="list-item" tabindex="0" #localJobEls>
       <a *ngIf="job !== editing" class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
       <span *ngIf="job === editing" class="name"><input autofocus (blur)="finishRename(job)" [(ngModel)]="job.name"></span>
       <span class="description">{{ job.description }}</span>
@@ -28,7 +28,7 @@
       <span class="folders-cnt">{{ 0 }}</span>
       <span class="components-cnt">{{ 0 }}</span>
     </li>
-    <li *ngIf="(!jobs || !jobs.length) && !newCollection">
+    <li *ngIf="(!localJobsjobs || !localJobsjobs.length) && !newCollection">
       <span class="name">None</span>
     </li>
     <li *ngIf="newCollection">
@@ -55,7 +55,7 @@
     <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
   </ul>
   <ul class="jobs">
-    <li *ngFor="let job of filter(jobs, true)" class="list-item" tabindex="0">
+    <li *ngFor="let job of remoteJobs" class="list-item" tabindex="0">
       <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
       <span class="description">{{ job.description }}</span>
       <span class="hoverlink settings fa fa-cog"></span>
@@ -64,7 +64,7 @@
       <span class="folders-cnt">{{ 0 }}</span>
       <span class="components-cnt">{{ 0 }}</span>
     </li>
-    <li *ngIf="!jobs || !filter(jobs, true).length">
+    <li *ngIf="!remoteJobs || remoteJobs.length">
       <span class="name">None</span>
     </li>
   </ul>

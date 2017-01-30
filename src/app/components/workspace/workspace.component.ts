@@ -8,7 +8,7 @@ import { Subject, BehaviorSubject } from 'rxjs';
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
-  styleUrls: ['./workspace.component.less']
+  styleUrls: ['../../styles/general.less', './workspace.component.less']
 })
 export class WorkspaceComponent implements OnInit {
   results = new Subject();

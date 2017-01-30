@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, ViewChildren, QueryList, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { FormBuilder, FormGroup } from '@angular/forms';
@@ -21,10 +21,11 @@ interface CollectionRecord {
 @Component({
   selector: 'app-job-list-page',
   templateUrl: './job-list-page.component.html',
-  styleUrls: ['./job-list-page.component.less']
+  styleUrls: ['../../styles/general.less', './job-list-page.component.less']
 })
-export class JobListPageComponent implements OnInit {
-  jobs: Collection[] = [];
+export class JobListPageComponent implements OnInit, AfterViewInit {
+  localJobs: Collection[] = [];
+  remoteJobs: Collection[] = [];
   users: User[] = [];
 
   editing: Collection = null;
@@ -34,14 +35,19 @@ export class JobListPageComponent implements OnInit {
 
   aboutJob: any = {}; // { job: about }
 
+  @ViewChildren('localJobEls') localJobEls: QueryList<any>;
+
   jobsSubject: BehaviorSubject<BehaviorSubject<Collection>[]>;
   constructor(private route: ActivatedRoute, private formBuilder: FormBuilder, private jobListService: JobListService, private searchService: SearchService, public userService: UserService) { }
 
   ngOnInit() {
     this.route.data.subscribe(({ jobs }) => {
-      this.jobs = jobs;
+      this.localJobs = jobs;
     });
     this.searchService.setJob(null);
+  }
+
+  ngAfterViewInit() {
   }
 
   createNewJob() {
@@ -72,6 +78,7 @@ export class JobListPageComponent implements OnInit {
 
   renameJob(job:Collection) {
     this.editing = job;
+    this.focusInput(job);
   }
 
   finishRename(job: Collection) {
@@ -87,5 +94,17 @@ export class JobListPageComponent implements OnInit {
   filter(jobs: Collection[], filter?) {
     if(filter) return [];
     return jobs;
+  }
+
+  focusInput(job: Collection) {
+    let i = this.localJobs.indexOf(job);
+    let els = this.localJobEls.toArray();
+    if (i > -1) {
+      setTimeout(() => {
+        let el = els[i].nativeElement.querySelector('input');
+        el.focus();
+        el.select();
+      }, 0)
+    }
   }
 }

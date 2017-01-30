@@ -1,5 +1,9 @@
-@navigation-height: 40px;
+@import "../../styles/basic";
 
+:host {
+  display: block;
+  margin-left: 10px;
+}
 .navigation {
   display: flex;
   justify-content: space-between;
@@ -7,7 +11,6 @@
 .navigation:not(:first-child) {
   margin-top: 6px;
 }
-
 ul.filters, ul.toggle {
   list-style-type: none;
   padding-left: 0;
@@ -20,7 +23,6 @@ ul.filters, ul.toggle {
     }
   }
 }
-
 ul.filters {
   & > li {
     font-size: 14px;
@@ -40,7 +42,6 @@ ul.filters {
     }
   }
 }
-
 ul.toggle {
   & > li {
     padding: 8px;
@@ -50,8 +51,6 @@ ul.toggle {
     }
   }
 }
-
-@off-white: #D5D8DD;
 .search {
   padding: 0 4px;
   position: relative;
@@ -64,26 +63,14 @@ ul.toggle {
     -webkit-appearance: none;
     border: 1px solid @off-white;
     width: 100%;
-    &::-webkit-input-placeholder {
-      font-style: italic;
-    }
-    &::-moz-placeholder {
-      font-style: italic;
-    }
-    &:-ms-input-placeholder {
-      font-style: italic;
-    }
-    &:-moz-placeholder {
-      font-style: italic;
-    }
+    .input-italic;
   }
-
   .suggestions {
     position: absolute;
     right: 0;
     min-width: 100%;
     background-color: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    .box-shadow;
     z-index: 10;
     padding: 4px 0;
 
@@ -100,7 +87,6 @@ ul.toggle {
           cursor: pointer;
         }
       }
-
       .rounded {
         padding: 4px;
         font-size: 12px;
@@ -112,18 +98,4 @@ ul.toggle {
       display: none;
     }
   }
-}
-
-.hoverlink {
-  &:hover {
-    cursor: pointer;
-  }
-}
-
-.noselect {
-
-}
-:host {
-  display: block;
-  margin-left: 10px;
 }

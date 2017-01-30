@@ -16,7 +16,7 @@ import { Collection } from '../../models';
 @Component({
   selector: 'app-details-page',
   templateUrl: './details-page.component.html',
-  styleUrls: ['./details-page.component.less']
+  styleUrls: ['../../styles/general.less', './details-page.component.less']
 }) export class DetailsPageComponent implements OnInit {
   private job: Collection;
   private jobForm: FormGroup;

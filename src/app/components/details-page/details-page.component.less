@@ -1,10 +1,14 @@
-@off-white: #D5D8DD;
-.header {
-  font-size: 1.5em;
-}
+@import "../../styles/basic";
+
 :host {
   display: block;
   margin-left: 10px;
+  & > * {
+    margin-bottom: 20px;
+  }
+}
+.header {
+  font-size: 1.5em;
 }
 form {
   .form-group {
@@ -35,7 +39,4 @@ form {
   .history-item {
     padding: 8px;
   }
-}
-:host > * {
-  margin-bottom: 20px;
 }

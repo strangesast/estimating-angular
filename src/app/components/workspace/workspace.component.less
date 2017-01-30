@@ -1,88 +1,48 @@
-@off-white: #D5D8DD;
+@import "../../styles/basic";
 
 :host {
-  //height: 100%;
   display: block;
 }
 
 .body {
   display: flex;
   flex-direction: row;
-}
 
-.body > .side {
-  width: 320px;
-  flex-direction: column;
+  & > .side {
+    width: 320px;
+    flex-direction: column;
+  
+    .search {
+      position: relative;
+      .default-margin;
 
-  /*
-  .search, ul {
-    .default-margin;
-    margin-right: 0;
-  }
-  */
+      input {
+        box-sizing: border-box;
+        padding: 4px;
+        font-size: 1.1em;
+        border-radius: 4px;
+        -webkit-appearance: none;
+        border: 1px solid @off-white;
+        width: 100%;
+        .input-italic;
+      }
+    }
+  
+    & > ul {
+      padding-left: 0;
+      list-style-type: none;
 
-  .search {
-    position: relative;
-    .default-margin;
-    input {
-      box-sizing: border-box;
-      padding: 4px;
-      font-size: 1.1em;
-      border-radius: 4px;
-      -webkit-appearance: none;
-      border: 1px solid @off-white;
-      width: 100%;
-      &::-webkit-input-placeholder {
-        font-style: italic;
-      }
-      &::-moz-placeholder {
-        font-style: italic;
-      }
-      &:-ms-input-placeholder {
-        font-style: italic;
-      }
-      &:-moz-placeholder {
-        font-style: italic;
+      & > li {
+        padding: 8px;
+        height: 40px;
+        box-sizing: border-box;
       }
     }
   }
 
-  & > ul {
-    padding-left: 0;
-    list-style-type: none;
-    & > li {
-      padding: 8px;
-      height: 40px;
-      box-sizing: border-box;
-    }
+  & > .main {
+    flex-grow: 1;
+    min-width: 0;
+    .default-margin-right;
   }
-}
-
-.body > .main {
-  flex-grow: 1;
-  min-width: 0;
-  .default-margin-right;
-}
-
-.default-margin-right {
-  margin-right: 2px;
-  @media(min-width: 500px) {
-    margin-right: 10px;
-  }
-  @media(min-width: 1000px) {
-    margin-right: 20px;
-  }
-}
-.default-margin-left {
-  margin-left: 2px;
-  @media(min-width: 500px) {
-    margin-left: 10px;
-  }
-  @media(min-width: 1000px) {
-    margin-left: 20px;
-  }
-}
-.default-margin {
-  .default-margin-left;
-  .default-margin-right;
 }

@@ -22,22 +22,26 @@ import { waitForTransition } from '../../resources/util';
 import { SimpleTreeElementComponent } from '../simple-tree/simple-tree-element/simple-tree-element.component';
 
 import { ClassToStringPipe, TypeToClassPipe } from '../../pipes';
-import { ChildElement } from '../../models';
+import { FolderElement, ChildElement } from '../../models';
 
 const HEIGHT = 36;
 let cnt = 0;
 
-function addEmptyFolders(arr, nodes, enabled = [true, true]) {
+function addEmptyFolders(arr, nodes, orders, enabled = [true, true]) {
   if(nodes.length) {
-    if(nodes.length > 1) arr.forEach(({ key, values }) => addEmptyFolders(values, nodes.slice(1), enabled.slice(1)));
+    if(nodes.length > 1) arr.forEach(({ key, values }) => addEmptyFolders(values, nodes.slice(1), orders, enabled.slice(1)));
     if(enabled[0]) {
+      let node = nodes[0];
       let ids = arr.map(el => el.key)
-      let desired = nodes[0].descendants().map(el => el.data.id);
+      let desired = node.descendants().map(el => el.data.id);
       desired.forEach(id => {
         if(ids.indexOf(id) === -1) {
           arr.push({ key: id, values: [] });
         }
       });
+      if (orders[node.data.type]) {
+        arr.sort((a, b) => orders[node.data.type].indexOf(a.key) > orders[node.data.type].indexOf(b.key) ? 1 : -1);
+      }
     }
   }
 }
@@ -46,7 +50,7 @@ function addEmptyFolders(arr, nodes, enabled = [true, true]) {
 @Component({
   selector: 'app-nest',
   templateUrl: './nest.component.html',
-  styleUrls: ['./nest.component.less'],
+  styleUrls: ['../../styles/general.less', './nest.component.less'],
   providers: [ TypeToClassPipe, ClassToStringPipe ]
 })
 export class NestComponent implements OnInit {
@@ -57,6 +61,7 @@ export class NestComponent implements OnInit {
   @Input() order: string[];
   @Output() drag: Subject<any> = new Subject();
   @Output() dropEvt: Subject<any> = new Subject();
+  @Output() rootEvt: Subject<any> = new Subject();
 
   // should be replaysubject
   private nestSubject = new ReplaySubject();
@@ -85,6 +90,7 @@ export class NestComponent implements OnInit {
 
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.dropEvt))).subscribe(this.dropEvt);
+    this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.rootEvt))).subscribe(this.rootEvt);
   }
 
   createChildComponent(data, index) {
@@ -93,7 +99,7 @@ export class NestComponent implements OnInit {
       useValue: data
     }, {
       provide: 'config',
-      useValue: this.config
+      useValue: Object.assign({ root: data.data instanceof FolderElement }, this.config)
     }];
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
     let injector = ReflectiveInjector.fromResolvedProviders(resolvedInputs, this._parent.parentInjector);
@@ -152,11 +158,15 @@ export class NestComponent implements OnInit {
     if (config.component.enabled) {
       // if empty folders
       let enabled = config.folders.order.filter(n => config.folders.enabled[n]).map(n => !!config.folders.filters[n].find(f => f.type == 'emptyFolders'));
-      addEmptyFolders(data, keys, enabled);
+      addEmptyFolders(data, keys, folderOrders, enabled);
       root = D3.hierarchy({ values: data, children: [] }, (d) => d.values || d.children);
 
     } else {
+      root = D3.hierarchy({ children: keys });
+      /*
+      console.log('root', keys[0]);
       root = D3.hierarchy(keys[0]);
+      */
     }
     this.currentRoot = root;
 
@@ -241,12 +251,4 @@ export class NestComponent implements OnInit {
       });
     });
   }
-
-  /*
-  ngOnChanges(changes: any) {
-    if('nest' in changes) {
-      this.nestSubject.next(this.nest);
-    }
-  }
-  */
 }

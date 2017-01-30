@@ -1,12 +1,16 @@
+@import "../../styles/basic";
+
 :host {
   display: block;
   width: 100%;
-}
-:host > div {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-}
-:host > div /deep/ .item {
-  position: absolute;
+
+  & > div {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+
+    /deep/ .item {
+      position: absolute;
+    }
+  }
 }

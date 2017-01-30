@@ -19,7 +19,7 @@ import { ComponentElement, ChildElement, FolderElement } from '../../models';
 @Component({
   selector: 'app-edit-window',
   templateUrl: './edit-window.component.html',
-  styleUrls: ['./edit-window.component.less'],
+  styleUrls: ['../../styles/general.less', './edit-window.component.less'],
   host: {
     '[class.isWindow]': 'isWindow'
   }
@@ -32,6 +32,8 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   @Output() close = new EventEmitter();
 
   @Input() isNew: boolean;
+
+  public context: any;
 
   private form: FormGroup;
   
@@ -63,6 +65,13 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
           name: [ _element.name || '' ],
           description: _element.description || ''
         });
+      }
+
+      if (_element instanceof ChildElement) {
+        this.elementService.getContext(_element).then(ctx => (<ChildElement>this._element).data = ctx);
+      }
+      if (_element instanceof FolderElement) {
+        this.elementService.getContext(_element).then(ctx => this.context = ctx);
       }
     });
   }

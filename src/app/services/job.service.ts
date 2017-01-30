@@ -56,7 +56,7 @@ export class JobService implements Resolve<Promise<any>> {
     private pipe: ClassToStringPipe
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  async resolve(route: ActivatedRouteSnapshot): Promise<boolean|{ editWindowsEnabled, collectionSubject, nestConfigSubject, selectedElementSubject, openElements, nestSubject, collection, trees }> {
     let username = route.params['username'];
     let shortname = route.params['shortname'];
 
@@ -194,7 +194,7 @@ export class JobService implements Resolve<Promise<any>> {
     return bs;
   }
 
-  addChildElement(to, what) {
+  addChildElement(to, what, config) {
     let db = this.db;
     let job = this.collectionSubject.getValue();
 
@@ -252,7 +252,8 @@ export class JobService implements Resolve<Promise<any>> {
             return true;
 
           } else {
-            let folders = job.folders.order.map(name => job.folders.roots[name]);
+            let folders = job.orderedFolders;
+            config.folders.order.filter(n => config.folders.roots[n]).forEach(n => folders[job.folders.order.indexOf(n)] = config.folders.roots[n]);
             folders[i] = id;
             let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
             let newPosition = await db.locationElements.get({ [keyName]: folders });
@@ -280,6 +281,7 @@ export class JobService implements Resolve<Promise<any>> {
           child.id = await db.childElements.add(child);
 
           let folders = job.orderedFolders;
+          config.folders.order.filter(n => config.folders.roots[n]).forEach(n => folders[job.folders.order.indexOf(n)] = config.folders.roots[n]);
           let i = job.folders.order.indexOf(to.type);
           folders[i] = to.id;
 
@@ -323,6 +325,8 @@ export class JobService implements Resolve<Promise<any>> {
         }
       } else if (to instanceof ChildElement) {
         if(!(what instanceof ChildElement || what instanceof ComponentElement)) throw new Error('invalid drag');
+
+        // potentially unwanted: dragged element copies location of destination.  confusing when only one folder is visible
 
         let desiredPosition: LocationElement|ComponentElement = (await db.locationElements.get({ children: to.id })) || (await db.componentElements.get({ children: to.id }));
         if(!desiredPosition) {
@@ -423,6 +427,15 @@ export class JobService implements Resolve<Promise<any>> {
           filters.splice(filters.indexOf(existing), 1);
           this.nestConfigSubject.next(config);
 
+        } else if (filter.type === 'root') {
+          let existing = filters.find(f => f.type === 'root');
+          if (!existing) {
+            throw new Error('already removed');
+          }
+          config.folders.roots[name] = null;
+          filters.splice(filters.indexOf(existing), 1);
+          this.nestConfigSubject.next(config);
+
         } else {
           // unsupported
         }
@@ -468,6 +481,15 @@ export class JobService implements Resolve<Promise<any>> {
           } else {
             filters.push(filter);
           }
+          changed = true;
+        } else if (filter.type === 'root') {
+          let existing = filters.find(f => f.type === 'root');
+          if (existing) {
+            filters.splice(filters.indexOf(existing), 1, filter);
+          } else {
+            filters.push(filter);
+          }
+          config.folders.roots[name] = filter.value;
           changed = true;
         } else {
           // unsupported

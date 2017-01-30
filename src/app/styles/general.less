@@ -1,0 +1,32 @@
+@import "./basic";
+
+.dropdown {
+  display: inline-block;
+  position: relative;
+
+  .dropdown-button {
+    color: black;
+    padding: 8px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    top: 95%;
+    background-color: white;
+    min-width: 130px;
+    .box-shadow;
+    z-index: 10;
+    padding: 4px 0;
+
+    & > * {
+      padding: 0 8px;
+      display: block;
+    }
+  }
+  &:hover .dropdown-content {
+    display: block;
+  }
+}

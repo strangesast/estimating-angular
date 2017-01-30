@@ -146,15 +146,6 @@ export class ElementService implements Resolve<any> {
     this.updateSubjectSub = this.updateSubject.switchMap(elements => {
       // if updateSubjct updated before finishing save bad things happen
       return Observable.never();
-      /*
-      return Observable.merge(...elements).flatMap(element => {
-        // TODO: improve this.  should change save state, save, then reset to correct savestate
-        //return saveRecordAs(this.prevDb, element);
-        let storeName = element.constructor.store;
-        let db = this.db;
-        return Observable.fromPromise(db[storeName].put(element.clean()));
-      });
-      */
     }).subscribe();
   }
 
@@ -372,7 +363,7 @@ export class ElementService implements Resolve<any> {
   }
 
   createComponent(job, name, description, parentId?): Promise<ComponentElement> {
-    let component = new ComponentElement(
+    let component = new (<any>ComponentElement)(
       name,
       description,
       Math.ceil(Math.random()*100000)/100, // sell
@@ -397,13 +388,6 @@ export class ElementService implements Resolve<any> {
 
   createFolder(job, _type, name, description = '(no description)', children = [], parentId?): Promise<FolderElement> {
     let folder = new FolderElement(name, description, _type, job.id, children);
-
-    /*
-    let saveFolder = saveRecordAs(this.prevDb, folder).then(folderId => {
-      folder.id = folderId;
-      return folder;
-    });
-    */
 
     let db = this.db;
     return db.transaction('rw', db.folderElements, async() => {
@@ -440,7 +424,7 @@ export class ElementService implements Resolve<any> {
           collection.id
         ));
 
-        let components = arr.map(i => new ComponentElement(
+        let components = arr.map(i => new (<any>ComponentElement)(
           'Example Component ' + (i + 1),
           'description',
           (Math.random()*100000)/100, // sell
@@ -682,16 +666,6 @@ export class ElementService implements Resolve<any> {
         about['isHead'] = val;
         subscriber.next(about);
       });
-      /*
-      let isSaved = Promise.all([
-        // will break when no commit exists
-        readRef(this.repo, job.shortname).then(commit => commit ? loadHashAs(this.repo, 'commit', commit) : Promise.resolve({tree: null})),
-        this.saveGitTree(job)
-      ]).then(([commit, treeHash]) => commit.tree == treeHash).then(val => {
-        about['isSaved'] = val;
-        subscriber.next(about);
-      });
-      */
       let componentCount = countRecords(this.prevDb, ComponentElement.store, job.id, 'job').then(val => {
         about['components'] = val;
         subscriber.next(about);
@@ -704,9 +678,6 @@ export class ElementService implements Resolve<any> {
         isHeadCommit,
         componentCount,
         folderCount,
-        /*
-        isSaved
-        */
       ]).then(() => {
         subscriber.complete();
       }).catch(err => {
@@ -985,6 +956,15 @@ export class ElementService implements Resolve<any> {
     })
   }
 
+  getContext(child: ChildElement|FolderElement) {
+    let db = this.db;
+    if (child instanceof ChildElement) {
+      return db.componentElements.get(<any>child.ref);
+    } else if (child instanceof FolderElement) {
+      return db.folderElements.get({ children: child.id});
+    }
+  }
+
   buildTree(job: Collection, root?:string|FolderElement) {
     return (typeof root === 'string' ? this.loadElement(FolderElement, root) : Promise.resolve(root)).then(folderSubject => {
       let folder = folderSubject.getValue();
@@ -997,25 +977,6 @@ export class ElementService implements Resolve<any> {
       return Promise.resolve(new BehaviorSubject(node));
     });
   }
-
-  /*
-  buildTreeSubject(jobSubject: BehaviorSubject<Collection>, rootSubject: Observable<string>) {
-    let subject = new BehaviorSubject(null);
-    rootSubject.withLatestFrom(jobSubject).switchMap(([root, job]) => {
-      let folderSubject = this.loadElement(FolderElement, root);
-      return Observable.fromPromise(folderSubject).flatMap(x=>x).switchMap(folder => {
-        if(!(folder instanceof FolderElement)) {
-          throw new ValidationError('invalid folder root"' + root + '"');
-        }
-        return Observable.fromPromise(this.retrieveChildren(folder).then(()=>{
-          let node =  D3.hierarchy(folder);
-          return node;
-        }));
-      });
-    }).subscribe(subject);
-    return subject;
-  }
-  */
 
   loadRootFolderNodes(folderIds): Promise<HierarchyNode<FolderElement>[]> {
     return Promise.all(folderIds.map(id => (typeof id === 'string' ? retrieveRecordAs(this.prevDb, FolderElement, id) : Promise.resolve(id)).then(this.retrieveChildren.bind(this)))).then(folders => folders.map(folder => D3.hierarchy(folder)));
@@ -1095,13 +1056,13 @@ export class ElementService implements Resolve<any> {
       let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + 0;
 
       // get locations at those intersections
-      let locations = (<LocationElement[]>(await Promise.all(pairs.map(pair =>
+      let locations = (<any[]>(await Promise.all(pairs.map(pair =>
         db.locationElements.where({ [keyName] : pair.length > 1 ? pair : pair[0] }).toArray())))).reduce((a, b) => a.concat(b), []);
 
       // resolve children for each location, assign 'folders' property for nest
-      let children = (<ChildElement[]>(await Promise.all(locations.map(location =>
+      let children = (<any[]>(await Promise.all(locations.map(location =>
         db.childElements.where('id').anyOf(location.children).filter(child => {
-          return config.component.filters.every(f => {
+          return config.component.filters.filter(f => f.type === 'property').every(f => {
             switch (f.type) {
               case 'property':
                 let prop = f.property;

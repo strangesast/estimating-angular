@@ -1,0 +1,66 @@
+@off-white: #D5D8DD;
+@nav-height: 60px;
+@navigation-height: 40px;
+@info-height: 40px;
+@main-height: 50px;
+
+.default-margin-right {
+  margin-right: 2px;
+  @media(min-width: 500px) {
+    margin-right: 10px;
+  }
+  @media(min-width: 1000px) {
+    margin-right: 20px;
+  }
+}
+.default-margin-left {
+  margin-left: 2px;
+  @media(min-width: 500px) {
+    margin-left: 10px;
+  }
+  @media(min-width: 1000px) {
+    margin-left: 20px;
+  }
+}
+.default-margin {
+  .default-margin-left;
+  .default-margin-right;
+}
+.default-host {
+  display: block;
+  height: 100%;
+  position: relative;
+}
+.input-italic {
+  &::-webkit-input-placeholder {
+    font-style: italic;
+  }
+  &::-moz-placeholder {
+    font-style: italic;
+  }
+  &:-ms-input-placeholder {
+    font-style: italic;
+  }
+  &:-moz-placeholder {
+    font-style: italic;
+  }
+}
+.box-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+.hoverlink {
+  &:hover {
+    cursor: pointer;
+  }
+}
+.nostyle {
+  color: inherit;
+  text-decoration: none;
+}
+.hoverunderline {
+  .nostyle;
+  &:hover {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}

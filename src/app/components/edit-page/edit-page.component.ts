@@ -12,7 +12,7 @@ import { ChildElement, ComponentElement, FolderElement } from '../../models';
 @Component({
   selector: 'app-edit-page',
   templateUrl: './edit-page.component.html',
-  styleUrls: ['./edit-page.component.less']
+  styleUrls: ['../../styles/general.less', './edit-page.component.less']
 })
 
 export class EditPageComponent implements OnInit, OnChanges {

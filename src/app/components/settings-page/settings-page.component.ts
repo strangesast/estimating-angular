@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-settings-page',
   templateUrl: './settings-page.component.html',
-  styleUrls: ['./settings-page.component.less']
+  styleUrls: ['../../styles/general.less', './settings-page.component.less']
 })
 export class SettingsPageComponent implements OnInit {
   locked = false;

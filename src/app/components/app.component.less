@@ -1,15 +1,7 @@
-@off-white: #D5D8DD;
-@nav-height: 60px;
+@import "../styles/basic";
 
 :host {
-  height: 100%;
-  display: block;
-  position: relative;
-}
-
-a.nostyle {
-  color: inherit;
-  text-decoration: none;
+  .default-host;
 }
 
 nav {
@@ -38,27 +30,4 @@ nav {
       }
     }
   }
-}
-
-.default-margin-right {
-  margin-right: 2px;
-  @media(min-width: 500px) {
-    margin-right: 10px;
-  }
-  @media(min-width: 1000px) {
-    margin-right: 20px;
-  }
-}
-.default-margin-left {
-  margin-left: 2px;
-  @media(min-width: 500px) {
-    margin-left: 10px;
-  }
-  @media(min-width: 1000px) {
-    margin-left: 20px;
-  }
-}
-.default-margin {
-  .default-margin-left;
-  .default-margin-right;
 }

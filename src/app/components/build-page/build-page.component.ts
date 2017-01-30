@@ -18,7 +18,7 @@ import {
 
 import { Nest } from 'd3';
 
-import { NestConfig, Collection, Filter } from '../../models';
+import { FolderElement, NestConfig, Collection, Filter } from '../../models';
 import { NestComponent } from '../nest/nest.component';
 import { SearchService } from '../../services/search.service';
 import { JobService } from '../../services/job.service';
@@ -48,7 +48,7 @@ function flattenFilters(config) {
     for(let j = 0; j < other.length; j ++) {
       let v = other[j];
       f.affects.push(v.affects[0]);
-      filters.splice(i, 1)
+      filters.splice(filters.indexOf(other[j]), 1)
       i--;
     }
   }
@@ -58,7 +58,7 @@ function flattenFilters(config) {
 @Component({
   selector: 'app-build-page',
   templateUrl: './build-page.component.html',
-  styleUrls: ['./build-page.component.less']
+  styleUrls: ['../../styles/general.less', './build-page.component.less']
 })
 export class BuildPageComponent implements OnInit, OnDestroy {
   private job: Collection;
@@ -234,6 +234,17 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   }
 
   handleDrop({dropped, on}) {
-    return this.jobService.addChildElement(on, dropped)
+    return this.jobService.addChildElement(on, dropped, this.nestConfig);
+  }
+
+  handleRoot({ data }) {
+    if (data instanceof FolderElement) {
+      if (data.id) {
+        let type = 'root';
+        let display = 'root: ' + data.name;
+        let filter = { type, affects: [ data.type ], value: data.id, display }
+        this.jobService.addFilter(filter);
+      }
+    }
   }
 }

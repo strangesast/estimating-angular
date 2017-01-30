@@ -48,6 +48,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   @Output() drag = new EventEmitter();
   @Output() collapse = new EventEmitter();
   @Output() dropEvt = new EventEmitter();
+  @Output() rootEvt = new EventEmitter();
 
   props: string[];
 

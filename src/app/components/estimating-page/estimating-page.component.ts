@@ -12,7 +12,7 @@ import { Collection, ChildElement } from '../../models';
 @Component({
   selector: 'app-estimating-page',
   templateUrl: './estimating-page.component.html',
-  styleUrls: ['./estimating-page.component.less']
+  styleUrls: ['../../styles/general.less', './estimating-page.component.less']
 })
 export class EstimatingPageComponent implements OnInit, AfterViewInit {
   private jobSubject: BehaviorSubject<Collection>;

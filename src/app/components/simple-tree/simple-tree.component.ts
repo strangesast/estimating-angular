@@ -38,7 +38,7 @@ let cnt = 0;
 @Component({
   selector: 'app-simple-tree',
   templateUrl: './simple-tree.component.html',
-  styleUrls: ['./simple-tree.component.less'],
+  styleUrls: ['../../styles/general.less', './simple-tree.component.less'],
   providers: [ ClassToStringPipe ]
 })
 export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {

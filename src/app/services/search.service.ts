@@ -60,7 +60,7 @@ export class SearchService implements Resolve<any> {
           return [D3.hierarchy(root)];
         });
         let prom2 = Promise.resolve([
-          new ComponentElement('New Component', '', 0.0, 0.0, ''),
+          new (<any>ComponentElement)('New Component', '', 0.0, 0.0, ''),
           new FolderElement('New Folder (phase)', '', 'phase', '', []),
           new FolderElement('New Folder (building)', '', 'building', '', [])
         ].map(n=>D3.hierarchy(n)));

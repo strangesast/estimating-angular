@@ -42,5 +42,9 @@
       <label>Buy:</label>
       <div>{{ _element.data.buy | currency:'USD':true}}</div>
     </div>
+    <div *ngIf="context">
+      <p>This elmement is a child of:</p>
+      <pre>{{ context | json }}</pre>
+    </div>
   </div>
 </div>
