@@ -35,6 +35,7 @@ import {
   TypeToClassPipe,
   ClassToStringPipe
 } from './pipes';
+import { HistoryPageComponent } from './components/history-page/history-page.component';
 
 
 @NgModule({
@@ -57,7 +58,8 @@ import {
     ClassToStringPipe,
     SettingsPageComponent,
     SearchPageComponent,
-    WorkspaceComponent
+    WorkspaceComponent,
+    HistoryPageComponent
   ],
   imports: [
     BrowserModule,

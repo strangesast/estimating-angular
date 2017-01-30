@@ -20,14 +20,14 @@ const gitModesInv = {
 type GitObjectType = 'tree'|'blob'|'file'|'exec'|'sym'|'commit';
 export interface Repo {
   refPrefix: string;
-  createTree(entries: any, callback): void;
-  hasHash(hash: string, callback): void;
-  loadAs(type: GitObjectType, hash: string, callback): void;
-  logWalk(ref: string, callback): void;
-  readRef(ref: string, callback): void;
-  saveAs(type: GitObjectType, body: any, callback): void;
+  createTree(entries: any, callback?): void;
+  hasHash(hash: string, callback?): void;
+  loadAs(type: GitObjectType, hash: string, callback?): void;
+  logWalk(ref: string, callback?): void;
+  readRef(ref: string, callback?): void;
+  saveAs(type: GitObjectType, body: any, callback?): void;
   treeWalk(hash: string, callback?): any;
-  updateRef(ref: string, hash: string, callback): void;
+  updateRef(ref: string, hash: string, callback?): void;
 }
 
 export interface Commit {

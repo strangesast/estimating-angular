@@ -11,11 +11,13 @@ import { EstimatingPageComponent } from './components/estimating-page/estimating
 import { SettingsPageComponent }   from './components/settings-page/settings-page.component';
 import { SearchPageComponent }     from './components/search-page/search-page.component';
 import { WorkspaceComponent }      from './components/workspace/workspace.component';
+import { HistoryPageComponent }    from './components/history-page/history-page.component';
 
 import { ElementService } from './services/element.service';
 import { SearchService }  from './services/search.service';
 import { JobService }     from './services/job.service';
 import { JobListService } from './services/job-list.service';
+import { GitService }     from './services/git.service';
 
 const routes: Routes = [
   {
@@ -65,6 +67,13 @@ const routes: Routes = [
               {
                 path: 'estimate',
                 component: EstimatingPageComponent
+              },
+              {
+                path: 'history',
+                component: HistoryPageComponent,
+                resolve: {
+                  git: GitService
+                }
               }
             ]
           }
@@ -116,7 +125,8 @@ const routes: Routes = [
   providers: [
     ElementService,
     JobService,
-    JobListService
+    JobListService,
+    GitService
   ]
 })
 export class AppRoutingModule { }

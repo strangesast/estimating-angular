@@ -21,7 +21,7 @@ import {
   readRef
 } from '../resources/git';
 
-import { initObjectStore } from '../resources/util';
+import { product, initObjectStore } from '../resources/util';
 
 // import { diff } from 'deep-diff';
 
@@ -58,17 +58,6 @@ import * as D3 from 'd3';
 import { DataService } from './data.service';
 
 import { ValidationError, NotImplementedError } from '../models/errors';
-
-function product(arr) {
-  return arr.reduce((a, b) =>
-    a.map((x) =>
-      b.map((y) =>
-        x.concat(y)
-      )
-    ).reduce((a, b) =>
-      a.concat(b), []),
-  [[]]);
-}
 
 function applyMethod(method, val, test) {
   if(['includes', 'startsWith', 'endsWith'].indexOf(method) !== -1) {
@@ -697,6 +686,24 @@ export class ElementService implements Resolve<any> {
         let child = await table.get(children[i]);
         children.splice(i, 1, child);
         await this.resolveChildren(child); // recurse
+      }
+    }
+    return root;
+  }
+
+  async resolveComponentChildren(root: ComponentElement) {
+    if(!root.children || !root.children.length) return root;
+    let db = this.db;
+    let children: any[] = root.children;
+    let table = db.childElements;
+    for(let i = 0; i < children.length; i++) {
+      if (typeof children[i] === 'string') {
+        let child = await table.get({ id: <string>children[i] });
+        if (typeof child.ref === 'string') {
+          child.data = await db.componentElements.get({ id: child.ref });
+          await this.resolveComponentChildren(child.data);
+        }
+        children.splice(i, 1, child);
       }
     }
     return root;
