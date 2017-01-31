@@ -55,6 +55,7 @@ import {
 import { HierarchyNode, Nest } from 'd3';
 import * as D3 from 'd3';
 
+import { ClassToStringPipe } from '../pipes';
 import { DataService } from './data.service';
 
 import { ValidationError, NotImplementedError } from '../models/errors';
@@ -96,7 +97,7 @@ export class ElementService implements Resolve<any> {
   private updateSubject: Subject<BehaviorSubject<any>[]> = new Subject(); // array of loaded elements
   private updateSubjectSub: Subscription;
 
-  constructor(private db: DataService) { }
+  constructor(private db: DataService, private pipe: ClassToStringPipe) { }
 
   // int db
   resolve(): Promise<any>|boolean {
@@ -1260,6 +1261,22 @@ export class ElementService implements Resolve<any> {
   getComponent(id) {
     let db = this.db;
     return db.componentElements.get(id);
+  }
+
+  async getFullPath(element): Promise<{ path: string[], fragment: string }> {
+    if (!element.id) throw new Error('need id for path');
+    let db = this.db;
+    let job = await db.collections.get(element.collection);
+    return {
+      path: ['/jobs'].concat(job.path, 'edit'),
+      fragment: this.pipe.transform(element) + '/' + element.id
+    };
+  }
+
+  async getChildData(child) {
+    let db = this.db;
+    child.data = await db.componentElements.get(child.ref);
+    return child;
   }
 
   async deepCopy(element: FolderElement|ComponentElement|ChildElement): Promise<FolderElement|ComponentElement|ChildElement> {

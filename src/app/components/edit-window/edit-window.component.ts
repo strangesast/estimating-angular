@@ -35,8 +35,12 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isNew: boolean;
 
   public context: any;
+  public refComponentEnabled: boolean = false;
+  public refComponentPath: any = false;
   public treeConfig: any = {};
   public root: any;
+
+  public fullPath: any;
 
   private form: FormGroup;
   
@@ -79,7 +83,15 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
 
       this.form = this.formBuilder.group(group);
 
+      if(_element instanceof ChildElement) {
+        this.elementService.getChildData(_element).then(() =>
+          this.elementService.getFullPath(_element.data).then(path =>
+            this.refComponentPath = path));
+      }
+
       this._element = _element;
+
+      this.elementService.getFullPath(_element).then(path => this.fullPath = path);
 
       if (!this.isWindow) {
         if (_element instanceof ChildElement ||

@@ -3,6 +3,7 @@
     <div>
       <span class="fa" [ngClass]="_element | classToString | typeToClass"></span>
       <span *ngIf="_element" class="hoverlink" (click)="toggleOpen()">{{ _element.name }}</span>
+      <span *ngIf="fullPath" class="fa fa-external-link hoverlink" [routerLink]="fullPath.path" [fragment]="fullPath.fragment"></span>
       <span *ngIf="!_element">Loading...</span>
     </div>
     <div>
@@ -46,7 +47,7 @@
             </div>
             <div class="form-control">
               <label>Qty:</label>
-              <input formControlName="qty" min="1" max="1000000" step="1">
+              <input formControlName="qty" type="number" min="1" max="1000000" step="1">
               <small class="about">Core reference part quantity.</small>
             </div>
           </div>
@@ -67,7 +68,7 @@
             <div class="form-group-title">Quantity</div>
             <div class="form-control">
               <label>Qty:</label>
-              <input formControlName="qty" min="1" max="1000000" step="1">
+              <input formControlName="qty" type="number" min="1" max="1000000" step="1">
               <small class="about">Component quantity.</small>
             </div>
           </div>
@@ -175,6 +176,38 @@
       <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root" (dropEvt)="handleDrop($event)"></app-simple-tree>
       <button type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
       <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
+      <div class="form-group" *ngIf="_element.data && refComponentEnabled">
+        <div class="form-group-title">Referenced Component <span class="fa fa-external-link hoverlink" *ngIf="refComponentPath" [routerLink]="refComponentPath.path" [fragment]="refComponentPath.fragment"></span></div>
+        <div class="form-control">
+          <label>Name:</label>
+          <input readonly type="text" [value]="_element.data.name">
+        </div>
+        <div class="form-control">
+          <label>Description:</label>
+          <textarea readonly>{{ _element.data.description }}</textarea>
+        </div>
+        <div class="form-control">
+          <label>Buy:</label>
+          <input readonly type="number" [value]="_element.data.buy">
+          <small class="about">Item buy price override.</small>
+        </div>
+        <div class="form-control">
+          <label>Sell:</label>
+          <input readonly type="number" [value]="_element.data.sell">
+          <small class="about">Item sell price override.</small>
+        </div>
+        <div class="form-control">
+          <label>Core part:</label>
+          <input readonly type="text" [value]="_element.data.catalog">
+          <small class="about">Core reference part.</small>
+        </div>
+        <div class="form-control">
+          <label>Qty:</label>
+          <input readonly type="number" [value]="_element.data.qty"> 
+          <small class="about">Core reference part quantity.</small>
+        </div>
+      </div>
+      <button type="button" *ngIf="_element.data" (click)="refComponentEnabled = !refComponentEnabled">{{ refComponentEnabled ? 'Close' : 'Open' }} Ref. Component</button>
     </form>
   </div>
 </div>

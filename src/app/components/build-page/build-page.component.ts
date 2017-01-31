@@ -77,6 +77,7 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   private nestSubject: BehaviorSubject<any>
 
   private filterForm: FormGroup;
+  private nestElementConfig: any = { ['window']: true };
 
   @ViewChild(NestComponent) nestComponent: NestComponent;
 

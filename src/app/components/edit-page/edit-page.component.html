@@ -40,7 +40,7 @@
         </div>
         <div class="form-control" *ngFor="let input of inputs">
           <label>{{ input.label }}</label>
-          <input *ngIf="input.type" [formControlName]="input.key" [type]="input.type">
+          <input *ngIf="input.type" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step">
           <select *ngIf="input.options" [formControlName]="input.key">
             <option *ngFor="let option of input.options" [value]="option.value">{{ option.key }}</option>
           </select>

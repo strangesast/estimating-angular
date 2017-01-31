@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import { ClassToStringPipe } from '../../../pipes/class-to-string.pipe';
+import { ElementService } from '../../../services/element.service';
 import { nameStringToClass, classToNameString } from '../../../resources/util';
 import { ChildElement, FolderElement } from '../../../models';
 
@@ -42,6 +43,8 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   props: string[];
 
   fragment: string = null;
+  fullPath: any;
+
   draggable: boolean = false;
   dragover: boolean = false;
   dragging: boolean = false;
@@ -49,7 +52,8 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
   constructor(
     private injector: Injector,
     public elementRef: ElementRef,
-    public classToStringPipe: ClassToStringPipe
+    public classToStringPipe: ClassToStringPipe,
+    private elementService: ElementService
   ) {
     this.data = this.injector.get('data');
     this.config = this.injector.get('config');
@@ -61,6 +65,9 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
     }
     if((this.data.data instanceof FolderElement || this.data.data instanceof ChildElement) && (this.data.data && this.data.data.id)) {
       this.fragment = [this.classToStringPipe.transform(this.data.data), this.data.data.id].join('/');
+      this.elementService.getFullPath(this.data.data).then(path => {
+        this.fullPath = path;
+      });
     }
   }
 

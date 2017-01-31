@@ -39,6 +39,15 @@ export class Collection extends BaseElement implements ICollection {
     return this.folders.roots ? this.folders.order.some(name => typeof this.folders.roots[name] === 'string') : false;
   }
 
+  get path(): string[] {
+    return [this.owner.username, this.shortname];
+  }
+
+  get pathString(): string {
+    return this.path.join('/');
+  }
+
+
   get orderedFolders(): (string|number)[] {
     if (!this.folders.roots) return [];
     return this.folders.order.map(n => this.folders.roots[n]);

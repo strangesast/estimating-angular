@@ -46,4 +46,4 @@
     </li>
   </ul>
 </div>
-<app-nest [nest]="nestSubject" [order]="job.folders.order" (dropEvt)="handleDrop($event)" (rootEvt)="handleRoot($event)"></app-nest>
+<app-nest [nest]="nestSubject" [config]="nestElementConfig" [order]="job.folders.order" (dropEvt)="handleDrop($event)" (rootEvt)="handleRoot($event)"></app-nest>

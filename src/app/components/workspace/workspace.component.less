@@ -12,8 +12,8 @@
 
   & > .side {
     width: 320px;
+    display: flex;
     flex-direction: column;
-    overflow: auto;
   
     .search {
       position: relative;
@@ -34,7 +34,10 @@
         .input-italic;
       }
     }
-  
+    .results {
+      overflow: auto;
+      flex-grow: 1;
+    }
     & > ul {
       padding-left: 0;
       list-style-type: none;

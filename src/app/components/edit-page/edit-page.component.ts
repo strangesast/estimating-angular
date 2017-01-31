@@ -74,6 +74,7 @@ export class EditPageComponent implements OnInit, OnChanges {
     this.newElementType = type;
     
     let group:any = {};
+    let form = this.newElementForm;
 
     if(type == 'folder') {
       let folderTypes = job.folders.order.map(name => ({ key: name[0].toUpperCase() + name.slice(1), value: name }));
@@ -92,6 +93,7 @@ export class EditPageComponent implements OnInit, OnChanges {
           key: 'parent',
           label: 'Parent Folder',
           options: parentFolders,
+          filter: (f) => form.value['type'] ? form.value['type'] == f.type : true,
           required: true,
           description: 'Choose where to add this folder.'
         }
@@ -107,6 +109,9 @@ export class EditPageComponent implements OnInit, OnChanges {
           label: 'Sell Price',
           value: 0,
           type: 'number',
+          min: 0,
+          max: 1000000,
+          step: 0.01,
           required: true,
           description: 'Override the sell price specified in core'
         },
@@ -115,6 +120,9 @@ export class EditPageComponent implements OnInit, OnChanges {
           label: 'Buy Price',
           value: 0,
           type: 'number',
+          min: 0,
+          max: 1000000,
+          step: 0.01,
           required: true,
           description: 'Override the buy price specified in core'
         },
@@ -122,6 +130,9 @@ export class EditPageComponent implements OnInit, OnChanges {
           key: 'qty',
           label: 'Core Part Qty',
           value: 1,
+          min: 1,
+          max: 1000000,
+          step: 1,
           type: 'number',
           required: true,
           description: 'How many core parts are included in this representation.  Typically 1.'
@@ -159,6 +170,9 @@ export class EditPageComponent implements OnInit, OnChanges {
           key: 'sell',
           label: 'Sell Price',
           type: 'number',
+          min: 0,
+          max: 1000000,
+          step: 0.01,
           required: false,
           description: 'Override sell price of descendant component/child elements.  If left undefined, use the computed value for each.'
         },
@@ -166,6 +180,9 @@ export class EditPageComponent implements OnInit, OnChanges {
           key: 'buy',
           label: 'Buy Price',
           type: 'number',
+          min: 0,
+          max: 1000000,
+          step: 0.01,
           required: false,
           description: 'Override buy price of descendant component/child elements.  If left undefined, use the computed value for each.'
         },
@@ -173,6 +190,9 @@ export class EditPageComponent implements OnInit, OnChanges {
           key: 'qty',
           label: 'Component Qty',
           value: 1,
+          min: 1,
+          max: 1000000,
+          step: 1,
           type: 'number',
           required: 'true',
           description: 'The quantity of components to add'

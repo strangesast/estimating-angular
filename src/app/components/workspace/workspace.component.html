@@ -5,7 +5,9 @@
         <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
       </form>
     </div>
-    <app-simple-tree class="default-margin" [config]="treeConfig" [rootNode]="results"></app-simple-tree>
+    <div class="results">
+      <app-simple-tree class="default-margin" [config]="treeConfig" [rootNode]="results"></app-simple-tree>
+    </div>
   </div>
   <div class="main">
     <router-outlet></router-outlet>
