@@ -1262,7 +1262,7 @@ export class ElementService implements Resolve<any> {
     return db.componentElements.get(id);
   }
 
-  async deepCopy(element) {
+  async deepCopy(element: FolderElement|ComponentElement|ChildElement): Promise<FolderElement|ComponentElement|ChildElement> {
     let db = this.db;
     if (element instanceof FolderElement) {
       let copy = element.clean();
