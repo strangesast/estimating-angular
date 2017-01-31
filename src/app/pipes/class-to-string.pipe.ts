@@ -6,7 +6,7 @@ import { ComponentElement, ChildElement, FolderElement, LocationElement, Collect
 })
 export class ClassToStringPipe implements PipeTransform {
 
-  transform(value: any, args?: any): any {
+  transform(value: any, folder?: any): any {
     if (typeof value === 'string') {
       switch(value) {
         case 'location':
@@ -15,6 +15,8 @@ export class ClassToStringPipe implements PipeTransform {
           return ComponentElement;
         case 'child':
           return ChildElement;
+        case 'phase':
+        case 'building':
         case 'folder':
           return FolderElement;
         case 'collection':
@@ -32,7 +34,7 @@ export class ClassToStringPipe implements PipeTransform {
         case ChildElement:
           return 'child';
         case FolderElement:
-          return 'folder';
+          return (folder ? value.type : false) || 'folder';
         case Collection:
           return 'collection';
         case CatalogPart:

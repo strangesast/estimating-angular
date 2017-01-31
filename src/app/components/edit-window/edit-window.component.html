@@ -1,7 +1,7 @@
 <div>
   <div *ngIf="isWindow" class="header">
     <div>
-      <span class="fa" [ngClass]="type | typeToClass"></span>
+      <span class="fa" [ngClass]="_element | classToString | typeToClass"></span>
       <span *ngIf="_element" class="hoverlink" (click)="toggleOpen()">{{ _element.name }}</span>
       <span *ngIf="!_element">Loading...</span>
     </div>
@@ -13,38 +13,138 @@
     <h1>{{ _element ? _element.name : 'New Element' }}</h1>
   </div>
   <div *ngIf="!isWindow || config.open" class="body">
-    <p>More about this object</p>
     <form (ngSubmit)="onSubmit(form)" [formGroup]="form">
-      <div class="form-control">
-        <label>Name:</label>
-        <input formControlName="name" type="text">
-      </div>
-      <div class="form-control">
-        <label>Description:</label>
-        <textarea formControlName="description"></textarea>
-      </div>
-      <div *ngIf="type === 'child'" class="form-control">
-        <label>Qty:</label>
-        <input formControlName="qty" type="number">
+      <div [ngSwitch]="_element | classToString:false">
+        <div *ngSwitchCase="'component'">
+          <div class="form-control">
+            <label>Name:</label>
+            <input formControlName="name" type="text">
+          </div>
+          <div class="form-control">
+            <label>Description:</label>
+            <textarea formControlName="description"></textarea>
+          </div>
+          <div class="form-control">
+            <label>Buy:</label>
+            <input formControlName="buy">
+          </div>
+          <div class="form-control">
+            <label>Sell:</label>
+            <input formControlName="sell">
+          </div>
+          <div class="form-control">
+            <label>Qty:</label>
+            <input formControlName="qty">
+          </div>
+          <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root"></app-simple-tree>
+        </div>
+        <div *ngSwitchCase="'child'">
+          <div class="form-control">
+            <label>Name:</label>
+            <input formControlName="name" type="text">
+          </div>
+          <div class="form-control">
+            <label>Description:</label>
+            <textarea formControlName="description"></textarea>
+          </div>
+          <div class="form-control">
+            <label>Qty:</label>
+            <input formControlName="qty">
+          </div>
+          <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root"></app-simple-tree>
+        </div>
+        <div *ngSwitchCase="'folder'">
+          <div class="form-control">
+            <label>Name:</label>
+            <input formControlName="name" type="text">
+          </div>
+          <div class="form-control">
+            <label>Description:</label>
+            <textarea formControlName="description"></textarea>
+          </div>
+          <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root"></app-simple-tree>
+        </div>
+        <div *ngSwitchCase="'collection'">
+          <div class="form-control">
+            <label>Name:</label>
+            <input formControlName="name" type="text">
+          </div>
+          <div class="form-control">
+            <label>Short name:</label>
+            <input formControlName="shortname" type="text">
+          </div>
+          <div class="form-control">
+            <label>Description:</label>
+            <textarea formControlName="description"></textarea>
+          </div>
+          <div class="form-group" formGroupName="owner">
+            <div class="form-group-title">Owner</div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input formControlName="name">
+            </div>
+            <div class="form-control">
+              <label>Username:</label>
+              <input formControlName="username">
+            </div>
+            <div class="form-control">
+              <label>Email Address:</label>
+              <input formControlName="email">
+            </div>
+          </div>
+          <div>Folders: <span>{{ _element.folders.order.join(', ') }}</span></div>
+        </div>
+        <div *ngSwitchCase="'catalog-part'">
+          <div class="form-control">
+            <label>Active:</label>
+            <input readonly [value]="_element.active">
+          </div>
+          <div class="form-control">
+            <label>Description:</label>
+            <input readonly [value]="_element.description">
+          </div>
+          <div class="form-control">
+            <label>Id:</label>
+            <input readonly [value]="_element.id">
+          </div>
+          <div class="form-control">
+            <label>Kind:</label>
+            <input readonly [value]="_element.kind">
+          </div>
+          <div class="form-control">
+            <label>Label:</label>
+            <input readonly [value]="_element.label">
+          </div>
+          <div class="form-control">
+            <label>Summary:</label>
+            <input readonly [value]="_element.summary">
+          </div>
+          <div class="form-control">
+            <label>Type:</label>
+            <input readonly [value]="_element.type">
+          </div>
+        </div>
+        <div *ngSwitchCase="'location'">
+          <div class="form-control">
+            <label>Name:</label>
+            <input formControlName="name">
+          </div>
+          <div class="form-control">
+            <label>Description:</label>
+            <input formControlName="description">
+          </div>
+          <div class="form-control">
+            <label>Children:</label>
+            <span>{{ _element.children.join(', ') }}</span>
+          </div>
+        </div>
+        <div *ngSwitchDefault>
+          <div>Unknown element type.</div>
+          <pre>{{ _element | json }}</pre>
+        </div>
       </div>
       <button type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
       <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
-
     </form>
-    <div *ngIf="type === 'child' && _element && _element.data">
-      <div>Component</div>
-      <label>Name:</label>
-      <div>{{ _element.data.name }}</div>
-      <label>Description:</label>
-      <div>{{ _element.data.description }}</div>
-      <label>Sell:</label>
-      <div>{{ _element.data.sell | currency:'USD':true}}</div>
-      <label>Buy:</label>
-      <div>{{ _element.data.buy | currency:'USD':true}}</div>
-    </div>
-    <div *ngIf="context">
-      <p>This elmement is a child of:</p>
-      <pre>{{ context | json }}</pre>
-    </div>
   </div>
 </div>

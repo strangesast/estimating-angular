@@ -11,8 +11,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Observable, Subscription, BehaviorSubject } from 'rxjs';
 
+import * as D3 from 'd3';
 import { ElementService } from '../../services/element.service';
-import { ComponentElement, ChildElement, FolderElement } from '../../models';
+import { Collection, CatalogPart, LocationElement, ComponentElement, ChildElement, FolderElement } from '../../models';
 
 // for use in edit page in '.main' and on build / elsewhere in lower window
 
@@ -34,6 +35,8 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isNew: boolean;
 
   public context: any;
+  public treeConfig: any = {};
+  public root: any;
 
   private form: FormGroup;
   
@@ -50,28 +53,42 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
 
   initElement(element) {
     return this.elementSub = element.subscribe(_element => {
+      let group: any = {};
+
+      if (_element instanceof ComponentElement ||
+          _element instanceof ChildElement ||
+          _element instanceof FolderElement ||
+          _element instanceof Collection ||
+          _element instanceof LocationElement) {
+        group.name = [_element.name, Validators.required];
+        group.description = _element.description;
+      }
+
+      if (_element instanceof ComponentElement) {
+        group.buy = _element.buy;
+        group.sell = _element.sell;
+        group.qty = [_element.qty, Validators.required];
+
+      } else if (_element instanceof ChildElement) {
+        group.qty = [_element.qty, Validators.required];
+
+      } else if (_element instanceof Collection) {
+        group.shortname = [_element.shortname, Validators.required, Validators.minLength(4)];
+      }
+
+      this.form = this.formBuilder.group(group);
+
       this._element = _element;
-      this.type = _element instanceof FolderElement ? _element.type : _element instanceof ComponentElement ? 'component' : _element instanceof ChildElement ? 'child' : 'unknown';
 
-      if(_element && _element instanceof ChildElement) {
-        this.form = this.formBuilder.group({
-          name: [ _element.name || '' ],
-          description: _element.description || '',
-          qty: [ _element.qty || null ]
-        });
-
-      } else {
-        this.form = this.formBuilder.group({
-          name: [ _element.name || '' ],
-          description: _element.description || ''
-        });
-      }
-
-      if (_element instanceof ChildElement) {
-        this.elementService.getContext(_element).then(ctx => (<ChildElement>this._element).data = ctx);
-      }
-      if (_element instanceof FolderElement) {
-        this.elementService.getContext(_element).then(ctx => this.context = ctx);
+      if (!this.isWindow) {
+        if (_element instanceof ChildElement ||
+            _element instanceof FolderElement ||
+            _element instanceof ComponentElement) {
+          this.elementService.resolveElementTree(_element.clean()).then(copy => {
+            let node = D3.hierarchy(copy, (n: any) => n.data ? n.data.children : n.children);
+            this.root = new BehaviorSubject(node);
+          });
+        }
       }
     });
   }

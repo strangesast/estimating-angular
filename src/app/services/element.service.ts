@@ -709,6 +709,28 @@ export class ElementService implements Resolve<any> {
     return root;
   }
 
+  async resolveElementTree(root: ComponentElement|ChildElement|FolderElement) {
+    let db = this.db;
+    if (root instanceof ChildElement) {
+      let ref = await db.componentElements.get({ id: root.ref });
+      if (ref) {
+        await this.resolveElementTree(ref);
+      }
+    } else if (root instanceof ComponentElement) {
+      if (root.children && root.children.length) {
+        root.children = <any[]>(await Promise.all((<any[]>root.children).map(childId => db.childElements.get(<any>childId).then(this.resolveElementTree.bind(this)))));
+      }
+    } else if (root instanceof FolderElement) {
+      if (root.children && root.children.length) {
+        root.children = await Promise.all(root.children.map(childId => db.folderElements.get(<any>childId).then(this.resolveElementTree.bind(this))));
+      }
+    } else {
+      console.error('invalid type', root);
+      throw new Error('invalid type');
+    }
+    return root;
+  }
+
   async resolveChildElements(job: Collection, root: FolderElement|ComponentElement|ChildElement, maxDepth = 10) {
     if(maxDepth < 1) return root;
     let db = this.db;
@@ -969,6 +991,21 @@ export class ElementService implements Resolve<any> {
       return db.componentElements.get(<any>child.ref);
     } else if (child instanceof FolderElement) {
       return db.folderElements.get({ children: child.id});
+    }
+  }
+
+  // returns hierarchy node
+  async getContextualChildren(parent: ChildElement|FolderElement|ComponentElement) {
+    let db = this.db;
+    if (parent instanceof ChildElement) {
+      let ref = await db.componentElements.get(<any>parent.ref);
+
+    } else if (parent instanceof FolderElement) {
+
+    } else if (parent instanceof ComponentElement) {
+
+    } else {
+      throw new Error('invalid type for this function');
     }
   }
 
