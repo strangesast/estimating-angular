@@ -1,4 +1,4 @@
-<div>
+<div [class.window]="isWindow">
   <div *ngIf="isWindow" class="header">
     <div>
       <span class="fa" [ngClass]="_element | classToString | typeToClass"></span>
@@ -16,126 +16,155 @@
     <form (ngSubmit)="onSubmit(form)" [formGroup]="form">
       <div [ngSwitch]="_element | classToString:false">
         <div *ngSwitchCase="'component'">
-          <div class="form-control">
-            <label>Name:</label>
-            <input formControlName="name" type="text">
-          </div>
-          <div class="form-control">
-            <label>Description:</label>
-            <textarea formControlName="description"></textarea>
-          </div>
-          <div class="form-control">
-            <label>Buy:</label>
-            <input formControlName="buy">
-          </div>
-          <div class="form-control">
-            <label>Sell:</label>
-            <input formControlName="sell">
-          </div>
-          <div class="form-control">
-            <label>Qty:</label>
-            <input formControlName="qty">
-          </div>
-          <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root"></app-simple-tree>
-        </div>
-        <div *ngSwitchCase="'child'">
-          <div class="form-control">
-            <label>Name:</label>
-            <input formControlName="name" type="text">
-          </div>
-          <div class="form-control">
-            <label>Description:</label>
-            <textarea formControlName="description"></textarea>
-          </div>
-          <div class="form-control">
-            <label>Qty:</label>
-            <input formControlName="qty">
-          </div>
-          <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root"></app-simple-tree>
-        </div>
-        <div *ngSwitchCase="'folder'">
-          <div class="form-control">
-            <label>Name:</label>
-            <input formControlName="name" type="text">
-          </div>
-          <div class="form-control">
-            <label>Description:</label>
-            <textarea formControlName="description"></textarea>
-          </div>
-          <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root"></app-simple-tree>
-        </div>
-        <div *ngSwitchCase="'collection'">
-          <div class="form-control">
-            <label>Name:</label>
-            <input formControlName="name" type="text">
-          </div>
-          <div class="form-control">
-            <label>Short name:</label>
-            <input formControlName="shortname" type="text">
-          </div>
-          <div class="form-control">
-            <label>Description:</label>
-            <textarea formControlName="description"></textarea>
-          </div>
-          <div class="form-group" formGroupName="owner">
-            <div class="form-group-title">Owner</div>
+          <div class="form-group">
+            <div class="form-group-title">General</div>
             <div class="form-control">
               <label>Name:</label>
-              <input formControlName="name">
+              <input formControlName="name" type="text">
+            </div>
+            <div class="form-control">
+              <label>Description:</label>
+              <textarea formControlName="description"></textarea>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-group-title">Pricing</div>
+            <div class="form-control">
+              <label>Buy:</label>
+              <input formControlName="buy" type="number" min="0.00" max="1000000" step="0.01">
+              <small class="about">Item buy price override.</small>
+            </div>
+            <div class="form-control">
+              <label>Sell:</label>
+              <input formControlName="sell" type="number" min="0.00" max="1000000" step="0.01">
+              <small class="about">Item sell price override.</small>
+            </div>
+            <div class="form-control">
+              <label>Core part:</label>
+              <input formControlName="catalog">
+              <small class="about">Core reference part.</small>
+            </div>
+            <div class="form-control">
+              <label>Qty:</label>
+              <input formControlName="qty" min="1" max="1000000" step="1">
+              <small class="about">Core reference part quantity.</small>
+            </div>
+          </div>
+        </div>
+        <div *ngSwitchCase="'child'">
+          <div class="form-group">
+            <div class="form-group-title">General</div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input formControlName="name" type="text">
+            </div>
+            <div class="form-control">
+              <label>Description:</label>
+              <textarea formControlName="description"></textarea>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-group-title">Quantity</div>
+            <div class="form-control">
+              <label>Qty:</label>
+              <input formControlName="qty" min="1" max="1000000" step="1">
+              <small class="about">Component quantity.</small>
+            </div>
+          </div>
+        </div>
+        <div *ngSwitchCase="'folder'">
+          <div class="form-group">
+            <div class="form-group-title">General</div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input formControlName="name" type="text">
+            </div>
+            <div class="form-control">
+              <label>Description:</label>
+              <textarea formControlName="description"></textarea>
+            </div>
+          </div>
+        </div>
+        <div *ngSwitchCase="'collection'">
+          <div class="form-group">
+            <div class="form-group-title">General</div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input formControlName="name" type="text">
+            </div>
+            <div class="form-control">
+              <label>Short name:</label>
+              <input formControlName="shortname" type="text">
+            </div>
+            <div class="form-control">
+              <label>Description:</label>
+              <textarea formControlName="description"></textarea>
+            </div>
+          </div>
+          <div class="form-group" formGroupName="owner">
+            <div class="form-group-title">Ownership</div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input formControlName="name" type="text">
             </div>
             <div class="form-control">
               <label>Username:</label>
-              <input formControlName="username">
+              <input formControlName="username" type="text">
             </div>
             <div class="form-control">
               <label>Email Address:</label>
-              <input formControlName="email">
+              <input formControlName="email" type="email">
             </div>
           </div>
           <div>Folders: <span>{{ _element.folders.order.join(', ') }}</span></div>
         </div>
         <div *ngSwitchCase="'catalog-part'">
-          <div class="form-control">
-            <label>Active:</label>
-            <input readonly [value]="_element.active">
-          </div>
-          <div class="form-control">
-            <label>Description:</label>
-            <input readonly [value]="_element.description">
-          </div>
-          <div class="form-control">
-            <label>Id:</label>
-            <input readonly [value]="_element.id">
-          </div>
-          <div class="form-control">
-            <label>Kind:</label>
-            <input readonly [value]="_element.kind">
-          </div>
-          <div class="form-control">
-            <label>Label:</label>
-            <input readonly [value]="_element.label">
-          </div>
-          <div class="form-control">
-            <label>Summary:</label>
-            <input readonly [value]="_element.summary">
-          </div>
-          <div class="form-control">
-            <label>Type:</label>
-            <input readonly [value]="_element.type">
+          <div class="form-group">
+            <div class="form-control">
+              <label>Active:</label>
+              <input readonly [value]="_element.active">
+            </div>
+            <div class="form-control">
+              <label>Description:</label>
+              <textarea readonly>{{ _element.description }}</textarea>
+            </div>
+            <div class="form-control">
+              <label>Id:</label>
+              <input readonly [value]="_element.id">
+            </div>
+            <div class="form-control">
+              <label>Kind:</label>
+              <input readonly [value]="_element.kind">
+            </div>
+            <div class="form-control">
+              <label>Label:</label>
+              <input readonly [value]="_element.label">
+            </div>
+            <div class="form-control">
+              <label>Summary:</label>
+              <input readonly [value]="_element.summary">
+            </div>
+            <div class="form-control">
+              <label>Type:</label>
+              <input readonly [value]="_element.type">
+            </div>
           </div>
         </div>
         <div *ngSwitchCase="'location'">
-          <div class="form-control">
-            <label>Name:</label>
-            <input formControlName="name">
-          </div>
-          <div class="form-control">
-            <label>Description:</label>
-            <input formControlName="description">
-          </div>
-          <div class="form-control">
-            <label>Children:</label>
-            <span>{{ _element.children.join(', ') }}</span>
+          <div class="form-group">
+            <div class="form-group-title">General</div>
+            <div class="form-control">
+              <label>Name:</label>
+              <input formControlName="name" type="text">
+            </div>
+            <div class="form-control">
+              <label>Description:</label>
+              <textarea formControlName="description"></textarea>
+            </div>
+            <div class="form-control">
+              <label>Children:</label>
+              <span>{{ _element.children.join(', ') }}</span>
+            </div>
           </div>
         </div>
         <div *ngSwitchDefault>
@@ -143,6 +172,7 @@
           <pre>{{ _element | json }}</pre>
         </div>
       </div>
+      <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root" (dropEvt)="handleDrop($event)"></app-simple-tree>
       <button type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
       <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
     </form>

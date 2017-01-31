@@ -68,6 +68,7 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
         group.buy = _element.buy;
         group.sell = _element.sell;
         group.qty = [_element.qty, Validators.required];
+        group.catalog = _element.catalog;
 
       } else if (_element instanceof ChildElement) {
         group.qty = [_element.qty, Validators.required];
@@ -84,11 +85,20 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
         if (_element instanceof ChildElement ||
             _element instanceof FolderElement ||
             _element instanceof ComponentElement) {
-          this.elementService.resolveElementTree(_element.clean()).then(copy => {
-            let node = D3.hierarchy(copy, (n: any) => n.data ? n.data.children : n.children);
-            this.root = new BehaviorSubject(node);
-          });
+          this.buildChildTree(_element);
         }
+      }
+    });
+  }
+
+  buildChildTree(el) {
+    this.elementService.resolveElementTree(el.clean()).then(copy => {
+      let node = D3.hierarchy(copy, (n: any) => n.data ? n.data.children : n.children);
+      if (this.root) {
+        this.root.next(node);
+
+      } else {
+        this.root = new BehaviorSubject(node);
       }
     });
   }
@@ -121,6 +131,37 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   reset() {
     this.form.reset();
     this.form.patchValue(this.element.getValue());
+  }
+
+  async handleDrop({ dropped, on }) {
+    let element = this.element.getValue();
+    
+    if (dropped.collection === '') dropped.collection = on.collection;
+    if (on.collection !== dropped.collection) return;
+    let job = element.collection;
+    if (on.id === element.id) {
+
+      if (element instanceof ComponentElement && (dropped instanceof ChildElement || dropped instanceof ComponentElement)) {
+        if (!dropped.id) {
+          await this.elementService.addChildElement(job, on, dropped);
+
+        } else {
+          let copy = await this.elementService.deepCopy(dropped);
+          await this.elementService.addChildElement(job, on, copy);
+
+        }
+        let component = await this.elementService.getComponent(element.id);
+        await this.buildChildTree(component);
+
+
+      } else if (element instanceof ChildElement) {
+
+      } else if (element instanceof FolderElement && dropped instanceof FolderElement) {
+        await this.elementService.addChildElement(job, on, dropped);
+        let folder = await this.elementService.getFolder(element.id);
+        await this.buildChildTree(folder);
+      }
+    }
   }
 
   ngOnDestroy() {

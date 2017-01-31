@@ -55,7 +55,9 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   @Output() drag: Subject<any> = new Subject();
   @Output() dropEvt: Subject<any> = new Subject();
   private dragging: boolean = false;
+  /*
   componentCollapse: Subject<any> = new Subject();
+  */
 
   // should be in config
   //@Input() draggable: boolean = true;
@@ -72,36 +74,8 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementComponentRefMap = new Map();
     this.childComponentFactory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
-    this.childComponents.switchMap(components =>
-      Observable.merge(...components.map(component =>
-        component.instance.nameClicked))
-    ).subscribe(this.componentEdit);
-
-    this.childComponents.switchMap(components =>
-      Observable.merge(...components.map(component =>
-        component.instance.collapse))
-    ).subscribe(this.componentCollapse);
-
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.drag))).subscribe(this.drag);
     this.childComponents.switchMap(components => Observable.merge(...components.map(({instance}) => instance.dropEvt))).subscribe(this.dropEvt);
-
-    this.componentCollapse.withLatestFrom(this.rootNode).subscribe(([el, node]: [any, any]) => {
-      let par = getNodeParent(el);
-      if(Array.isArray(node)) {
-        let i = node.indexOf(par);
-        if(i!=-1 && par == el) {
-          node[i].open = !node[i].open;
-          this.rootNode.next(node)
-          return;
-        }
-      } else {
-        if(node.data == el.data) {
-          node.open = !node.open;
-          this.rootNode.next(node);
-          return;
-        }
-      }
-    });
 
     this.drag.subscribe(({event: e, component}) => {
       if(e.type == 'dragstart') {
@@ -136,7 +110,6 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     component.destroy();
     return res;
   }
-
 
   ngAfterViewInit() {
     this.htmlElement = this.element.nativeElement.querySelector('ul');

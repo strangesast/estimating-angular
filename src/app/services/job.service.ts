@@ -195,10 +195,19 @@ export class JobService implements Resolve<Promise<any>> {
   }
 
   addChildElement(to, what, config) {
-    let db = this.db;
     let job = this.collectionSubject.getValue();
+    return this.elementService.addChildElement(job, to, what, config).then((res) => {
+      if(res !== undefined) this.nestConfigSubject.next(this.nestConfigSubject.getValue()); // touch the config to trigger recalc
+    }).catch(err => {
+      console.error('drag error', err);
+      alert('drag error');
+    });
+
+    /*
+    let db = this.db;
 
     if(to.id === what.id) return;
+    let job = this.collectionSubject.getValue();
 
     return db.transaction('rw', db.folderElements, db.locationElements, db.childElements, db.componentElements, async() => {
       let currentPosition;
@@ -375,6 +384,7 @@ export class JobService implements Resolve<Promise<any>> {
       console.error('drag error', err);
       alert('drag error');
     });
+    */
   }
 
   createFolder(el, parentId) {

@@ -841,94 +841,184 @@ export class ElementService implements Resolve<any> {
     });
   }
 
-  addChildElement(job, to, what) {
-    if(to.id == what.id) return Promise.resolve();
-    if(what.collection !== '' && what.collection !== job.id) throw new NotImplementedError('unsupported - clone child from second job');
+  async addChildElement(job, to, what, config?) {
+    if (!config) config = { folders: job.folders };
+    let db = this.db;
+    if(typeof job === 'string') {
+      job = await db.collections.get(<any>job);
+    }
 
-    let getChildElement, getParent, getLocation;
-    if (to instanceof ChildElement) {
-      getParent = this.retrieveElement(to.constructor, to.id).then((par: ChildElement) => {
-        return retrieveRecordAs(this.prevDb, ComponentElement, par.ref).then((comp:ChildElement) => {
-          par.data = comp;
-          return par;
-        });
-      });
-    }
-    if (to instanceof ComponentElement) {
-      getParent = this.retrieveElement(to.constructor, to.id);
-    }
-    if (to instanceof FolderElement) {
-      let determineFolders = (what.id !== '' ? retrieveRecordsAsWith(this.prevDb, LocationElement, what.id, 'children') : Promise.resolve([])).then(locs => {
-        if(locs.length === 1) {
-          let folders = locs[0].folders.slice()
-          folders[job.folders.order.indexOf(to.type)] = to.id;
-          return folders;
+    if(to.id === what.id) return;
+
+    return db.transaction('rw', db.folderElements, db.locationElements, db.childElements, db.componentElements, async() => {
+      let currentPosition;
+      if (what instanceof ChildElement) {
+        if (!what.id) {
+          currentPosition = null;
+        } else {
+          currentPosition = await db.locationElements.get({ children: what.id });
         }
-        let folders = job.folders.order.map(name => job.folders.roots[name]);
-        folders[job.folders.order.indexOf(to.type)] = to.id;
-        return folders;
-      });
+      }
 
-      // load/create location with root folders except 'to' folder 
-      getLocation = determineFolders.then(folders => this.retrieveLocationOrCreate(job, folders));
-    }
-    if (what instanceof FolderElement) {
-      getChildElement = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createFolder(job, what.type, what.name, what.description, what.children);
-    }
-    if (what instanceof ChildElement) {
-      getChildElement = what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createChildElement(job, what.ref, undefined, what.name, what.description, what.qty);
+      if (what instanceof FolderElement) {
+        if (!what.id) {
+          currentPosition = null;
+        } else {
+          currentPosition = await db.folderElements.get({ children: what.id });
+        }
+      }
 
-    }
-    if (what instanceof ComponentElement) {
-      getChildElement = (what.id !== '' ? this.retrieveElement(what.constructor, what.id) : this.createComponent(job, what.name, what.description)).then((component: ComponentElement) => {
-        return this.createChildElement(job, component.id, undefined, component.name, component.description, 1);
-      });
-    }
-    if ((what instanceof ChildElement || what instanceof ComponentElement) && to instanceof FolderElement) {
-      return Promise.all([getChildElement, getLocation]).then(([child, loc]: [any, any]) =>
-        this.moveChildElement(job, child, loc));
+      if (to instanceof FolderElement) {
 
-    } else if (what instanceof ChildElement && to instanceof ChildElement) {
-      if(what.id === to.id) return Promise.resolve(); // do nothing
-      return Promise.all([getChildElement, getParent]).then(([child, parent]: [ChildElement, ChildElement]) => {
-        let component = parent.data;
-        return this.moveChildElement(job, child, component);
-      });
+        if (what instanceof ChildElement) {
+          let i = job.folders.order.indexOf(to.type);
+          if (i == -1) throw new Error('invalid job folder state');
+          let id = to.id;
 
-    } else if ((what instanceof ChildElement || what instanceof ComponentElement) && to instanceof ComponentElement) {
-      if(what.id === to.id) return Promise.resolve(); // do nothing
-      return Promise.all([getChildElement, getParent]).then(([child, parent]) => {
-        return this.moveChildElement(job, child, parent);
-      });
 
-    } else if (what instanceof FolderElement && to instanceof FolderElement) {
-      return getChildElement.then((child:any) => {
-        return retrieveRecordsAsWith(this.prevDb, FolderElement, <any>child.id, 'children').then((folders:any) => {
-          to.children = to.children || [];
-          to.children.push(child.id);
+          if (currentPosition) {
+            let folders = currentPosition.folders;
+            folders[i] = id;
+            let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
+            let newPosition: LocationElement = await db.locationElements.get({ [keyName]: folders });
+            if (!newPosition) {
+              newPosition = new LocationElement(undefined, undefined, job.id, [], folders);
+              await db.locationElements.add(newPosition);
+            }
 
-          if(folders.length == 1) {
-            folders[0].children.splice(folders[0].children.indexOf(<any>child.id), 1)
+            // already in desired position
+            if (currentPosition.id == newPosition.id) return;
 
-            return <any>Promise.all([
-              saveRecordAs(this.prevDb, folders[0]),
-              saveRecordAs(this.prevDb, to)
-            ]);
-          } else if (folders.length == 0) {
-            return <any>saveRecordAs(this.prevDb, to)
+            newPosition.children.push(what.id);
+            let childIndex = currentPosition.children.indexOf(what.id);
+            if(childIndex == -1) throw new Error('malformed');
+            currentPosition.children.splice(childIndex, 1);
+
+            // save previous first (else children key error)
+            await db.locationElements.put(currentPosition.clean());
+
+            await db.locationElements.put(newPosition.clean());
+
+            return true;
 
           } else {
-            throw new ValidationError('invalid state - child in more than one folder');
+            let folders = job.orderedFolders;
+            config.folders.order.filter(n => config.folders.roots[n]).forEach(n => folders[job.folders.order.indexOf(n)] = config.folders.roots[n]);
+            folders[i] = id;
+            let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
+            let newPosition = await db.locationElements.get({ [keyName]: folders });
+            if (!newPosition) {
+              newPosition = new LocationElement(undefined, undefined, job.id, [], folders);
+              await db.locationElements.add(newPosition);
+            }
+
+            if(!what.id) {
+              what.id = await db.childElements.add(what);
+            }
+
+            newPosition.children.push(what.id);
+            await db.locationElements.put(newPosition.clean());
+
+            return true;
+          }
+        } else if (what instanceof ComponentElement) {
+          if (!what.id) {
+            what.collection = to.collection;
+            what.id = await db.componentElements.add(what);
+          }
+
+          let child = new ChildElement(what.name, what.description, what.collection, what.id);
+          child.id = await db.childElements.add(child);
+
+          let folders = job.orderedFolders;
+          config.folders.order.filter(n => config.folders.roots[n]).forEach(n => folders[job.folders.order.indexOf(n)] = config.folders.roots[n]);
+          let i = job.folders.order.indexOf(to.type);
+          folders[i] = to.id;
+
+          let keyName = folders.length > 1 ? ('[' + folders.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + i;
+          let newPosition = await db.locationElements.get({ [keyName]: folders });
+          if (!newPosition) {
+            newPosition = new LocationElement(undefined, undefined, job.id, [], folders);
+            await db.locationElements.add(newPosition);
+          }
+
+          newPosition.children.push(child.id);
+          await db.locationElements.put(newPosition.clean());
+
+          return true;
+
+        } else if (what instanceof FolderElement) {
+          if (currentPosition) {
+            // already in desired position
+            if (currentPosition.id == to.id) return;
+
+            let childIndex = currentPosition.children.indexOf(what.id);
+            if(childIndex == -1) throw new Error('malformed');
+            currentPosition.children.splice(childIndex, 1);
+            to.children.push(what.id);
+
+            await db.folderElements.put(currentPosition.clean());
+            await db.folderElements.put(to.clean());
+            
+          } else {
+            if(!what.id) {
+              what.type = to.type;
+              what.collection = to.collection;
+              what.id = await db.folderElements.add(what);
+            }
+            to.children.push(what.id);
+            await db.folderElements.put(to.clean());
+
+            return true;
 
           }
-        });
-      });
+        }
+      } else if (to instanceof ChildElement) {
+        if(!(what instanceof ChildElement || what instanceof ComponentElement)) throw new Error('invalid drag');
 
-    } else {
-      // invalid drop
-      throw new ValidationError('invalid parent child combination');
+        // potentially unwanted: dragged element copies location of destination.  confusing when only one folder is visible
 
-    }
+        let desiredPosition: LocationElement|ComponentElement = (await db.locationElements.get({ children: to.id })) || (await db.componentElements.get({ children: to.id }));
+        if(!desiredPosition) {
+          throw new Error('invalid or malformed destination');
+        }
+
+        if (what instanceof ChildElement) {
+          if (!what.id) {
+            what.collection = to.collection;
+            what.id = await db.childElements.add(what);
+          }
+          
+          if (currentPosition.id == desiredPosition.id) return;
+
+          if (currentPosition) {
+            let childIndex = currentPosition.children.indexOf(what.id);
+            if(childIndex == -1) throw new Error('malformed');
+            currentPosition.children.splice(childIndex, 1)
+            await db[(<any>currentPosition.constructor).store].put(currentPosition);
+          }
+
+          (<(string|number)[]>desiredPosition.children).push(what.id);
+          await db[(<any>desiredPosition.constructor).store].put(desiredPosition);
+
+          return true;
+
+        } else if (what instanceof ComponentElement) {
+          if(!what.id) {
+            what.collection = to.collection;
+            what.id = await db.componentElements.add(what);
+          }
+
+          let child = new ChildElement(what.name, what.description, what.collection, what.id);
+          child.id = await db.childElements.add(child);
+
+          (<(string|number)[]>desiredPosition.children).push(child.id);
+          await db[(<any>desiredPosition.constructor).store].put(desiredPosition);
+
+          return true;
+        }
+      }
+   });
   }
 
   retrieveAllChildren(job, rootFolder) {
@@ -1160,5 +1250,41 @@ export class ElementService implements Resolve<any> {
     return _config.withLatestFrom(_collection).switchMap(([config, collection]) => {
       return this.buildNest(collection, config);
     });
+  }
+
+  getFolder(id) {
+    let db = this.db;
+    return db.folderElements.get(id);
+  }
+
+  getComponent(id) {
+    let db = this.db;
+    return db.componentElements.get(id);
+  }
+
+  async deepCopy(element) {
+    let db = this.db;
+    if (element instanceof FolderElement) {
+      let copy = element.clean();
+      copy.children = [];
+      delete copy.id;
+      copy.id = await db.folderElements.add(copy);
+      return copy;
+
+    } else if (element instanceof ComponentElement) {
+      let copy = element.clean();
+      delete copy.id;
+      copy.id = await db.componentElements.add(copy);
+      return copy;
+
+    } else if (element instanceof ChildElement) {
+      let copy = element.clean();
+      delete copy.id;
+      copy.id = await db.childElements.add(copy);
+      return copy;
+
+    } else {
+      throw new Error('invalid type');
+    }
   }
 }
