@@ -27,6 +27,10 @@
         -webkit-appearance: none;
         border: 1px solid @off-white;
         width: 100%;
+        background: inherit;
+        &:active, &:focus {
+          background: #F8F8F8;
+        }
         .input-italic;
       }
     }
@@ -47,5 +51,10 @@
     flex-grow: 1;
     min-width: 0;
     .default-margin-right;
+    padding: 12px;
+    align-self: baseline;
+    .box-shadow-2;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    background: #F8F8F8;
   }
 }
