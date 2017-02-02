@@ -716,6 +716,7 @@ export class ElementService implements Resolve<any> {
       let ref = await db.componentElements.get({ id: root.ref });
       if (ref) {
         await this.resolveElementTree(ref);
+        root.data = ref;
       }
     } else if (root instanceof ComponentElement) {
       if (root.children && root.children.length) {
@@ -1018,6 +1019,27 @@ export class ElementService implements Resolve<any> {
 
           return true;
         }
+      } else if (to instanceof ComponentElement) {
+        if (what instanceof ComponentElement) {
+          if (!what.id) {
+            what.collection = to.collection;
+            what.id = await db.componentElements.add(what);
+          }
+
+          let child = new ChildElement(what.name, what.description, what.collection, what.id);
+          child.id = await db.childElements.add(child);
+
+          (<any[]>to.children).push(child.id);
+          await db.componentElements.put(to)
+
+          return true;
+
+
+        } else if (what instanceof ChildElement) {
+
+        } else {
+
+        }
       }
    });
   }
@@ -1192,7 +1214,7 @@ export class ElementService implements Resolve<any> {
 
       // get locations at those intersections
       let locations = (<any[]>(await Promise.all(pairs.map(pair =>
-        db.locationElements.where({ [keyName] : pair.length > 1 ? pair : pair[0] }).toArray())))).reduce((a, b) => a.concat(b), []);
+        db.locationElements.where({ [keyName] : pair.length > 1 ? pair : pair[0] }).toArray())))).reduce((a, b) => a.concat(b), []).filter(l => !!l);
 
       // resolve children for each location, assign 'folders' property for nest
       let children = (<any[]>(await Promise.all(locations.map(location =>
@@ -1239,7 +1261,7 @@ export class ElementService implements Resolve<any> {
       for(let i = 0; i < children.length; i++) {
         let child = children[i];
         child.data = await db.componentElements.get(child.ref);
-        children[i] = D3.hierarchy(child, (n) => n.data.children);
+        children[i] = D3.hierarchy(child, (n) => n.data);
       }
 
       let keys = nodes.filter(n => config.folders.enabled[n.data.type]);

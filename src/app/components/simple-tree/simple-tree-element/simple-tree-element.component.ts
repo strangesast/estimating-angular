@@ -12,7 +12,7 @@ import {
 import { ClassToStringPipe } from '../../../pipes/class-to-string.pipe';
 import { ElementService } from '../../../services/element.service';
 import { nameStringToClass, classToNameString } from '../../../resources/util';
-import { ChildElement, FolderElement } from '../../../models';
+import { ComponentElement, ChildElement, FolderElement } from '../../../models';
 
 export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
 
@@ -63,7 +63,7 @@ export class SimpleTreeElementComponent implements OnInit, OnChanges {
     if(this.config && this.config.properties) {
       this.props = this.config.properties;
     }
-    if((this.data.data instanceof FolderElement || this.data.data instanceof ChildElement) && (this.data.data && this.data.data.id)) {
+    if((this.data.data instanceof FolderElement || this.data.data instanceof ChildElement || this.data.data instanceof ComponentElement) && (this.data.data && this.data.data.id)) {
       this.fragment = [this.classToStringPipe.transform(this.data.data), this.data.data.id].join('/');
       this.elementService.getFullPath(this.data.data).then(path => {
         this.fullPath = path;

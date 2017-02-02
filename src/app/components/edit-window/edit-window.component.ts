@@ -105,7 +105,7 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
 
   buildChildTree(el) {
     this.elementService.resolveElementTree(el.clean()).then(copy => {
-      let node = D3.hierarchy(copy, (n: any) => n.data ? n.data.children : n.children);
+      let node = D3.hierarchy(copy, (n: any) => n.data ? [n.data] : n.children);
       if (this.root) {
         this.root.next(node);
 
@@ -153,13 +153,15 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
     let job = element.collection;
     if (on.id === element.id) {
 
-      if (element instanceof ComponentElement && (dropped instanceof ChildElement || dropped instanceof ComponentElement)) {
-        if (!dropped.id) {
-          await this.elementService.addChildElement(job, on, dropped);
+      if (element instanceof ComponentElement) {
+        if (dropped instanceof ComponentElement) {
+          await this.elementService.addChildElement(job, element, dropped)
+
+        } else if (dropped instanceof ChildElement) {
+          throw new Error('invalid (unsupported)');
 
         } else {
-          let copy = await this.elementService.deepCopy(dropped);
-          await this.elementService.addChildElement(job, on, copy);
+          throw new Error('invalid');
 
         }
         let component = await this.elementService.getComponent(element.id);
