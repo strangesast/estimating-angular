@@ -9,6 +9,7 @@ export { BasedOn } from './based-on';
 export { CatalogPart } from './catalog-part';
 
 /* interfaces */
+export { TreeConfiguration } from './tree-configuration';
 export { TreeConfig } from './tree-config';
 export { NestConfig } from './nest-config';
 export { Filter } from './filter';

@@ -42,9 +42,10 @@ let cnt = 0;
   providers: [ ClassToStringPipe ]
 })
 export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
-  @Input() rootNode: ReplaySubject<HierarchyNode<any>|HierarchyNode<any>[]>;
+  @Input() rootNode: BehaviorSubject<any|any[]>;
   @Input() config: any;
   @ViewChild('parent', {read: ViewContainerRef}) _parent: ViewContainerRef; // parent container html element ref
+  private ready: boolean;
 
   //private nodesSubject: ReplaySubject<HierarchyNode<any>[]> = new ReplaySubject(1);
   private host: Selection<any, any, any, any>;
@@ -117,6 +118,7 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
     if(this.nodeSub) this.nodeSub.unsubscribe();
     this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.childComponents);
     this.changeDetectionRef.detectChanges();
+    this.ready = true;
   }
 
   subjectUpdate(nodes:HierarchyNode<any>[]): Observable<any> {
@@ -125,12 +127,12 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
 
     //let arr:any = nodes.map(node => node.descendants()).reduce((a, b)=>a.concat(b), []);
     let arr = [];
+    let maxDepth = (this.config ? this.config.maxDepth : null) || 4;
     nodes.forEach((node:any) => {
       arr.push(node)
       node.each((n:any)=>{
         // init with open < amt
-        if(n.depth < 4 && n.open == null) n.open = true;
-        if(n.children && n.open) {
+        if(n.children && n.depth < maxDepth) {
           let i = arr.indexOf(n);
           if(i !== -1) {
             arr.splice.apply(arr, [i+1, 0].concat(n.children));
@@ -178,9 +180,16 @@ export class SimpleTreeComponent implements OnInit, OnChanges, AfterViewInit {
   }
 
   ngOnChanges(changes: any) {
-    if('rootNode' in changes) {
-      if(this.nodeSub) this.nodeSub.unsubscribe();
-      this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.subjectUpdate);
+    if(this.ready) {
+      if('rootNode' in changes) {
+        if(this.nodeSub) this.nodeSub.unsubscribe();
+        this.nodeSub = this.rootNode.switchMap(this.subjectUpdate.bind(this)).subscribe(this.subjectUpdate);
+      } 
+      /*
+      if('config' in changes) {
+        this.subjectUpdate(this.rootNode.getValue())
+      }
+      */
     }
   }
 }

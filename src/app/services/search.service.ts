@@ -98,14 +98,23 @@ export class SearchService implements Resolve<any> {
 
     let observables = types.map((tableName) => Observable.fromPromise(db[tableName].where('name').startsWithIgnoreCase(clean).distinct().toArray().then(arr => arr.map(element => D3.hierarchy(element)))).startWith([]));
 
-    console.log('clean', clean);
-    let uri = 'http://10.0.20.33:9200/production_part_catalogs/_search?size=100&q="' + clean + '"';
+    let uri = '/catalog/development_part_catalogs/_search?size=100&q="' + clean + '"';
 
     let net = this.http.get(uri).map(res => {
       let json = res.json();
       return json.hits.hits.map(el => D3.hierarchy(CatalogPart.fromJSON(el._source)));
     }).startWith([]);
 
+
     return Observable.combineLatest(...observables, net).map(arr => arr.reduce((a, b) => a.concat(b)));
+  }
+
+  moreDetail(id) {
+    let path = '/data/part_catalogs/' + id
+    let uri = '/core' + path + '.json';
+    return this.http.get(uri).map(res => {
+      console.log('res', res);
+      return res.json();
+    });
   }
 }

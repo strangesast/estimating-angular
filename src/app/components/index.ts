@@ -18,3 +18,5 @@ export { SearchComponent }            from './search/search.component';
 export { EditWindowComponent }        from './edit-window/edit-window.component';
 export { SimpleTreeComponent }        from './simple-tree/simple-tree.component';
 export { SimpleTreeElementComponent } from './simple-tree/simple-tree-element/simple-tree-element.component';
+export { TreeComponent }              from './tree/tree.component';
+export { ElementDisplayComponent }    from './element-display/element-display.component';

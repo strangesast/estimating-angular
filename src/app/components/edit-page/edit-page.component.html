@@ -27,7 +27,7 @@
     </div>
     <form *ngIf="newElementForm" [formGroup]="newElementForm" (ngSubmit)="onSubmit(newElementForm)">
       <div class="form-group">
-        <div class="form-group-title">New {{ newElementType[0].toUpperCase() + newElementType.slice(1) }}</div>
+        <!--<div class="form-group-title">New {{ newElementType[0].toUpperCase() + newElementType.slice(1) }}</div>-->
         <div class="form-control">
           <label>Name:</label>
           <input formControlName="name" type="text">
@@ -40,15 +40,26 @@
         </div>
         <div class="form-control" *ngFor="let input of inputs">
           <label>{{ input.label }}</label>
-          <input *ngIf="input.type" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step">
-          <select *ngIf="input.options" [formControlName]="input.key">
+          <input *ngIf="input.type == 'text' || input.type == 'number'" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step">
+          <select *ngIf="input.options && input.type == 'select'" [formControlName]="input.key">
             <option *ngFor="let option of input.options" [value]="option.value">{{ option.key }}</option>
           </select>
+          <div *ngIf="input.options && input.type == 'radio'" class="radio">
+            <div *ngFor="let option of input.options; let i = index">
+              <input [attr.id]="i + '-' + input.key" type="radio" [checked]="newElementForm.value[input.key] == option.value" [formControlName]="input.key" [value]="option.value">
+              <label [attr.for]="i + '-' + input.key">{{ option.key }}</label>
+            </div>
+          </div>
+          <div *ngIf="input.type == 'search'">
+            <input type="search" [attr.list]="input.key" [formControlName]="input.key">
+            <datalist [attr.id]="input.key">
+              <option *ngFor="let option of input.filter(input.options)" [value]="option.value">{{ option.key }}</option>
+            </datalist>
+          </div>
           <small class="about" *ngIf="input.description">{{ input.description }}</small>
         </div>
+        <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty">Save</button>
       </div>
-
-      <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty">Save</button>
     </form>
   </div>
 </div>

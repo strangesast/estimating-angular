@@ -1,0 +1,43 @@
+@import '../../styles/basic';
+
+:host {
+  display: block;
+
+  line-height: 40px;
+  span {
+    line-height: inherit;
+  }
+  &.small {
+    height: 40px;
+  }
+  &.large {
+    height: 80px;
+  }
+
+  .row {
+    display: flex;
+    .icon {
+
+    }
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 1;
+      margin-left: 4px;
+    }
+  }
+}
+.fa.fa-grip:before {
+  content: "\f142 \202F \f142 \202F \f142";
+}
+.fa.fa-grip-large:before {
+  content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142";
+}
+.grip {
+  color: @off-white;
+  &:hover {
+    color: black;
+    cursor: move;
+  }
+}

@@ -37,7 +37,7 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   public context: any;
   public refComponentEnabled: boolean = false;
   public refComponentPath: any = false;
-  public treeConfig: any = {};
+  public treeConfig: any = { maxDepth: 1 };
   public root: any;
 
   public fullPath: any;
@@ -147,11 +147,12 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
 
   async handleDrop({ dropped, on }) {
     let element = this.element.getValue();
+    if (on.id !== element.id) return;
     
-    if (dropped.collection === '') dropped.collection = on.collection;
-    if (on.collection !== dropped.collection) return;
-    let job = element.collection;
-    if (on.id === element.id) {
+    if(dropped instanceof FolderElement || dropped instanceof ComponentElement || dropped instanceof ChildElement) {
+      if (dropped.collection === '') dropped.collection = on.collection;
+      if (on.collection !== dropped.collection) return;
+      let job = element.collection;
 
       if (element instanceof ComponentElement) {
         if (dropped instanceof ComponentElement) {
@@ -175,7 +176,29 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
         let folder = await this.elementService.getFolder(element.id);
         await this.buildChildTree(folder);
       }
+
+    } else if (dropped instanceof CatalogPart) {
+      console.log('dropped', dropped);
+
+      //let component = new ComponentElement(
+      //  name,
+      //  description,
+      //  sell: number,
+      //  buy: number,
+      //  collection: string|number,
+      //  children: (number|string)[]|ChildElement[] = [],
+      //  qty: number = 1,
+      //  catalog: string,
+      //  basedOn?: BasedOn|null,
+      //  hash?: string,
+      //  saveState: SaveState = 'unsaved'
+      //)
     }
+  }
+
+  setMaxDepth(n) {
+    this.treeConfig.maxDepth = n;
+    this.root.next(this.root.getValue());
   }
 
   ngOnDestroy() {

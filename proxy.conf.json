@@ -4,10 +4,18 @@
     "secure": false
   },
   "/catalog": {
-    "target": "http://10.0.20.33:9200",
+    "target": "http://10.0.32.102:9200",
     "changeOrigin":true,
     "pathRewrite": {
       "^/catalog/" : "/"
+    },
+    "secure": false
+  },
+  "/core" : {
+    "target": "http://10.0.32.102:80",
+    "changeOrigin":true,
+    "pathRewrite": {
+      "^/core/" : "/"
     },
     "secure": false
   }

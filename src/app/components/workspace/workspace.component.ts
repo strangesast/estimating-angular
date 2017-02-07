@@ -29,7 +29,7 @@ export class WorkspaceComponent implements OnInit {
       query: ''
     });
 
-    this.searchForm.valueChanges.debounceTime(50).startWith({query: ''}).switchMap(({query}) => {
+    this.searchForm.valueChanges.debounceTime(100).startWith({query: ''}).switchMap(({query}) => {
       if(query) {
         return this.searchService.search(query);
       } else {

@@ -22,6 +22,7 @@ import { hierarchy } from 'd3-hierarchy';
 import * as D3 from 'd3';
 
 import { SimpleTreeComponent } from '../simple-tree/simple-tree.component';
+import { TreeComponent } from '../tree/tree.component';
 
 import { ClassToStringPipe } from '../../pipes';
 
@@ -40,8 +41,7 @@ const STATS_INIT = { buy: 0, sell: 0, childCnt: 0, componentCnt: 0, folderCnt: 0
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
-  styleUrls: ['../../styles/general.less', './project-page.component.less'],
-  providers: [ SimpleTreeComponent ]
+  styleUrls: ['../../styles/general.less', './project-page.component.less']
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private job: Collection;

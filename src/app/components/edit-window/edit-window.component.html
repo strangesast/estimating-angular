@@ -173,7 +173,11 @@
           <pre>{{ _element | json }}</pre>
         </div>
       </div>
-      <app-simple-tree *ngIf="root" [config]="treeConfig" [rootNode]="root" (dropEvt)="handleDrop($event)"></app-simple-tree>
+      <div *ngIf="root">
+        <label>Show full tree.</label>
+        <input type="checkbox" (change)="setMaxDepth(treeConfig.maxDepth > 1 ? 1 : 10)" [checked]="treeConfig.maxDepth > 1">
+        <app-simple-tree [config]="treeConfig" [rootNode]="root" (dropEvt)="handleDrop($event)"></app-simple-tree>
+      </div>
       <button type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
       <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
       <div class="form-group" *ngIf="_element.data && refComponentEnabled">

@@ -2,6 +2,7 @@ import { BaseElement } from './base-element';
 import { ChildElement } from './child-element';
 import { BasedOn } from './based-on';
 import { SaveState } from './save-state';
+import { CatalogPart } from './catalog-part';
 
 export interface IComponent extends BaseElement {
   name;
@@ -10,6 +11,7 @@ export interface IComponent extends BaseElement {
   buy: number;
   qty: number;
   collection: string|number;
+  data?: CatalogPart;
 }
 
 // components are generally exclusive to job unless ref-copied (probably wont happen) 
@@ -39,6 +41,8 @@ export class ComponentElement extends BaseElement implements IComponent {
   ) {
     super(name, description);
   }
+
+  public data;
 
   clean(): ComponentElement {
     let component = Object.create(ComponentElement.prototype);

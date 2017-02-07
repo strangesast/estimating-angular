@@ -1,5 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { ComponentElement, ChildElement, FolderElement } from '../models';
+import { CatalogPart, ComponentElement, ChildElement, FolderElement } from '../models';
+import { hierarchy } from 'd3';
 
 @Pipe({
   name: 'typeToClass'
@@ -33,7 +34,11 @@ export class TypeToClassPipe implements PipeTransform {
     } else if (value instanceof ComponentElement) {
       return 'fa-cube';
     } else if (value instanceof FolderElement) {
-      return 'fa-folder-o';
+      return value.type == 'phase' ? 'fa-bookmark-o' : value.type == 'building' ? 'fa-building-o' : 'fa-folder-o';
+    } else if (value instanceof CatalogPart) {
+      return 'fa-file-o';
+    } else if (value instanceof hierarchy) {
+      return 'fa-th-list';
     } else {
       return 'fa-question';
     }

@@ -79,12 +79,12 @@ export class EditPageComponent implements OnInit, OnChanges {
     if(type == 'folder') {
       let folderTypes = job.folders.order.map(name => ({ key: name[0].toUpperCase() + name.slice(1), value: name }));
       let parentFolders = await this.jobService.getParentFolderCandidates();
-      let form = this.newElementForm;
 
       this.inputs = [ 
         {
           key: 'type',
           label: 'Folder Type',
+          type: 'radio',
           options: folderTypes,
           required: true,
           description: 'The type of new folder.'
@@ -92,8 +92,9 @@ export class EditPageComponent implements OnInit, OnChanges {
         {
           key: 'parent',
           label: 'Parent Folder',
+          type: 'search',
           options: parentFolders,
-          filter: (f) => form.value['type'] ? form.value['type'] == f.type : true,
+          filter: (arr) => arr.filter((f) => this.newElementForm.value['type'] ? this.newElementForm.value['type'] == f.type : true),
           required: true,
           description: 'Choose where to add this folder.'
         }
@@ -101,8 +102,8 @@ export class EditPageComponent implements OnInit, OnChanges {
       Object.assign(group, { type: [undefined, Validators.required], parent: [undefined, Validators.required] });
 
     } else if (type == 'component') {
-      let parentElements = await this.jobService.getParentChildCandidates();
-      parentElements.unshift({ value: null, key: 'No parent'});
+      //let parentElements = await this.jobService.getParentChildCandidates();
+      //parentElements.unshift({ value: null, key: 'No parent'});
       this.inputs = [
         {
           key: 'sell',
@@ -137,13 +138,17 @@ export class EditPageComponent implements OnInit, OnChanges {
           required: true,
           description: 'How many core parts are included in this representation.  Typically 1.'
         },
+        /*
         {
           key: 'parent',
           label: 'Parent Element',
+          type: 'search',
+          filter: (arr) => arr,
           options: parentElements,
           required: false,
           description: 'Optionally immediately add this component as a child of another component'
         },
+        */
         {
           key: 'catalog',
           label: 'Core Part',
@@ -162,6 +167,8 @@ export class EditPageComponent implements OnInit, OnChanges {
         {
           key: 'ref',
           label: 'Component',
+          type: 'search',
+          filter: (arr) => arr,
           options: componentElements,
           required: true,
           description: 'The existing component would you like to add.'

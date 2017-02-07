@@ -1,0 +1,67 @@
+<div [ngSwitch]="element | classToString">
+  <div *ngSwitchCase="'hierarchy'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span [ngSwitch]="element.data | classToString" [class.hoverlink]="fragment" [routerLink]="fragment ? ['./'] : []" [fragment]="fragment" class="name">
+      <span *ngSwitchCase="'component'">
+        {{ element.data.name }}
+      </span>
+      <span *ngSwitchCase="'child'">
+        {{ element.data.name }}
+      </span>
+      <span *ngSwitchCase="'folder'">
+        {{ element.data.name }}
+      </span>
+      <span *ngSwitchCase="'catalog-part'">
+        {{ element.data.description }}
+      </span>
+      <span *ngSwitchDefault>
+        {{ element.data.name }}
+      </span>
+    </span>
+    <span class="spacer"></span>
+    <span *ngIf="element.children && element.children.length" class="fa fa-fw fa-angle-down"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchCase="'component'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchCase="'child'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchCase="'folder'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchCase="'phase'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchCase="'building'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchCase="'catalog-part'" class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+  <div *ngSwitchDefault class="row">
+    <span class="icon fa fa-fw" [ngClass]="element.data | typeToClass"></span>
+    <span class="name">{{ element.name }}</span>
+    <span class="spacer"></span>
+    <span class="fa fa-fw fa-grip grip" (mouseover)="setDraggable(true)" (mouseleave)="setDraggable(false)"></span>
+  </div>
+</div>

@@ -6,7 +6,9 @@ html, body {
   height: 100%;
   background-color: #F0F0F0;
 }
-
+.spacer {
+  flex-grow: 1;
+}
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none;   /* Chrome/Safari/Opera */
