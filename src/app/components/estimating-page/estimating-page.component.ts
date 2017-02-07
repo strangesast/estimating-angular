@@ -1,7 +1,7 @@
-import { ElementRef, Component, OnInit, AfterViewInit } from '@angular/core';
+import { ElementRef, Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, Subscription, BehaviorSubject } from 'rxjs';
 import * as D3 from 'd3';
 import { Selection, HierarchyNode } from 'd3';
 
@@ -14,10 +14,12 @@ import { Collection, ChildElement } from '../../models';
   templateUrl: './estimating-page.component.html',
   styleUrls: ['../../styles/general.less', './estimating-page.component.less']
 })
-export class EstimatingPageComponent implements OnInit, AfterViewInit {
+export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy {
   private jobSubject: BehaviorSubject<Collection>;
   private nestSubject: BehaviorSubject<any>;
+  private nestSubscription: Subscription;
   private treesSubject: BehaviorSubject<any>;
+  private treesSubscription: Subscription;
 
   private hostReady: BehaviorSubject<boolean> = new BehaviorSubject(false);
   private htmlElement: HTMLElement;
@@ -35,12 +37,14 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
   ) { }
 
   ngOnInit() {
-    this.route.parent.data.subscribe(({ job: { job: jobSubject, nest: nestSubject, trees:treesSubject }}) => {
+    this.route.parent.data.subscribe(({ job: { collectionSubject: jobSubject, nestConfigSubject: nestConfig, nestSubject, trees:treesSubject }}) => {
       this.jobSubject = jobSubject;
       this.nestSubject = nestSubject;
 
+      this.nestSubscription = nestConfig.withLatestFrom(jobSubject).switchMap(([config, job]) => Observable.fromPromise(this.elementService.buildNestTree(job, config))).switchMap(this.blobUpdate.bind(this)).subscribe();
+
       (this.treesSubject = treesSubject).withLatestFrom(this.groupBySubject).take(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
-      Observable.combineLatest(this.treesSubject, this.groupBySubject).skip(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
+      this.treesSubscription = Observable.combineLatest(this.treesSubject, this.groupBySubject).skip(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
       
     });
   }
@@ -72,6 +76,33 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
     */
   }
 
+  blobUpdate({ keys, config, rootNode }) {
+    let nest = D3.nest();
+
+    //let root = D3.hierarchy({ children: entries });
+    //(<any>root).value = root.children.map(n => n.value).reduce((a, b) => a + b);
+
+    let pack = D3.pack().size([100, 100])
+
+    let svg = this.host.select('svg.pack')
+
+    let descendants = pack(rootNode).descendants();
+    console.log('d', descendants); 
+
+    let node = svg.selectAll('g').data(descendants)
+      .enter()
+      .append('g')
+      .attr('transform', (d) => 'translate(' + d.x + ', ' + d.y + ')')
+
+    node.append('circle')
+      .attr('r', (d: any) => d.r)
+      .attr('fill', 'blue')
+      .attr('fill-opacity', 0.1)
+      .append('title').text((n: any) => n.data.name);
+
+    return Observable.never();
+  }
+
   treeUpdate(data, groupBy) {
     let fader = (c) => D3.interpolateRgb(c, '#fff')(0.2);
     let color = D3.scaleOrdinal(D3.schemeCategory20.map(fader));
@@ -82,10 +113,11 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
       .round(true)
       .paddingInner(1);
 
-    let svg = this.host.selectAll('svg').data(data);
+    let svg = this.host.selectAll('svg.hierarchy').data(data);
 
     let cell = svg.enter()
       .append('svg')
+      .attr('class', 'hierarchy')
       .attr('width', '100%')
       .attr('height', '500px')
       .attr('viewBox', '0 0 500 500')
@@ -207,6 +239,11 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit {
 
   groupByChanged(evt) {
     this.groupBySubject.next(this.groupBy);
+  }
+
+  ngOnDestroy() {
+    this.nestSubscription.unsubscribe();
+    this.treesSubscription.unsubscribe();
   }
 
 }

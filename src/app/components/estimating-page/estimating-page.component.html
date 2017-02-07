@@ -1,12 +1,9 @@
 <div>
+  <svg preserveAspectRatio="none" width="100%" viewBox="0 0 100 100" class="pack"></svg>
+
   <select [(ngModel)]="groupBy" (ngModelChange)="groupByChanged($event)">
     <option *ngFor="let option of groupByOptions">{{option}}</option>
   </select>
-  <div class="first">
 
-  </div>
-  <div class="second">
-
-  </div>
   <!--<svg xmlns="http://www.w3.org/2000/svg" class="graph"></svg>-->
 </div>

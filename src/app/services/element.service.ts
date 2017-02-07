@@ -1173,6 +1173,86 @@ export class ElementService implements Resolve<any> {
     });
   }
 
+  async resolveAllComponents(root, prev = {}) {
+    let db = this.db;
+    if (root instanceof ComponentElement) {
+      let children = (root.children && root.children.length) ? (await db.childElements.where('id').anyOf((<any[]>root.children).filter((c: any) => typeof c === 'string')).toArray()) : [];
+      let todo = [];
+      for (let i=0; i < children.length; i++) {
+        let ref = children[i].ref;
+        if (typeof ref === 'string') {
+          if (ref in prev) {
+            children[i].data = prev[ref];
+          } else if (todo.indexOf(ref) == -1) {
+            todo.push(ref);
+          }
+        }
+      }
+      let childIds = children.map(c => c.id);
+      (<any[]>(root.children || [])).filter(c => typeof c === 'string').forEach((id: string) => {
+        let i = childIds.indexOf(id);
+        root.children[i] = children[i];
+      });
+      let components = await db.componentElements.where('id').anyOf(todo).toArray();
+      components.forEach(c => prev[c.id] = c);
+
+      children.forEach(c => {
+        if (!c.data || c.ref !== c.data.id) {
+          c.data = prev[c.ref];
+        }
+      });
+
+      await Promise.all(children.map(c => this.resolveAllComponents(c.data, prev)))
+
+    } else if (root instanceof ChildElement) {
+      if (root.ref) {
+        if (!root.data || root.ref !== root.data.id) {
+          root.data = await db.componentElements.get({ id: root.ref });
+          await this.resolveAllComponents(root.data, prev)
+        }
+      } 
+    }
+    return root;
+  }
+
+  async buildNestTree(job, config) {
+    let db = this.db;
+    let folderIds = config.folders.order.map(name => config.folders.roots[name] || job.folders.roots[name]);
+    let folders: any[] = await Promise.all(folderIds.map(id => db.folderElements.get(id).then(folder => this.resolveChildren(folder).then(root => D3.hierarchy(root).descendants()))));
+    let pairs = product(folders.map(arr => arr.map(n => n.data.id)));
+
+    let keyName = folderIds.length > 1 ? ('[' + folderIds.map((n, _i) => 'folder' + _i).join('+') + ']') : 'folder' + 0;
+    let locs = (await Promise.all(pairs.map(p => db.locationElements.get({ [keyName]: p.length > 1 ? p : p[0] })))).filter(l => l);
+
+    let componentMap = {};
+    let children = (await Promise.all(locs.map(async(l: any) => {
+      return (l.children && l.children.length) ? (await db.childElements.where('id').anyOf(l.children).toArray()).map(c => {
+        c.folders = l.folders;
+        return c;
+      }) : []
+    }))).reduce((a, b) => a.concat(b), []);
+
+
+    let ob = {};
+    await Promise.all(children.map(child => this.resolveAllComponents(child, ob)))
+
+    //let nodes = children.map(child => D3.hierarchy(child, (n: any) => n.data ? [n.data] : n.children))
+    let rootNode = D3.hierarchy({ children }, (n: any) => n.data ? [n.data] : n.children);
+
+    rootNode.eachAfter((n:any) => {
+      if (n.data instanceof ComponentElement) {
+        n.value = (n.children ? n.children.map(c => +c.value).reduce((a, b) => a + b) : 0) + +n.data.sell
+      } else if (n.data instanceof ChildElement) {
+        n.value = +(n.data.sell || n.data.ref ? n.children[0].value : 0) * n.data.qty;
+      } else {
+        n.value = n.children.map(node => node.value).reduce((a, b) => a + b);
+      }
+    });
+
+
+    return { keys: folders, config, rootNode };
+  }
+
   buildTreesSubject(jobSubject: BehaviorSubject<Collection>, configSubject: BehaviorSubject<NestConfig>) {
     return configSubject.withLatestFrom(jobSubject).switchMap(([config, job]) => {
       return this.buildTrees(job, config);
