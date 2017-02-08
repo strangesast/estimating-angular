@@ -10,7 +10,7 @@ import { IComponent } from './component-element';
 
 export class ChildElement extends BaseElement implements IComponent {
   static readonly store = 'childElements';
-  static readonly keys = ['$$id', 'collection', 'name', 'qty', 'buy', 'sell'];
+  static readonly keys = ['$$id', 'collection', 'name', 'qty', 'buy', 'sell', 'ref'];
 
   static excluded: string[] = ['data', 'folders', 'saveState'];
 

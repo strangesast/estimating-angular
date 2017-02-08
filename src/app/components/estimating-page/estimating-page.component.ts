@@ -18,6 +18,7 @@ import { Collection, ChildElement, ComponentElement, FolderElement } from '../..
 export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy {
   private jobSubject: BehaviorSubject<Collection>;
   private nestSubject: BehaviorSubject<any>;
+  private nestConfig: BehaviorSubject<any>;
   private nestSubscription: Subscription;
   private treesSubject: BehaviorSubject<any>;
   private treesSubscription: Subscription;
@@ -46,12 +47,13 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
     this.route.parent.data.subscribe(({ job: { collectionSubject: jobSubject, nestConfigSubject: nestConfig, nestSubject, trees:treesSubject }}) => {
       this.jobSubject = jobSubject;
       this.nestSubject = nestSubject;
+      this.nestConfig = nestConfig;
 
       jobSubject.take(1).subscribe((job) => {
         this.selectedFolder = job.folders.order[0];
         this.selectedFolderSubject = new BehaviorSubject(this.selectedFolder);
         this.folderNames = job.folders.order;
-        this.nestSubscription = Observable.combineLatest(nestConfig, this.selectedFolderSubject, this.groupBySubject).withLatestFrom(jobSubject).switchMap(([[config, selectedFolder, groupBy], job]) => Observable.fromPromise(this.treeService.nest(job, config)).switchMap(res => this.blobUpdate2(res, selectedFolder, groupBy))).subscribe();
+        this.nestSubscription = Observable.combineLatest(nestConfig, this.selectedFolderSubject, this.groupBySubject).withLatestFrom(jobSubject).switchMap(([[config, selectedFolder, groupBy], job]) => Observable.fromPromise(this.treeService.nest(job, config)).switchMap(res => this.blobUpdate(res, selectedFolder, groupBy))).subscribe();
       });
 
       (this.treesSubject = treesSubject).withLatestFrom(this.groupBySubject).take(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
@@ -87,34 +89,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
     */
   }
 
-  blobUpdate({ keys, config, rootNode }) {
-    let nest = D3.nest();
-
-    //let root = D3.hierarchy({ children: entries });
-    //(<any>root).value = root.children.map(n => n.value).reduce((a, b) => a + b);
-
-    let pack = D3.pack().size([100, 100])
-
-    let svg = this.host.select('svg.pack')
-
-    let descendants = pack(rootNode).descendants();
-    console.log('d', descendants); 
-
-    let node = svg.selectAll('g').data(descendants)
-      .enter()
-      .append('g')
-      .attr('transform', (d) => 'translate(' + d.x + ', ' + d.y + ')')
-
-    node.append('circle')
-      .attr('r', (d: any) => d.r)
-      .attr('fill', 'blue')
-      .attr('fill-opacity', 0.1)
-      .append('title').text((n: any) => n.data.name + ' (' + n.value + ')');
-
-    return Observable.never();
-  }
-
-  blobUpdate2({ children, components, folders }, selectedFolder, groupBy) {
+  blobUpdate({ children, components, folders }, selectedFolder, groupBy) {
     if (!folders.length) return Observable.never();
     //this.selectedFolder = this.selectedFolder || this.folderNames[0];
 
@@ -125,7 +100,9 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       if (n instanceof FolderElement) {
         return (n.children || []).concat(children.filter(c => c.folders[folderIndex] === n.id));
       }
-    }).sum(n => n[groupBy == 'sell' ? 'totalSell' : 'totalBuy']);
+    })
+    .sum(n => n[groupBy == 'sell' ? 'totalSell' : 'totalBuy'])
+    .sort((a, b) => a.value - b.value)
 
     let pack = D3.pack().size([1000, 1000])
 
@@ -155,7 +132,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .transition(t)
       .attr('transform', (d) => 'translate(' + d.x + ', ' + d.y + ')')
 
-
     add.append('title')
       .text((d: any) => d.data.name + ' (' + d.value + ')');
 
@@ -163,6 +139,16 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .attr('r', (d: any) => d.r)
 
     nodes.select('circle').transition(t).attr('r', (d) => d.r);
+
+    circle.on('dblclick', (node) => {
+      if (node.data instanceof FolderElement) {
+        let config = this.nestConfig.getValue()
+        if (config.folders.roots[node.data.type] !== node.data.id) {
+          config.folders.roots[node.data.type] = node.data.id;
+          this.nestConfig.next(config);
+        }
+      }
+    });
 
     circle.transition(t)
       .attrTween('stroke-opacity', (d) => <any>D3.interpolate(0, 1.0))
@@ -178,13 +164,19 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .attr('fill', 'grey')
       .attr('fill-opacity', 0.1)
 
-    /*
-    add.filter(d => d.data instanceof ChildElement).append('text')
-      .attr('text-anchor', 'middle')
-      .text((d: any) => d.data.name + '\n' + d.value)
-    */
-
     return Observable.never();
+  }
+
+  async gotoParent() {
+    let folderName = this.selectedFolder;
+    let config = this.nestConfig.getValue();
+    let current = config.folders.roots[folderName];
+    if (current == null) return;
+    let par = await this.treeService.getParent(current);
+    if (par) {
+      config.folders.roots[folderName] = par.id
+      this.nestConfig.next(config);
+    }
   }
 
 

@@ -174,4 +174,16 @@ export class TreeService {
     folder.totalSell = arr.map(child => child.totalSell).reduce((a, b) => a + b, sell);
     folder.totalBuy =  arr.map(child => child.totalBuy ).reduce((a, b) => a + b, buy);
   }
+
+  async getParent(object) {
+    let db = this.db;
+    if (typeof object === 'string') {
+      return (await Promise.all([db.folderElements.get({ children: object }), db.childElements.get({ ref: object })])).reduce((a, b) => a || b);
+    } else if ((object instanceof FolderElement || object instanceof ChildElement) && object.id) {
+      return await db[(<any>object.constructor).store].get({ children: object.id });
+    } else {
+      console.error(object);
+      throw new Error('invalid/ incompatible object');
+    }
+  }
 }
