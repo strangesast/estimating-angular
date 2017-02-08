@@ -17,3 +17,8 @@ html, body {
   -ms-user-select: none;       /* Internet Explorer/Edge */
   user-select: none;           /* Non-prefixed version, currently not supported by any browser */
 }
+input, textarea {
+  padding: 3px;
+  border-radius: 3px;
+  border: 1px solid #d1d1d1;
+}

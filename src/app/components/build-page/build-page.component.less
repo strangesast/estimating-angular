@@ -45,9 +45,12 @@ ul.filters {
 ul.toggle {
   & > li {
     padding: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    &:not(:first-child) {
+      margin-left: -1px;
+    }
     &.active {
-      color: white;
-      background: black;
+      background: rgba(0, 0, 0, 0.08);
     }
   }
 }

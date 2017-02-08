@@ -22,11 +22,12 @@ import { Collection, CatalogPart, LocationElement, ComponentElement, ChildElemen
   templateUrl: './edit-window.component.html',
   styleUrls: ['../../styles/general.less', './edit-window.component.less'],
   host: {
-    '[class.isWindow]': 'isWindow'
+    '[class.isWindow]': 'isWindow',
+    '[class.isOpen]': 'config.open'
   }
 })
 export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() config: any;
+  @Input() config: any = {};
   @Input() element: BehaviorSubject<ComponentElement|FolderElement|ChildElement|null>;
   public _element: ComponentElement|FolderElement|ChildElement|null;
   public type: string = 'unknown';

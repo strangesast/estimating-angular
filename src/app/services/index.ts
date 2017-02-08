@@ -5,3 +5,4 @@ export { JobListService } from './job-list.service'
 export { JobService } from './job.service'
 export { SearchService } from './search.service'
 export { UserService } from './user.service';
+export { TreeService } from './tree.service';

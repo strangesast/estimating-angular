@@ -25,6 +25,9 @@ export class FolderElement extends BaseElement {
     return Object.assign(folder, obj);
   }
 
+  public totalSell = null;
+  public totalBuy = null;
+
   constructor(
     name,
     description,

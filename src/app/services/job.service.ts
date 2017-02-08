@@ -24,6 +24,7 @@ import {
 } from '../models';
 
 import { ElementService } from './element.service';
+import { TreeService } from './tree.service';
 import { DataService } from './data.service';
 
 import { ClassToStringPipe } from '../pipes';
@@ -53,7 +54,8 @@ export class JobService implements Resolve<Promise<any>> {
     private db: DataService,
     private elementService: ElementService,
     private router: Router,
-    private pipe: ClassToStringPipe
+    private pipe: ClassToStringPipe,
+    private treeService: TreeService
   ) { }
 
   async resolve(route: ActivatedRouteSnapshot): Promise<boolean|{ editWindowsEnabled, collectionSubject, nestConfigSubject, selectedElementSubject, openElements, nestSubject, collection, trees }> {

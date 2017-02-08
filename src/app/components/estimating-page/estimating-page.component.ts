@@ -7,7 +7,8 @@ import { Selection, HierarchyNode } from 'd3';
 
 import { ElementService } from '../../services/element.service';
 import { JobService } from '../../services/job.service';
-import { Collection, ChildElement } from '../../models';
+import { TreeService } from '../../services/tree.service';
+import { Collection, ChildElement, ComponentElement, FolderElement } from '../../models';
 
 @Component({
   selector: 'app-estimating-page',
@@ -25,6 +26,10 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
   private htmlElement: HTMLElement;
   private host: Selection<any, any, any, any>;
 
+  public selectedFolder: string;
+  public folderNames: string[];
+  private selectedFolderSubject: BehaviorSubject<string>;
+
   private groupBy:'qty'|'buy'|'sell' = 'qty';
   private groupByOptions = ['qty', 'buy', 'sell'];
   private groupBySubject: BehaviorSubject<string> = new BehaviorSubject('qty');
@@ -33,7 +38,8 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
     private jobService: JobService,
     private route: ActivatedRoute,
     private element: ElementRef,
-    private elementService: ElementService
+    private elementService: ElementService,
+    private treeService: TreeService
   ) { }
 
   ngOnInit() {
@@ -41,7 +47,12 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       this.jobSubject = jobSubject;
       this.nestSubject = nestSubject;
 
-      this.nestSubscription = nestConfig.withLatestFrom(jobSubject).switchMap(([config, job]) => Observable.fromPromise(this.elementService.buildNestTree(job, config))).switchMap(this.blobUpdate.bind(this)).subscribe();
+      jobSubject.take(1).subscribe((job) => {
+        this.selectedFolder = job.folders.order[0];
+        this.selectedFolderSubject = new BehaviorSubject(this.selectedFolder);
+        this.folderNames = job.folders.order;
+        this.nestSubscription = Observable.combineLatest(nestConfig, this.selectedFolderSubject, this.groupBySubject).withLatestFrom(jobSubject).switchMap(([[config, selectedFolder, groupBy], job]) => Observable.fromPromise(this.treeService.nest(job, config)).switchMap(res => this.blobUpdate2(res, selectedFolder, groupBy))).subscribe();
+      });
 
       (this.treesSubject = treesSubject).withLatestFrom(this.groupBySubject).take(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
       this.treesSubscription = Observable.combineLatest(this.treesSubject, this.groupBySubject).skip(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
@@ -98,10 +109,84 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .attr('r', (d: any) => d.r)
       .attr('fill', 'blue')
       .attr('fill-opacity', 0.1)
-      .append('title').text((n: any) => n.data.name);
+      .append('title').text((n: any) => n.data.name + ' (' + n.value + ')');
 
     return Observable.never();
   }
+
+  blobUpdate2({ children, components, folders }, selectedFolder, groupBy) {
+    if (!folders.length) return Observable.never();
+    //this.selectedFolder = this.selectedFolder || this.folderNames[0];
+
+    let folderIndex = this.folderNames.indexOf(this.selectedFolder);
+    let folder = folders[folderIndex];
+
+    let root = D3.hierarchy(folder, (n) => {
+      if (n instanceof FolderElement) {
+        return (n.children || []).concat(children.filter(c => c.folders[folderIndex] === n.id));
+      }
+    }).sum(n => n[groupBy == 'sell' ? 'totalSell' : 'totalBuy']);
+
+    let pack = D3.pack().size([1000, 1000])
+
+    let svg = this.host.select('svg.pack');
+
+    let nodes = svg.selectAll('g')
+      .data(pack(root).descendants(), (el: any) => el.data.id)
+
+    let t = D3.transition(null).duration(500);
+
+
+    let add = nodes
+      .enter()
+      .append('g')
+      .attr('class', (d) => d instanceof FolderElement ? 'folder' : 'child')
+
+    add.attr('transform', (d) => 'translate(' + d.x + ', ' + d.y + ')')
+
+    nodes.exit()
+      .transition(t)
+      .remove()
+
+    nodes.exit().select('circle').transition(t)
+      .attrTween('stroke-opacity', (d) => <any>D3.interpolate(1.0, 0))
+
+    nodes
+      .transition(t)
+      .attr('transform', (d) => 'translate(' + d.x + ', ' + d.y + ')')
+
+
+    add.append('title')
+      .text((d: any) => d.data.name + ' (' + d.value + ')');
+
+    let circle = add.append('circle')
+      .attr('r', (d: any) => d.r)
+
+    nodes.select('circle').transition(t).attr('r', (d) => d.r);
+
+    circle.transition(t)
+      .attrTween('stroke-opacity', (d) => <any>D3.interpolate(0, 1.0))
+
+    circle.filter(d => d.data instanceof FolderElement)
+      .attr('fill', 'grey')
+      .attr('fill-opacity', 0.0)
+      .attr('stroke', 'grey')
+      .attr('stroke-width', 2)
+
+    circle
+      .filter(d => d.data instanceof ChildElement)
+      .attr('fill', 'grey')
+      .attr('fill-opacity', 0.1)
+
+    /*
+    add.filter(d => d.data instanceof ChildElement).append('text')
+      .attr('text-anchor', 'middle')
+      .text((d: any) => d.data.name + '\n' + d.value)
+    */
+
+    return Observable.never();
+  }
+
 
   treeUpdate(data, groupBy) {
     let fader = (c) => D3.interpolateRgb(c, '#fff')(0.2);
@@ -150,7 +235,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .attr('height', (d:any) => d.y1 - d.y0)
       .attr('fill', (d:any) => color(d.parent.data.id))
       .append('title').text((d:any) => {
-        return d.data.name;
+        return d.data.name + ' (' + d.value + ')';
       })
 
     cell.transition()
@@ -239,6 +324,10 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
 
   groupByChanged(evt) {
     this.groupBySubject.next(this.groupBy);
+  }
+
+  selectedFolderChanged(evt) {
+    this.selectedFolderSubject.next(this.selectedFolder);
   }
 
   ngOnDestroy() {

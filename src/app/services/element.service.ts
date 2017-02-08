@@ -417,8 +417,8 @@ export class ElementService implements Resolve<any> {
         let components = arr.map(i => new (<any>ComponentElement)(
           'Example Component ' + (i + 1),
           'description',
-          (Math.random()*100000)/100, // sell
-          (Math.random()*10000)/100,  // buy
+          Math.floor(Math.random()*100000)/100, // sell
+          Math.floor(Math.random()*10000)/100,  // buy
           collection.id, // collection id
           [] // children
         ));

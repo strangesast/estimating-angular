@@ -11,7 +11,8 @@ import {
   ElementService,
   DragService,
   JobService,
-  UserService
+  UserService,
+  TreeService
 } from './services';
 
 import { AppComponent }               from './components/app.component';
@@ -83,7 +84,8 @@ import {
     DragService,
     JobService,
     UserService,
-    ClassToStringPipe
+    ClassToStringPipe,
+    TreeService
   ],
   entryComponents: [ SimpleTreeElementComponent, ElementDisplayComponent ],
   bootstrap: [ AppComponent ]

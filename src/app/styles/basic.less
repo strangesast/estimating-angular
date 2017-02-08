@@ -67,3 +67,29 @@
     text-decoration: underline;
   }
 }
+.button {
+  border: none;
+  background: inherit;
+  font-size: 1em;
+  color: inherit;
+  &:active, &:focus {
+    outline: none;
+  }
+  .hoverlink;
+  padding: 8px;
+  &[disabled] {
+    opacity: 0.5;
+    background: #d1d1d1;
+  }
+  &:not([disabled]):hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+  &:not([disabled]):active {
+    background: rgba(0, 0, 0, 0.18);
+  }
+  border: 1px solid #d1d1d1;
+  margin-bottom: -1px;
+  &[disabled] {
+    border-bottom: 1px solid white;
+  }
+}

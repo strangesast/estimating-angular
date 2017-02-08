@@ -4,13 +4,15 @@
   display:inline-block;
   background: white;
   max-height: 100vh;
-  min-width: 400px;
-  overflow-y: auto;
-  &.isWindow .body {
-    padding-left: 8px;
-    padding-right: 8px;
-    min-height: 200px;
-    min-width: 300px;
+  &.isWindow {
+    &.isOpen {
+      min-width: 400px;
+    }
+    .body {
+      overflow-y: auto;
+      padding: 0 10px 10px 10px;
+      min-width: 300px;
+    }
   }
 }
 .header {
@@ -47,4 +49,27 @@ form {
 }
 app-simple-tree {
   width: 100%;
+}
+/*
+.buttons {
+  & > button {
+    border: none;
+    background: inherit;
+    font-size: 1em;
+    color: inherit;
+    &:active, &:focus {
+      outline: none;
+    }
+    .hoverlink;
+    padding: 8px;
+    &[disabled] {
+      opacity: 0.5;
+      background: #d1d1d1;
+    }
+    border: 1px solid #d1d1d1;
+  }
+}
+*/
+.ref-component {
+  margin-top: 10px;
 }

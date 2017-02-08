@@ -178,9 +178,12 @@
         <input type="checkbox" (change)="setMaxDepth(treeConfig.maxDepth > 1 ? 1 : 10)" [checked]="treeConfig.maxDepth > 1">
         <app-simple-tree [config]="treeConfig" [rootNode]="root" (dropEvt)="handleDrop($event)"></app-simple-tree>
       </div>
-      <button type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
-      <button type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
-      <div class="form-group" *ngIf="_element.data && refComponentEnabled">
+      <div class="buttons">
+        <button class="button" type="submit" [disabled]="form.invalid || !form.dirty">Update</button>
+        <button class="button" type="button" (click)="reset()" [disabled]="!form.dirty">Reset</button>
+        <button class="button" type="button" *ngIf="_element.data" (click)="refComponentEnabled = !refComponentEnabled">{{ refComponentEnabled ? 'Close' : 'Open' }} Ref. Component</button>
+      </div>
+      <div class="form-group ref-component" *ngIf="_element.data && refComponentEnabled">
         <div class="form-group-title">Referenced Component <span class="fa fa-external-link hoverlink" *ngIf="refComponentPath" [routerLink]="refComponentPath.path" [fragment]="refComponentPath.fragment"></span></div>
         <div class="form-control">
           <label>Name:</label>
@@ -211,7 +214,6 @@
           <small class="about">Core reference part quantity.</small>
         </div>
       </div>
-      <button type="button" *ngIf="_element.data" (click)="refComponentEnabled = !refComponentEnabled">{{ refComponentEnabled ? 'Close' : 'Open' }} Ref. Component</button>
     </form>
   </div>
 </div>

@@ -1,7 +1,7 @@
 // root 'element' of phase, building, component, job, etc
 export class BaseElement {
-  _id?: string|number; // server id.  may be null if unsaved
-  id:   string|number;
+  _id?: string; // server id.  may be null if unsaved
+  id:   string;
 
   constructor(
     public name: string,

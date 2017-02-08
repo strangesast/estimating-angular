@@ -1,11 +1,11 @@
 <div class="navigation">
   <ul class="tabs">
-    <li class="hoverlink" [class.active]="id == selectedElement" *ngFor="let id of openElementIds" [routerLink]="" [fragment]="(openElements[id].element.getValue() | classToString) + '/' + id">
+    <li class="hoverlink" [class.active]="id == selectedElement" *ngFor="let id of openElementIds" [routerLink]="" [fragment]="(openElements[id].element.getValue() | classToString) + '/' + id" [title]="(openElements[id].element | async).name">
       <span class="fa fa-remove hoverlink" (click)="closeOpenElement(openElements[id])"></span>
-      <span class="fa fa-lg" [ngClass]="typeOf(openElements[id].element | async) | typeToClass"></span>
+      <span class="fa" [ngClass]="typeOf(openElements[id].element | async) | typeToClass"></span>
       <span>{{ (openElements[id].element | async).name }}</span>
-    <li class="hoverlink" [class.active]="selectedElement === null" [routerLink]="" fragment="new">
-      <span class="fa fa-lg fa-plus"></span>
+    <li class="hoverlink" [class.active]="selectedElement === null" [routerLink]="" fragment="new" title="Create New">
+      <span class="fa fa-plus"></span>
       <span>Create New</span>
   </ul>
 </div>
@@ -58,7 +58,7 @@
           </div>
           <small class="about" *ngIf="input.description">{{ input.description }}</small>
         </div>
-        <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty">Save</button>
+        <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty" class="button">Save</button>
       </div>
     </form>
   </div>

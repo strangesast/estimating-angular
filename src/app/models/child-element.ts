@@ -19,9 +19,12 @@ export class ChildElement extends BaseElement implements IComponent {
     return Object.assign(child, obj);
   }
 
-  public sell = 0;
-  public buy = 0;
-
+  public sell = null;
+  public buy = null;
+  public sellFac = 1; // qty multiplier totalSell = component.sell * qty * mult + child.sell
+  public buyFac = 1; // qty multiplier totalSell = component.sell * qty * mult + child.sell
+  public totalSell = 0;
+  public totalBuy = 0;
 
   constructor(
     name,
@@ -39,7 +42,7 @@ export class ChildElement extends BaseElement implements IComponent {
 
   clean() {
     let child = Object.create(ChildElement.prototype);
-    ['id', 'name', 'description', 'collection', 'ref', 'qty', '_ref', '_id', 'buy', 'sell'].forEach((name) => {
+    ['id', 'name', 'description', 'collection', 'ref', 'qty', '_ref', '_id', 'buy', 'sell', 'sellFac', 'buyFac', 'totalSell', 'totalBuy'].forEach((name) => {
       child[name] = this[name];
     });
     return child;

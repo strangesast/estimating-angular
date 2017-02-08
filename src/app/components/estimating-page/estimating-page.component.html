@@ -1,9 +1,12 @@
 <div>
-  <svg preserveAspectRatio="none" width="100%" viewBox="0 0 100 100" class="pack"></svg>
+  <svg preserveAspectRatio="none" width="100%" viewBox="0 0 1005 1005" class="pack"></svg>
 
   <select [(ngModel)]="groupBy" (ngModelChange)="groupByChanged($event)">
     <option *ngFor="let option of groupByOptions">{{option}}</option>
   </select>
 
+  <select [(ngModel)]="selectedFolder" *ngIf="folderNames" (ngModelChange)="selectedFolderChanged($event)">
+    <option *ngFor="let folderName of folderNames" [value]="folderName">{{ folderName }}</option>
+  </select> 
   <!--<svg xmlns="http://www.w3.org/2000/svg" class="graph"></svg>-->
 </div>

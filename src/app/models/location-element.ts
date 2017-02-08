@@ -31,7 +31,7 @@ export class LocationElement extends BaseElement {
     return Object.assign(location, obj);
   }
 
-  get folders(): (string|number)[] {
+  get folders(): string[] {
     let i = 0, folders = [];
     while(i < 10) {
       let id = this['folder' + i];
@@ -44,11 +44,14 @@ export class LocationElement extends BaseElement {
     return folders;
   }
 
-  set folders(arr: (string|number)[]) {
+  set folders(arr: string[]) {
     for(let i = 0; i < arr.length; i++) {
       this['folder' + i] = arr[i];
     }
   }
+
+  public totalSell = null;
+  public totalBuy = null;
 
   constructor(
     name,

@@ -26,13 +26,16 @@ export class ComponentElement extends BaseElement implements IComponent {
     return Object.assign(component, obj);
   }
 
+  public totalSell = 0;
+  public totalBuy = 0;
+
   constructor(
     name,
     description,
     public sell: number,
     public buy: number,
-    public collection: string|number,
-    public children: (number|string)[]|ChildElement[] = [],
+    public collection: string,
+    public children: string[]|ChildElement[] = [],
     public qty: number = 1,
     public catalog: string,
     public basedOn?: BasedOn|null,
@@ -46,7 +49,7 @@ export class ComponentElement extends BaseElement implements IComponent {
 
   clean(): ComponentElement {
     let component = Object.create(ComponentElement.prototype);
-    ['id', 'name', 'description', 'collection', '_id', 'sell', 'buy', 'qty', 'catalog', 'basedOn'].forEach((name) => {
+    ['id', 'name', 'description', 'collection', '_id', 'sell', 'buy', 'totalSell', 'totalBuy', 'qty', 'catalog', 'basedOn'].forEach((name) => {
       component[name] = this[name];
     });
     component.children = this.children ? (<any[]>this.children).filter(child => typeof child === 'string' || child instanceof ChildElement).map(child => {
