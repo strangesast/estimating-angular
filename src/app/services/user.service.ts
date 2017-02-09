@@ -9,4 +9,7 @@ export class UserService {
 
   constructor() { }
 
+  initAuth(token) {
+  }
+
 }

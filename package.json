@@ -4,7 +4,7 @@
   "license": "MIT",
   "angular-cli": {},
   "scripts": {
-    "start": "ng serve --proxy-config proxy.conf.json",
+    "start": "ng serve --proxy-config proxy.conf.json --host 0.0.0.0",
     "startboth": "concurrently \"nodemon server/bin/www\" \"ng serve --proxy-config proxy.conf.json\"",
     "lint": "tslint \"src/**/*.ts\"",
     "test": "ng test",

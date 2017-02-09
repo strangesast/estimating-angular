@@ -1,14 +1,21 @@
-<div class="small-container">
-  <div class="user-list list shadow">
-    <div class="header-item">Users</div>
-    <div *ngFor="let user of users" class="list-item user">
-      <div class="details">
-        <span class="name hoverunderline">{{ user.name }} <small>({{user.username}})</small></span>
-        <span class="description">{{ user.email }}</span>
-      </div>
-    </div>
-    <div class="last-item">
-      <span (click)="createNewUser()" class="hoverunderline">Create New User</span>
-    </div>
-  </div>
+<div class="table">
+  <span class="title">Users</span>
+  <ul class="header">
+    <li class="name"><a class="hoverunderline">Name</a></li>
+    <li class="username"><a class="hoverunderline">Username</a></li>
+    <span class="settings"></span>
+    <li class="email"><a class="hoverunderline">Email</a></li>
+    <li class="collections-cnt"><a class="hoverunderline"><span class="fa fa-fw fa-truck"></span>/<span class="fa fa-fw fa-book"></span></a></li>
+  </ul>
+  <ul class="body">
+    <li>
+      <a class="name hoverunderline">John Doe</a>
+      <span class="username">john_doe</span>
+      <a class="settings hoverunderline"><span class="fa fa-fw fa-cog"></span></a>
+      <span class="email">John.Doe@example.com</span>
+      <span class="collections-cnt">10</span>
+    </li>
+  </ul>
 </div>
+<button (click)="authenticate()" class="button">Authenticate</button>
+<a target="_blank" href="{{ windowURL }}" class="button">Authenticate</a>

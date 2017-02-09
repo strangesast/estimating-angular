@@ -1,1 +1,40 @@
 @import "../../styles/basic";
+
+.table {
+  .title {
+    font-size: 1.5em;
+  }
+  ul {
+    position: relative;
+    padding-left: 0;
+    list-style-type: none;
+    margin: 0;
+    .name {
+      width: 35%;
+    }
+    .username {
+      width: 20%;
+    }
+    .settings {
+      width: 5%;
+    }
+    .email {
+      width: 30%;
+    }
+    .collections-cnt {
+      width: 10%;
+    }
+  }
+  ul.header, ul > li {
+    white-space: nowrap;
+    display: flex;
+    height: 30px;
+    line-height: 30px;
+
+    & > li, & > span, & > a {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
