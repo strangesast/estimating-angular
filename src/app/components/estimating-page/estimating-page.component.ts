@@ -115,7 +115,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
     }
     root = root
       .sum(n => n[groupBy == 'sell' ? 'totalSell' : 'totalBuy'])
-      .sort((a, b) => a.value - b.value)
+      .sort((a, b) => b.value - a.value)
 
     root.each(n => {
       max = Math.max(n.value, max);
@@ -127,7 +127,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .interpolate(<any>D3.interpolateHcl)
       .range(<any>[D3.rgb('#E0E0E0'), D3.rgb('#707070')])
 
-    let pack = D3.pack().size([1000, 1000])
+    let pack = D3.pack().size([1000, 1000]).padding(2);
 
     let svg = this.host.select('svg.pack');
 
