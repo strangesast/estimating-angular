@@ -12,12 +12,16 @@ import { SettingsPageComponent }   from './components/settings-page/settings-pag
 import { SearchPageComponent }     from './components/search-page/search-page.component';
 import { WorkspaceComponent }      from './components/workspace/workspace.component';
 import { HistoryPageComponent }    from './components/history-page/history-page.component';
+import { PageNotFoundComponent }   from './components/page-not-found/page-not-found.component';
+import { JobNotFoundComponent }    from './components/job-not-found/job-not-found.component';
+import { LoginPageComponent }      from './components/login-page/login-page.component';
 
 import { ElementService } from './services/element.service';
 import { SearchService }  from './services/search.service';
 import { JobService }     from './services/job.service';
 import { JobListService } from './services/job-list.service';
 import { GitService }     from './services/git.service';
+import { UserService }    from './services/user.service';
 
 const routes: Routes = [
   {
@@ -26,8 +30,14 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   {
+    path: 'login',
+    component: LoginPageComponent,
+    resolve: { user: UserService }
+  },
+  {
     path: '',
     component: WorkspaceComponent,
+    canActivate: [UserService],
     children: [
       {
         path: 'jobs/:username',
@@ -76,6 +86,10 @@ const routes: Routes = [
                 }
               }
             ]
+          },
+          {
+            path: '**',
+            component: JobNotFoundComponent
           }
         ]
       },
@@ -112,6 +126,10 @@ const routes: Routes = [
     resolve: {
       elements: ElementService
     }
+  },
+  {
+    path: '**',
+    component: PageNotFoundComponent
   }
 ];
 

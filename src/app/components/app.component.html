@@ -6,6 +6,10 @@
       <a class="nostyle" routerLink="/users" routerLinkActive="active">Users</a>
       <a class="nostyle" routerLink="/search" routerLinkActive="active">Search</a>
       <a class="nostyle" routerLink="/settings" routerLinkActive="active">Settings</a>
+      <span *ngIf="user">
+        Logged in as
+        <span>{{ user.first_name }}</span>
+      </span>
     </div>
   </div>
 </nav>

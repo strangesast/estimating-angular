@@ -1,0 +1,7 @@
+<div *ngIf="!user">
+  <button (click)="openLogin()">Login with Core</button>
+  <button (click)="anon()">Continue Anonymously</button>
+</div>
+<div *ngIf="user">
+  Logged in as {{ user.name }}.
+</div>

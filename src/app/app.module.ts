@@ -42,6 +42,9 @@ import {
   TypeToClassPipe,
   ClassToStringPipe
 } from './pipes';
+import { LoginPageComponent } from './components/login-page/login-page.component';
+import { PageNotFoundComponent } from './components/page-not-found/page-not-found.component';
+import { JobNotFoundComponent } from './components/job-not-found/job-not-found.component';
 
 
 @NgModule({
@@ -68,7 +71,10 @@ import {
     HistoryPageComponent,
     FilterArrayPipe,
     TreeComponent,
-    ElementDisplayComponent
+    ElementDisplayComponent,
+    LoginPageComponent,
+    PageNotFoundComponent,
+    JobNotFoundComponent
   ],
   imports: [
     BrowserModule,

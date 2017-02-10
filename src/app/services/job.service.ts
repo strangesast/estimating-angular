@@ -68,7 +68,6 @@ export class JobService implements Resolve<Promise<any>> {
     let collection = await db.collections.get({ '[owner.username+shortname]': [username, shortname] });
 
     if (!collection) {
-      this.router.navigate(['/jobs']); // 404
       return false;
     }
 

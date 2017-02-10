@@ -1,6 +1,10 @@
 import { OnInit, Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
-import { Subject, Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
+
+import { UserService } from '../services/user.service';
+import { User } from '../models';
 
 @Component({
   selector: 'app-root',
@@ -9,9 +13,12 @@ import { Subject, Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
 })
 export class AppComponent implements OnInit {
   title = 'Estimating';
+  user: User;
 
-  constructor() { }
+  constructor(private userService: UserService, private route: ActivatedRoute) { }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.userService.currentUser.subscribe(user => this.user = user);
+  }
 
 }
