@@ -1,12 +1,16 @@
 import { Injectable } from '@angular/core';
 import { Resolve } from '@angular/router';
-import { Http, Response, Headers } from '@angular/http';
+import { Http, Response, Headers, URLSearchParams } from '@angular/http';
 
 import { Observable, ReplaySubject, BehaviorSubject, Subscription } from 'rxjs';
 import { HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
+import { environment } from '../../environments/environment';
+const { API_ADDR } = environment;
+
 import { ElementService } from '../services/element.service';
+import { UserService } from '../services/user.service';
 import { DataService } from '../services/data.service';
 import { FolderElement, ComponentElement, Collection, CatalogPart } from '../models';
 
@@ -24,7 +28,7 @@ export class SearchService implements Resolve<any> {
   private jobSub: Subscription;
   private resultObservable: Observable<any>;
 
-  constructor(private elementService: ElementService, private db: DataService, private http: Http) { }
+  constructor(private elementService: ElementService, private db: DataService, private http: Http, private userService: UserService) { }
 
   startListening(): void {
     let jobPageSwitch:Observable<any> = this.currentJob.switchMap((job:Collection) => {
@@ -90,20 +94,34 @@ export class SearchService implements Resolve<any> {
     this.currentJob.next(job);
   }
 
+  refreshCredentials() {
+
+  }
+
   search(query) {
     let clean = query.replace(/[^\w\s-&#@]/gi, '');
     let db = this.db;
 
     let types = this.currentTypes.getValue();
 
+    let search = new URLSearchParams();
+    search.set('active', '1')
+    search.set('q', clean);
+    let options = this.userService.authorizationOptions.merge({ search });
+
     let observables = types.map((tableName) => Observable.fromPromise(db[tableName].where('name').startsWithIgnoreCase(clean).distinct().toArray().then(arr => arr.map(element => D3.hierarchy(element)))).startWith([]));
 
-    let uri = '/catalog/development_part_catalogs/_search?size=100&q="' + clean + '"';
+    //let uri = '/catalog/development_part_catalogs/_search?size=100&q="' + clean + '"';
+    let uri = `${ API_ADDR }/search/select/part_catalogs.json`;
 
-    let net = this.http.get(uri).map(res => {
-      let json = res.json();
-      return json.hits.hits.map(el => D3.hierarchy(CatalogPart.fromJSON(el._source)));
-    }).startWith([]);
+    let net = this.http.get(uri, options)
+      .catch(err => {
+        this.userService.refresh();
+        return Observable.never();
+      })
+      .map((res:any) => {
+        return res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el)));
+      }).startWith([]);
 
 
     return Observable.combineLatest(...observables, net).map(arr => arr.reduce((a, b) => a.concat(b)));

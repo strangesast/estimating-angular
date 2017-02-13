@@ -19,19 +19,74 @@
       position: relative;
       .default-margin;
 
-      input {
+      .input {
+        height: 38px;
+        line-height: 38px;
+        padding: 0 4px;
         box-sizing: border-box;
-        padding: 4px;
+        border-radius: 3px;
         font-size: 1.1em;
-        border-radius: 4px;
-        -webkit-appearance: none;
         border: 1px solid @off-white;
-        width: 100%;
-        background: inherit;
-        &:active, &:focus {
-          background: #F8F8F8;
+        background-color: #F8F8F8;
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+
+        input {
+          flex-grow: 1;
+          -webkit-appearance: none;
+          background-color: inherit;
+          font-size: 1.1em;
+          border: none;
+          &:active, &:focus {
+            outline: none;
+          }
+          .input-italic;
         }
-        .input-italic;
+      }
+
+      .advanced {
+        font-size: 0.75em;
+        background-color: #F8F8F8;
+        border: 1px solid rgba(0, 0, 0, 0.18);
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        min-height: 200px;
+        .box-shadow;
+        display: flex;
+        flex-direction: column;
+        & > .controls {
+          flex-grow: 1;
+          list-style-type: none;
+          padding-left: 0;
+          margin: 0;
+          & > li {
+            display: flex;
+            margin-bottom: 8px;
+          }
+          line-height: 28px;
+          .key {
+            flex-basis: 50%;
+            flex-grow: 1;
+          }
+          input.value {
+            min-width: 100px;
+          }
+          .radio {
+            input[type='radio'] {
+              display: none;
+            }
+            input:checked + label {
+              background-color: #d8d8d8;
+            }
+            label {
+              .button;
+            }
+          }
+        }
+        & > .buttons {
+        }
       }
     }
     .results {
@@ -62,6 +117,10 @@
     align-self: baseline;
     .box-shadow-2;
     border: 1px solid rgba(0, 0, 0, 0.18);
-    background: #F8F8F8;
+    background-color: #F8F8F8;
   }
+}
+
+.invert {
+  transform: rotate(180deg);
 }

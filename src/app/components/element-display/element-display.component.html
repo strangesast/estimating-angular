@@ -12,7 +12,8 @@
         {{ element.data.name }}
       </span>
       <span *ngSwitchCase="'catalog-part'">
-        {{ element.data.description }}
+        {{ element.data.label }}
+        <small>{{ element.data.description }}</small>
       </span>
       <span *ngSwitchDefault>
         {{ element.data.name }}

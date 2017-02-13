@@ -16,7 +16,7 @@
       <span class="description">{{ job.description }}</span>
       <div class="settings dropdown">
         <span class="dropdown-button"><span class="fa fa-cog"></span></span>
-        <div class="dropdown-content">
+        <div class="dropdown-content right">
           <span class="triangle"></span>
           <span (click)="renameJob(job)"class="hoverunderline">Rename</span>
           <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Details</a>

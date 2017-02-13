@@ -1,7 +1,19 @@
-<div *ngIf="!user">
-  <button (click)="openLogin()">Login with Core</button>
-  <button (click)="anon()">Continue Anonymously</button>
-</div>
-<div *ngIf="user">
-  Logged in as {{ user.name }}.
+<div>
+  <div *ngIf="!user">
+    <span>Log in with your CORE credentials.</span>
+    <div class="core-login" (click)="openLogin()">
+      <span class="icon-core">Login with Core</span>
+    </div>
+    <span class="spacer"></span>
+    <button class="button wide" (click)="anon()">Continue Anonymously</button>
+  </div>
+  <div *ngIf="user">
+    <h3>Logged in as</h3>
+    <h1>{{ user.first_name }} {{ user.last_name }}</h1>
+    <div class="buttons">
+      <a class="nostyle button" target="_blank" href="https://beta.dayautomation.com/oauth/authorized_applications">Revoke Access</a>
+      <a class="nostyle button" target="_blank" href="https://beta.dayautomation.com/pages/people/{{ user.id }}/">Core Profile</a>
+      <button class="button" (click)="logout()">Log out</button>
+    </div>
+  </div>
 </div>

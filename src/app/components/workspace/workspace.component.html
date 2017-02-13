@@ -2,7 +2,51 @@
   <div class="side">
     <div class="search">
       <form *ngIf="searchForm" [formGroup]="searchForm" (ngSubmit)="searchFormSubmit(searchForm)">
-        <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
+        <div class="input">
+          <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
+          <span (click)="advancedSearchVisible = !advancedSearchVisible" class="hoverlink fa fa-fw fa-angle-down" [class.invert]="advancedSearchVisible"></span>
+        </div>
+        <div *ngIf="advancedSearchVisible" class="advanced">
+          <ul class="controls">
+            <li>
+              <span class="key">Element</span>
+              <select formControlName="elementType" class="button value">
+                <option value="catalog">Part Catalog</option>
+                <option value="component">Component</option>
+                <option value="folder">Folder</option>
+              </select>
+            </li>
+            <li *ngIf="activeElementType == 'catalog'">
+              <span class="key">Kind</span>
+              <select class="button value">
+                <option *ngFor="let kind of kinds">{{ kind }}</option>
+              </select>
+            </li>
+            <li *ngIf="activeElementType == 'catalog'">
+              <span class="key">Type</span>
+              <select class="button value">
+                <option *ngFor="let type of types">{{ type }}</option>
+              </select>
+            </li>
+            <li *ngIf="activeElementType == 'catalog'">
+              <span class="key">Manufacturer</span>
+              <input class="value" type="text">
+            </li>
+            <li *ngIf="activeElementType == 'catalog'">
+              <span class="key">Active</span>
+              <div class="value radio">
+                <input name="active" id="active-true" type="radio">
+                <label for="active-true">Yes</label>
+                <input name="active" id="active-false" type="radio">
+                <label for="active-false">No</label>
+              </div>
+            </li>
+          </ul>
+          <div class="buttons">
+            <button class="button">Clear</button>
+            <button (click)="advancedSearchVisible = false" class="button">Close</button>
+          </div>
+        </div>
       </form>
     </div>
     <div class="results">

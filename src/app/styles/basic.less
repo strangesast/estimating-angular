@@ -71,6 +71,7 @@
   border: none;
   background: inherit;
   font-size: 1em;
+  white-space: nowrap;
   color: inherit;
   &:active, &:focus {
     outline: none;
@@ -81,15 +82,18 @@
     opacity: 0.5;
     background: #d1d1d1;
   }
-  &:not([disabled]):hover {
-    background: rgba(0, 0, 0, 0.08);
-  }
-  &:not([disabled]):active {
-    background: rgba(0, 0, 0, 0.18);
-  }
   border: 1px solid #d1d1d1;
   margin-bottom: -1px;
   &[disabled] {
     border-bottom: 1px solid white;
   }
+  &.wide {
+    width: 100%;
+  }
+}
+button.button:not([disabled]):hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+button.button:not([disabled]):active {
+  background: rgba(0, 0, 0, 0.18);
 }

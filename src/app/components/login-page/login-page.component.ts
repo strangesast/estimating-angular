@@ -22,15 +22,15 @@ export class LoginPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.data.subscribe(({ user: userSubject }) => {
-      let wait = userSubject.skip(1).filter(user => user != null);
+      let wait = userSubject.skip(1);
       userSubject.take(1).subscribe(user => {
         if (user) {
-
-        } else {
-          this.userWaitSub = wait.subscribe(user => {
-            this.userService.completeNavigation();
-          });
+          this.user = user;
         }
+        this.userWaitSub = wait.subscribe(user => {
+          if (!this.user) this.userService.completeNavigation();
+          this.user = user;
+        });
       });
     });
   }
@@ -55,12 +55,18 @@ export class LoginPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  logout() {
+    this.userService.logout();
+  }
+
   anon() {};
 
   ngOnDestroy() {
+    if (this.windowMessageListener) {
+      this.windowMessageListener();
+    }
     if (this.windowObjectReference) {
       this.windowObjectReference.close();
-      this.windowMessageListener();
     }
   }
 }

@@ -9,6 +9,8 @@
     padding: 8px;
     border: none;
     font-size: 16px;
+    height: 16px;
+    line-height: 16px;
     cursor: pointer;
   }
   .dropdown-content {
@@ -16,7 +18,12 @@
     position: absolute;
     top: 95%;
     background-color: white;
-    min-width: 130px;
+    min-width: 100px;
+    max-width: 250px;
+    line-height: 30px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     .box-shadow;
     z-index: 10;
     padding: 4px 0;
@@ -24,6 +31,15 @@
     & > * {
       padding: 0 8px;
       display: block;
+    }
+
+    &.right {
+      right: 0;
+      text-align: right;
+    }
+
+    &.hovershadow > *:hover {
+      background: rgba(0, 0, 0, 0.08);
     }
   }
   &:hover .dropdown-content {

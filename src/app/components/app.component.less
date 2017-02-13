@@ -11,22 +11,24 @@ nav {
     padding: 8px;
     font-size: 1.5em;
   }
-  span, a {
-    line-height: @nav-height;
-    &.active {
-      font-style: italic;
-    }
-  }
-
   & > div {
     .default-margin;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
 
+    & > a, & > span, & > .links > a, & > .links > span {
+      line-height: @nav-height;
+      &.active {
+        font-style: italic;
+      }
+    }
+
     & > .links {
-      padding: 8px;
-      & > *:not(:first-child) {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      & > *:not(:first-child):not(.dropdown) {
         margin-left: 8px;
       }
     }
