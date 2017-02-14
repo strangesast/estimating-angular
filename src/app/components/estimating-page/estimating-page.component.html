@@ -1,13 +1,22 @@
 <div>
   <svg preserveAspectRatio="none" width="100%" viewBox="-40 -40 1080 1080" class="pack"></svg>
 
-  <select [(ngModel)]="groupBy" (ngModelChange)="groupByChanged($event)">
-    <option *ngFor="let option of groupByOptions">{{option}}</option>
-  </select>
-
-  <select [(ngModel)]="selectedFolder" *ngIf="folderNames" (ngModelChange)="selectedFolderChanged($event)">
-    <option *ngFor="let option of folderNames" [value]="option.value">{{ option.display }}</option>
-  </select> 
-  <button (click)="gotoParent()">Go Up</button>
+  <ul class="controls">
+    <li>
+      <span>Value</span>
+      <select class="button value" [(ngModel)]="groupBy" (ngModelChange)="groupByChanged($event)">
+        <option *ngFor="let option of groupByOptions" [value]="option">{{ option[0].toUpperCase() + option.slice(1) }}</option>
+      </select>
+    </li>
+    <li>
+      <span>Group By</span>
+      <select class="button value" [(ngModel)]="selectedFolder" *ngIf="folderNames" (ngModelChange)="selectedFolderChanged($event)">
+        <option *ngFor="let option of folderNames" [value]="option.value">{{ option.display }}</option>
+      </select> 
+    </li>
+    <li>
+      <button class="button" type="button" (click)="gotoParent()">Go Up</button>
+    </li>
+  </ul>
   <!--<svg xmlns="http://www.w3.org/2000/svg" class="graph"></svg>-->
 </div>

@@ -129,12 +129,23 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
   }
 
   async logout() {
-    this.accessToken = null;
-    localStorage.removeItem('access_token');
-    this.refreshToken = null;
-    localStorage.removeItem('refresh_token');
-    this.currentUser.next(null);
-    localStorage.removeItem('user');
+    if (this.authorizationOptions) {
+      let body = {
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        token: this.accessToken
+      };
+      let res = await this.http.post(`${ API_ADDR }/oauth/revoke`, body, this.authorizationOptions).map(res => res.json()).toPromise();
+      this.accessToken = null;
+      localStorage.removeItem('access_token');
+      this.refreshToken = null;
+      localStorage.removeItem('refresh_token');
+      this.currentUser.next(null);
+      localStorage.removeItem('user');
+
+    } else {
+      throw new Error('not logged in');
+    }
   }
 
   async resolve() {

@@ -160,11 +160,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
     add.append('title')
       .text((d: any) => d.data.name + ' (' + currency(d.value) + ')')
 
-    add.filter(d => d.data instanceof ChildElement)
-      .append('text')
-      .text((d) => currency(d.value))
-      .attr('text-anchor', 'middle')
-
     add.filter(d => d.data instanceof FolderElement)
       .on('mouseover', function() {
         D3.select(this).select('text').transition().duration(100).attrTween('fill-opacity', () => <any>D3.interpolate(0, 1)); 
@@ -179,6 +174,8 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .text((d) => currency(d.value))
 
     nodes.select('circle').transition(t).attr('r', (d) => d.r);
+
+    nodes.filter(d => d.data instanceof FolderElement).select('text').transition(t).attr('y', (d) => -(d.r + 10));
 
     let notChild = circle.filter(d => !(d.data instanceof ChildElement))
 
@@ -214,6 +211,12 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .on('mouseout', function() {
         D3.select(this).attr('stroke-opacity', 0);
       })
+
+    add.filter(d => d.data instanceof ChildElement)
+      .append('text')
+      .text((d) => currency(d.value))
+      .attr('text-anchor', 'middle')
+
 
 
     return Observable.never();

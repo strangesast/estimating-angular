@@ -1,7 +1,8 @@
 import { Component, OnInit, OnChanges } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { AbstractControl, ValidatorFn, FormBuilder, FormGroup } from '@angular/forms';
 
 import { SearchService } from '../../services/search.service';
+import { DataService } from '../../services/data.service';
 
 import { Subscription, Observable, Subject, BehaviorSubject } from 'rxjs';
 
@@ -389,6 +390,14 @@ const PART_KINDS = [
   'ZPS'
 ];
 
+function inArrayValidator(arr: string[]): ValidatorFn {
+  return (control: AbstractControl) => {
+    let kind = control.value
+    console.log(arr.indexOf(kind));
+    return arr.indexOf(kind) == -1 ? { inArrayValidator: true } : null;
+  };
+}
+
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -400,7 +409,7 @@ export class WorkspaceComponent implements OnInit {
 
   kinds = PART_KINDS;
   types = PART_TYPES;
-  activeElementType = 'catalog';
+  collections;
 
   advancedSearchVisible: boolean = false;
 
@@ -413,9 +422,13 @@ export class WorkspaceComponent implements OnInit {
 
   searchFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  constructor(private searchService: SearchService, private formBuilder: FormBuilder) { }
+  constructor(private searchService: SearchService, private formBuilder: FormBuilder, private db: DataService) { }
 
-  ngOnInit() {
+  async ngOnInit() {
+    let db = this.db;
+    this.collections = await db.collections.toArray();
+    console.log('collections', this.collections);
+
     this.searchForm = this.formBuilder.group({
       query: '',
       elementType: ''
@@ -427,7 +440,41 @@ export class WorkspaceComponent implements OnInit {
   initForm(formGroup) {
     if (this.searchFormSubscription) this.searchFormSubscription.unsubscribe();
 
-    let s = formGroup.valueChanges.debounceTime(100).startWith({query: ''});
+    let changes = formGroup.valueChanges;
+
+    let onReset = changes.map(({elementType}) => elementType).startWith(formGroup.value.elementType).distinctUntilChanged().skip(1).take(1).subscribe(elementType => {
+      let group: any = {
+        query: this.searchForm && this.searchForm.value.query || '',
+        elementType
+      };
+      if (elementType == '') {
+
+      } else if (elementType == 'catalog') {
+        group.attributes = this.formBuilder.group({
+          kind: ['', inArrayValidator(this.kinds)],
+          type: ['', inArrayValidator(this.types)],
+          manufacturer: '',
+          active: true
+        });
+
+      } else if (elementType == 'folder') {
+        group.attributes = this.formBuilder.group({
+          type: '',
+          collection: ['', inArrayValidator(this.collections)],
+        });
+
+      } else if (elementType == 'component') {
+        group.attributes = this.formBuilder.group({
+          collection: ['', inArrayValidator(this.collections)],
+        });
+
+      }
+      this.searchForm = this.formBuilder.group(group);
+      this.initForm(this.searchForm);
+    });
+
+    let s = changes.debounceTime(100).startWith(formGroup.value);
+
     s.catch(err => {
       console.log('err', err);
       return Observable.never();
@@ -440,24 +487,16 @@ export class WorkspaceComponent implements OnInit {
         return this.searchService.results;
       }
     }).subscribe(this.results);
-
   }
 
-  ngOnChanges(changes) {
-    if ('advancedSearchVisible' in changes) {
-      if (this.advancedSearchVisible) {
-        this.searchForm = this.formBuilder.group({
-          query: '',
-          elementType: 'catalog'
-        });
-      } else {
-        this.searchForm = this.formBuilder.group({
-          query: '',
-          elementType: ''
-        });
-      }
-      this.initForm(this.searchForm);
-    }
+  resetForm() {
+    this.searchForm = this.formBuilder.group({
+      query: this.searchForm && this.searchForm.value.query || '',
+      elementType: ''
+    });
+    this.initForm(this.searchForm);
   }
+
+  ngOnChanges(changes) {}
 
 }
