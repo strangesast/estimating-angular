@@ -95,7 +95,40 @@ export class SearchService implements Resolve<any> {
   }
 
   refreshCredentials() {
+    return Observable.of(null).delay(1000);
+  }
 
+  streamWithRetry(stream, fn) {
+    return stream.catch((err, stream) => fn.concat(stream));
+  }
+
+  searchSubject(inputSubject, retries = 1, on = 1) {
+    let retryFn = this.refreshCredentials()
+      .withLatestFrom(inputSubject)
+      .flatMap(([_, input]) => this.handleSearchForm(input));
+
+    let input = inputSubject.debounceTime(100)
+      .switchMap(this.handleSearchForm.bind(this));
+
+    return this.streamWithRetry(input, retryFn);
+
+    /*
+    return inputSubject
+      .debounceTime(100)
+      .switchMap(input => this.handleSearchForm(input))
+      .catch((err, stream) => this.refreshCredentials()
+        .withLatestFrom(inputSubject)
+        .flatMap(([_, input]) => this.handleSearchForm(input))
+        .concat(stream)
+      );
+    */
+  }
+
+  handleSearchForm(input: any) {
+    if (Math.random() > 0.9) {
+      return Observable.throw(new Error('fuck'));
+    }
+    return this.http.get(`${ API_ADDR }/search.json`, this.userService.authorizationOptions).map(res => res.json());
   }
 
   search(query) {

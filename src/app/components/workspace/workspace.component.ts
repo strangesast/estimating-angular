@@ -442,6 +442,8 @@ export class WorkspaceComponent implements OnInit {
 
     let changes = formGroup.valueChanges;
 
+    this.searchService.searchSubject(changes).subscribe(x => console.log('out', x));
+
     let onReset = changes.map(({elementType}) => elementType).startWith(formGroup.value.elementType).distinctUntilChanged().skip(1).take(1).subscribe(elementType => {
       let group: any = {
         query: this.searchForm && this.searchForm.value.query || '',
