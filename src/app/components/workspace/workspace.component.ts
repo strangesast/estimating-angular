@@ -393,7 +393,6 @@ const PART_KINDS = [
 function inArrayValidator(arr: string[]): ValidatorFn {
   return (control: AbstractControl) => {
     let kind = control.value
-    console.log(arr.indexOf(kind));
     return arr.indexOf(kind) == -1 ? { inArrayValidator: true } : null;
   };
 }
@@ -441,8 +440,6 @@ export class WorkspaceComponent implements OnInit {
 
     let changes = formGroup.valueChanges;
 
-    this.searchService.searchSubject(changes).subscribe(x => console.log('out', x));
-
     let onReset = changes.map(({elementType}) => elementType).startWith(formGroup.value.elementType).distinctUntilChanged().skip(1).take(1).subscribe(elementType => {
       let group: any = {
         query: this.searchForm && this.searchForm.value.query || '',
@@ -455,7 +452,7 @@ export class WorkspaceComponent implements OnInit {
           kind: ['', inArrayValidator(this.kinds)],
           type: ['', inArrayValidator(this.types)],
           manufacturer: '',
-          active: true
+          active: null
         });
 
       } else if (elementType == 'folder') {
@@ -476,10 +473,13 @@ export class WorkspaceComponent implements OnInit {
 
     let s = changes.debounceTime(100).startWith(formGroup.value);
 
+    let stream = this.searchService.searchSubject(changes).subscribe(this.results);
+
     s.catch(err => {
       return Observable.never();
     }).subscribe();
     
+    /*
     this.searchFormSubscription = s.switchMap(({query}) => {
       if(query) {
         return this.searchService.search(query);
@@ -487,6 +487,7 @@ export class WorkspaceComponent implements OnInit {
         return this.searchService.results;
       }
     }).subscribe(this.results);
+    */
   }
 
   resetForm() {

@@ -99,10 +99,13 @@ export class SearchService implements Resolve<any> {
   }
 
   streamWithRetry(stream, fn) {
-    return stream.catch((err, stream) => fn.concat(stream));
+    return stream.catch((err, stream) => {
+      console.log('err', err);
+      return fn.concat(stream)
+    });
   }
 
-  searchSubject(inputSubject, retries = 1, on = 1) {
+  searchSubject(inputSubject) {
     let retryFn = this.refreshCredentials()
       .withLatestFrom(inputSubject)
       .flatMap(([_, input]) => this.handleSearchForm(input));
@@ -125,10 +128,57 @@ export class SearchService implements Resolve<any> {
   }
 
   handleSearchForm(input: any) {
-    if (Math.random() > 0.9) {
-      return Observable.throw(new Error('fuck'));
+    //if (Math.random() > 0.9) {
+    //  return Observable.throw(new Error('fuck'));
+    //}
+    if (input.elementType == 'catalog') {
+      let search = new URLSearchParams();
+      if (input.attributes) {
+        for (let prop in input.attributes) {
+          let val = input.attributes[prop];
+          if (val != '') {
+            search.set(prop, val);
+          }
+        }
+      }
+
+      if (search.paramsMap.size) {
+        if (input.query) {
+          search.set('description', ':' + input.query);
+        }
+        search.set('fields', ['description', 'label'].join(','));
+        
+        let options = this.userService.authorizationOptions.merge({ search });
+        return this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el[Object.keys(el)[0]]))));
+
+      } else {
+        search.set('search', input.query);
+        let options = this.userService.authorizationOptions.merge({ search });
+        return this.http.get(`${ API_ADDR }/search/select/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el))));
+
+      }
+
+    } else if (input.elementType == 'component') {
+      /*
+      let options = this.userService.authorizationOptions.merge({ search: Object.assign({ description: ':' + input.query }, input.attributes) });
+      return this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json()).toPromise();
+      */
+      return [];
+
+
+    } else if (input.elementType == 'folder') {
+      /*
+      let options = this.userService.authorizationOptions.merge({ search: Object.assign({ description: ':' + input.query }, input.attributes) });
+      return this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json()).toPromise();
+      */
+      return [];
+
+
     }
-    return this.http.get(`${ API_ADDR }/search.json`, this.userService.authorizationOptions).map(res => res.json());
+    let search = new URLSearchParams();
+    search.set('search', input.query);
+    let options = this.userService.authorizationOptions.merge({ search });
+    return this.http.get(`${ API_ADDR }/search/select/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el))));
   }
 
   search(query) {
@@ -164,11 +214,25 @@ export class SearchService implements Resolve<any> {
   }
 
   moreDetail(id) {
-    let path = '/data/part_catalogs/' + id
-    let uri = '/core' + path + '.json';
-    return this.http.get(uri).map(res => {
-      console.log('res', res);
-      return res.json();
-    });
+    let url = `${ API_ADDR }/data/part_catalogs/${ id }.json`;
+    let search = new URLSearchParams();
+    search.set('fields', [
+      'description',
+      'id',
+      'kind',
+      'label',
+      'summary',
+      'type',
+      'nys_price',
+      'price',
+      'list_price',
+      'number',
+      'version_id'
+    ].join(','));
+    let options = this.userService.authorizationOptions.merge({ search });
+    return this.http.get(url, options).map(res => {
+      let json = res.json();
+      return json[Object.keys(json)[0]];
+    }).toPromise();
   }
 }

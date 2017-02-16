@@ -26,6 +26,8 @@ export class EditPageComponent implements OnInit, OnChanges {
   public newElementType: string;
   public newElementForm: FormGroup;
 
+  public corePart;
+
   public inputs: any[] = [];
 
   constructor(
@@ -154,6 +156,19 @@ export class EditPageComponent implements OnInit, OnChanges {
           label: 'Core Part',
           type: 'text',
           required: false,
+          change: async(evt) => {
+            try {
+              let component: any = await this.searchComponent(evt.target.value);
+              let sell = isNaN(component.nys_price) ? 0.0 : Number(component.nys_price);
+              let buy = isNaN(component.price) ? 0.0 : Number(component.price);
+              this.corePart = component;
+              this.newElementForm.patchValue({ buy, sell });
+
+            } catch (e) {
+              console.error(e);
+              console.log('failed');
+            }
+          },
           description: 'Reference a (single) existing core part.'
         }
         // children
@@ -218,6 +233,10 @@ export class EditPageComponent implements OnInit, OnChanges {
     });
 
     this.newElementForm = this.formBuilder.group(group);
+  }
+
+  searchComponent(id) {
+    return this.searchService.moreDetail(id);
   }
 
   setSelectedElement(element) {

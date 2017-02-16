@@ -80,11 +80,15 @@ export class ElementDisplayComponent implements OnInit, OnChanges {
   onDragStart(evt) {
     this.dragging = true;
     let data = this.element instanceof D3.hierarchy ? (<any>this.element).data : this.element;
-    let obj = {
-      object: data.toJSON(),
-      type: this.pipe.transform(data)
-    };
-    evt.dataTransfer.setData('text', JSON.stringify(obj));
+    if (data instanceof CatalogPart) {
+      evt.dataTransfer.setData('text', data.id);
+    } else {
+      let obj = {
+        object: data.toJSON(),
+        type: this.pipe.transform(data)
+      };
+      evt.dataTransfer.setData('text', JSON.stringify(obj));
+    }
   }
 
   onDragOver(evt) {

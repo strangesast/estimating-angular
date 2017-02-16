@@ -45,13 +45,13 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   private host: Selection<any, any, any, any>;
 
   @ViewChild('container', { read: ViewContainerRef }) container: ViewContainerRef;
+  public children: any[];
 
-  constructor(
-    private componentFactoryResolver: ComponentFactoryResolver
-  ) { }
+  constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
 
   ngOnInit() {
     this.elementMap = new Map();
+    this.children = [];
     this.factory = this.componentFactoryResolver.resolveComponentFactory(ElementDisplayComponent);
   }
 
@@ -99,6 +99,10 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     let componentRef = this.elementMap.get(data);
     if (!componentRef) return; // should error
     componentRef.destroy();
+    let i = this.children.indexOf(data);
+    if (i != -1) {
+      this.children.splice(i, 1);
+    }
     return this.elementMap.delete(data);
   }
 
@@ -127,6 +131,12 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
     selection.enter()
       .append(this.create.bind(this))
       .merge(selection)
+      .each(data => {
+        let i = this.children.indexOf(data);
+        if (i == -1) {
+          this.children.push(data);
+        }
+      });
 
   }
 }

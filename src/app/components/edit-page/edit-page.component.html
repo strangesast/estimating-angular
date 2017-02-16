@@ -40,7 +40,7 @@
         </div>
         <div class="form-control" *ngFor="let input of inputs">
           <label>{{ input.label }}</label>
-          <input *ngIf="input.type == 'text' || input.type == 'number'" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step">
+          <input *ngIf="input.type == 'text' || input.type == 'number'" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step" (change)="input.change ? input.change($event) : null">
           <select *ngIf="input.options && input.type == 'select'" [formControlName]="input.key">
             <option *ngFor="let option of input.options" [value]="option.value">{{ option.key }}</option>
           </select>
@@ -57,6 +57,35 @@
             </datalist>
           </div>
           <small class="about" *ngIf="input.description">{{ input.description }}</small>
+          <div *ngIf="input.key == 'catalog' && corePart">
+            <div class="form-group">
+              <div class="form-group-title">Core Part</div>
+              <div class="form-control">
+                <label>Description</label>
+                <textarea readonly>{{ corePart.description }}</textarea>
+              </div>
+              <div class="form-control">
+                <label>Summary</label>
+                <input readonly [value]="corePart.summary">
+              </div>
+              <div class="form-control">
+                <label>Number</label>
+                <input readonly [value]="corePart.number">
+              </div>
+              <div class="form-control">
+                <label>Kind</label>
+                <input readonly [value]="corePart.kind">
+              </div>
+              <div class="form-control">
+                <label>Type</label>
+                <input readonly [value]="corePart.type">
+              </div>
+              <div class="form-control">
+                <label>Label</label>
+                <input readonly [value]="corePart.label">
+              </div>
+            </div>
+          </div>
         </div>
         <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty" class="button">Save</button>
       </div>
