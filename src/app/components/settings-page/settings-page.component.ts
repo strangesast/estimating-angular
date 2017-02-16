@@ -27,6 +27,7 @@ export class SettingsPageComponent implements OnInit {
         dbs.forEach((db) => indexedDB.deleteDatabase(db).onsuccess = complete);
       }
       this.locked = true;
+      localStorage.clear();
       setTimeout(() => window.location.reload(), 500)
     })
   }

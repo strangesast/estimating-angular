@@ -4,7 +4,7 @@ import { DataService } from './data.service';
 import { ElementService } from './element.service';
 import { UserService } from './user.service';
 
-import { Collection, FolderElement, ComponentElement, ChildElement } from '../models';
+import { User, Collection, FolderElement, ComponentElement, ChildElement } from '../models';
 import { CollectionPlus } from '../models/collection';
 
 @Injectable()
@@ -27,6 +27,7 @@ export class JobListService implements Resolve<any> {
       for(let i = 0; i < collections.length; i++) {
         let collection = collections[i];
         collection.stats = await this.getStats(collection);
+        collection.owner = User.fromJSON(collection.owner);
       }
       return collections;
     });
@@ -44,7 +45,7 @@ export class JobListService implements Resolve<any> {
   async createCollection(collection: Collection) {
     let db = this.db;
     let id = await db.collections.add(collection);
-    collection.id = id;
+    collection.id = <any>id;
     collection.stats = await this.getStats(collection);
     this.list.push(collection);
     return collection;

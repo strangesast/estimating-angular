@@ -49,7 +49,8 @@ import { Collection } from '../../models';
         ],
         description: collection.description,
         owner: this.formBuilder.group({
-          name: [collection.owner.name, Validators.required],
+          firstName: [collection.owner.first_name, Validators.required],
+          lastName: [collection.owner.last_name, Validators.required],
           username: [collection.owner.username, [Validators.required, Validators.pattern('^[A-Za-z0-9]+$')]],
           email: [collection.owner.email, Validators.required],
         }),

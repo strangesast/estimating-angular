@@ -65,7 +65,7 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
 
   async init() {
     let user = JSON.parse(localStorage.getItem('user'));
-    this.currentUser.next(user);
+    this.currentUser.next(user ? User.fromJSON(user) : null);
 
     // core stuff
     this.coreAccessToken = localStorage.getItem('core_access_token');
@@ -108,7 +108,7 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
       this.coreAuthState.next(1);
 
       let person = r2.person;
-      return Object.assign(person, { username: user.name });
+      return User.fromJSON(Object.assign(person, { username: user.name, user_id: user.id }));
     }
     this.coreAuthState.next(0);
     return null;

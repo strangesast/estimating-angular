@@ -57,11 +57,10 @@ export class JobListPageComponent implements OnInit, AfterViewInit {
       kind: 'job'
     });
     this.newCollection = true;
-
   }
 
   createNewJobSubmit(form) {
-    let user = this.userService.currentUser;
+    let user = this.userService.currentUser.getValue();
 
     let description = 'description';
 

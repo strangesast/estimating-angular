@@ -427,7 +427,6 @@ export class WorkspaceComponent implements OnInit {
   async ngOnInit() {
     let db = this.db;
     this.collections = await db.collections.toArray();
-    console.log('collections', this.collections);
 
     this.searchForm = this.formBuilder.group({
       query: '',
@@ -478,7 +477,6 @@ export class WorkspaceComponent implements OnInit {
     let s = changes.debounceTime(100).startWith(formGroup.value);
 
     s.catch(err => {
-      console.log('err', err);
       return Observable.never();
     }).subscribe();
     

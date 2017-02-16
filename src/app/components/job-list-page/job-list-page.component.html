@@ -23,7 +23,7 @@
           <span (click)="removeJob(job)" class="hoverunderline">Remove</span>
         </div>
       </div>
-      <span class="owner">{{ job.owner.name }}</span>
+      <span class="owner">{{ job.owner.username }}</span>
       <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
       <span class="folders-cnt">{{ 0 }}</span>
       <span class="components-cnt">{{ 0 }}</span>

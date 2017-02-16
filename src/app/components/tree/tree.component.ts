@@ -35,6 +35,11 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   rootSubscription: Subscription;
 
   @Input() config: TreeConfiguration;
+  // hideRoot: boolean
+  // styleRoot: boolean
+  // size: string
+  // dragsource: boolean
+  // dragsink: boolean
   private factory: ComponentFactory<any>;
   private elementMap: Map<HTMLElement, ComponentRef<any>>;
   private host: Selection<any, any, any, any>;
