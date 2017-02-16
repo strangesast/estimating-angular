@@ -140,24 +140,27 @@ export class SearchService implements Resolve<any> {
     let search = new URLSearchParams();
     search.set('active', '1')
     search.set('q', clean);
-    let options = this.userService.authorizationOptions.merge({ search });
-
     let observables = types.map((tableName) => Observable.fromPromise(db[tableName].where('name').startsWithIgnoreCase(clean).distinct().toArray().then(arr => arr.map(element => D3.hierarchy(element)))).startWith([]));
 
-    //let uri = '/catalog/development_part_catalogs/_search?size=100&q="' + clean + '"';
-    let uri = `${ API_ADDR }/search/select/part_catalogs.json`;
+    if (this.userService.authorizationOptions) {
 
-    let net = this.http.get(uri, options)
-      .catch(err => {
-        this.userService.refresh();
-        return Observable.never();
-      })
-      .map((res:any) => {
-        return res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el)));
-      }).startWith([]);
+      let options = this.userService.authorizationOptions.merge({ search });
+      //let uri = '/catalog/development_part_catalogs/_search?size=100&q="' + clean + '"';
+      let uri = `${ API_ADDR }/search/select/part_catalogs.json`;
+  
+      let net = this.http.get(uri, options)
+        .catch(err => {
+          this.userService.refresh();
+          return Observable.never();
+        })
+        .map((res:any) => {
+          return res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el)));
+        }).startWith([]);
 
+      return Observable.combineLatest(...observables, net).map(arr => arr.reduce((a, b) => a.concat(b)));
 
-    return Observable.combineLatest(...observables, net).map(arr => arr.reduce((a, b) => a.concat(b)));
+    }
+    return Observable.combineLatest(...observables).map(arr => arr.reduce((a:any[], b:any) => a.concat(b)));
   }
 
   moreDetail(id) {

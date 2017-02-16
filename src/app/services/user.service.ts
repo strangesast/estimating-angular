@@ -1,6 +1,6 @@
 import { Injectable, OnInit, OnDestroy } from '@angular/core';
 import { URLSearchParams, Http, Headers, RequestOptions } from '@angular/http';
-import { Resolve, Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { NavigationExtras, Resolve, Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 
 import { Observable, BehaviorSubject } from 'rxjs';
 
@@ -11,20 +11,36 @@ const { LOCAL_ADDR, API_ADDR, CLIENT_ID, CLIENT_SECRET } = environment;
 
 const AnonymousUser = new User('Anonymous', 'anonymous', 'anon@anon.com');
 
-const REDIRECT_URI = `${ LOCAL_ADDR }/oauth`;
-
 @Injectable()
 export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any> {
   currentUser: BehaviorSubject<User> = new BehaviorSubject<User>(null);
-  accessToken: string;
+  coreAccessToken: string;
   authorizationCode: string;
-  authorizationOptions: RequestOptions;
-  refreshToken: string;
+
+  get authorizationOptions(): RequestOptions {
+    return this.coreAccessToken ? new RequestOptions({ headers: new Headers({ 'Authorization': 'Bearer ' + this.coreAccessToken }) }) : null;
+  };
+
+  get coreRedirectURL(): string {
+    return `${ LOCAL_ADDR }/oauth`;
+  }
+
+  get coreAuthURL(): string {
+    let params = new URLSearchParams();
+    params.set('client_id', CLIENT_ID);
+    params.set('response_type', 'code');
+    params.set('redirect_uri', this.coreRedirectURL);
+    params.set('scopes', 'user');
+    return `${ API_ADDR }/oauth/authorize?${ params.toString() }`;
+  }
+
+  coreRefreshToken: string;
+
+  coreAuthState = new BehaviorSubject(0); // 0, 1, 2
+  sfAuthState = new BehaviorSubject(0); // 0, 1, 2
 
   initialized = new BehaviorSubject(false);
 
-  redirectedFromUrl: string;
-  authWindowURL: string;
 
   constructor(private router: Router, private http: Http) {
     this.init();
@@ -34,7 +50,7 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
     let user = this.currentUser.getValue();
     if (user) {
       return true;
-    } else if (this.accessToken) {
+    } else if (this.coreAccessToken) {
       user = await this.getCurrentUser();
       if (user) {
         this.currentUser.next(user);
@@ -42,44 +58,39 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
       }
     }
 
-    this.redirectedFromUrl = state.url;
-    this.router.navigate(['/login']);
+    let extras: NavigationExtras = { queryParams: { redirect: state.url } };
+    this.router.navigate(['/login'], extras);
     return false;
   }
 
   async init() {
-    this.accessToken = localStorage.getItem('access_token');
-    this.authorizationCode = localStorage.getItem('authorization_code'); // 'code'
-    this.refreshToken = localStorage.getItem('refresh_token');
-    this.authorizationOptions = new RequestOptions({ headers: new Headers({ 'Authorization': 'Bearer ' + this.accessToken }) });
+    let user = JSON.parse(localStorage.getItem('user'));
+    this.currentUser.next(user);
 
-    let user = localStorage.getItem('user');
+    // core stuff
+    this.coreAccessToken = localStorage.getItem('core_access_token');
+    this.authorizationCode = localStorage.getItem('core_authorization_code'); // 'code'
+    this.coreRefreshToken = localStorage.getItem('core_refresh_token');
 
-    if (user) {
-      this.currentUser.next(JSON.parse(user));
+    if (this.coreAccessToken) {
+      let t = await this.testCore();
+
+    } else {
     }
-
-    let params = new URLSearchParams();
-    params.set('client_id', CLIENT_ID);
-    params.set('response_type', 'code');
-    params.set('redirect_uri', REDIRECT_URI);
-    params.set('scopes', 'user');
-    this.authWindowURL = `${ API_ADDR }/oauth/authorize?${ params.toString() }`;
   }
 
-  completeNavigation() {
-    // if url is stored (from redirect) go there
-    if (this.redirectedFromUrl) {
-      this.router.navigateByUrl(this.redirectedFromUrl);
-      this.redirectedFromUrl = null;
-      return;
+  async testCore() {
+    if (!this.authorizationOptions) return false;
+    let test = await this.http.get(`${ API_ADDR }/sessions/me.json`, this.authorizationOptions).map(res => res.json()).toPromise();
+    if (!test || test.user) {
+      await this.refresh();
     }
-    this.router.navigate(['/jobs']);
+    this.coreAuthState.next(1);
+    return true;
   }
 
-  async getCurrentUser(token?: string) {
-    if (!this.accessToken && !token) return null;
-    this.authorizationOptions = new RequestOptions({ headers: new Headers({ 'Authorization': 'Bearer ' + (token || this.accessToken) }) });
+  async getCurrentUser() {
+    if (!this.coreAccessToken) return null;
     let r1 = await this.http.get(`${ API_ADDR }/sessions/me.json`, this.authorizationOptions)
       .map(res => res.json())
       .toPromise();
@@ -90,34 +101,40 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
         .map(res => res.json())
         .toPromise();
 
-      if (r2 && r2.person) {
-        let person = r2.person;
-        return Object.assign(person, { username: user.name });
+      if (!r2 || !r2.person) {
+        throw new Error('person info not accessible');
       }
+
+      this.coreAuthState.next(1);
+
+      let person = r2.person;
+      return Object.assign(person, { username: user.name });
     }
+    this.coreAuthState.next(0);
     return null;
   }
 
   async refresh() {
-    if (!this.refreshToken) throw new Error('need a refresh token for refresh');
-    return this.login(this.refreshToken, true);
+    if (!this.coreRefreshToken) throw new Error('need a refresh token for refresh');
+    return this.login(this.coreRefreshToken, true);
   }
 
   async login(authorizationCode: string, refresh = false) {
+    if (!authorizationCode) throw new Error('no auth code provided');
     let body = {
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: this.coreRedirectURL,
       grant_type: refresh ? 'refresh_token' : 'authorization_code'
     };
     body[refresh ? 'refresh_token' : 'code'] = authorizationCode;
     let headers = new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' });
-    let { access_token: accessToken, refresh_token: refreshToken } = await this.http.post(`${ API_ADDR }/oauth/token`, body, headers).map(response => response.json()).toPromise();
+    let { access_token: coreAccessToken, refresh_token: coreRefreshToken } = await this.http.post(`${ API_ADDR }/oauth/token`, body, headers).map(response => response.json()).toPromise();
 
-    this.accessToken = accessToken;
-    localStorage.setItem('access_token', accessToken);
-    this.refreshToken = refreshToken;
-    localStorage.setItem('refresh_token', refreshToken);
+    this.coreAccessToken = coreAccessToken;
+    localStorage.setItem('core_access_token', coreAccessToken);
+    this.coreRefreshToken = coreRefreshToken;
+    localStorage.setItem('core_refresh_token', coreRefreshToken);
 
     let user = await this.getCurrentUser();
 
@@ -133,23 +150,36 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
       let body = {
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
-        token: this.accessToken
+        token: this.coreAccessToken
       };
       let res = await this.http.post(`${ API_ADDR }/oauth/revoke`, body, this.authorizationOptions).map(res => res.json()).toPromise();
-      this.accessToken = null;
-      localStorage.removeItem('access_token');
-      this.refreshToken = null;
-      localStorage.removeItem('refresh_token');
+      this.coreAccessToken = null;
+      localStorage.removeItem('core_access_token');
+      this.coreRefreshToken = null;
+      localStorage.removeItem('core_refresh_token');
+
+      this.coreAuthState.next(0);
+
+      /*
       this.currentUser.next(null);
       localStorage.removeItem('user');
+      */
 
     } else {
       throw new Error('not logged in');
     }
   }
 
+  async changeUser(user) {
+    // currently only for removing user
+    if (!user) {
+      localStorage.removeItem('user');
+    }
+    this.currentUser.next(user);
+  }
+
   async resolve() {
-    return this.currentUser;
+    return { user: this.currentUser, core: this.coreAuthState };
   }
   ngOnInit() {}
   ngOnDestroy() {}

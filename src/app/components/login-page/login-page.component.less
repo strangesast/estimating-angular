@@ -2,15 +2,42 @@
 :host {
   display: block;
 
+  .icon {
+    height: 1em;
+    //width: 1.28571429em;
+    font-size: 3em;
+  }
+
   & > div {
-    width: 300px;
-    height: 400px;
-    margin: 0 auto;
+    max-width: 400px;
+    margin: 10% auto 0 auto;
     padding: 10px;
-    .box-shadow-2;
+    .box-shadow;
     border: 1px solid rgba(0, 0, 0, 0.18);
     background: #F8F8F8;
 
+    .list-element.core {
+      background-color: #203346;
+      color: white;
+      /*
+      &:hover {
+        cursor: pointer;
+        background-color: lighten(#203346, 5%);
+      }
+      */
+    }
+    .list-element.sf {
+      background-color: #00a1e0;
+      color: white;
+    }
+    .list-element {
+      .status {
+        font-size: 2em;
+        line-height: 2em;
+      }
+    }
+
+    /*
     & > div {
       display: flex;
       flex-direction: column;
@@ -43,6 +70,39 @@
           margin-bottom: 10px;
         }
       }
+    }
+    */
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  .list-element {
+    display: flex;
+    .icon {
+      padding: 4px;
+    }
+    .title {
+      font-size: 1.25em;
+    }
+  }
+  .list-element.tall {
+    & > .content {
+      padding: 8px 0;
+    }
+    & > .icon {
+      margin: auto 0;
+    }
+  }
+  .list-element > .content {
+    flex-grow: 1;
+  }
+
+  .list-element.bordered {
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    &:not(:last-child) {
+      margin-bottom: 10px;
     }
   }
 }

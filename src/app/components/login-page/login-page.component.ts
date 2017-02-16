@@ -1,5 +1,5 @@
 import { Renderer, Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { Subscription } from 'rxjs';
 
@@ -11,27 +11,37 @@ import { User } from '../../models';
   templateUrl: './login-page.component.html',
   styleUrls: ['./login-page.component.less']
 })
-export class LoginPageComponent implements OnInit, OnDestroy {
-  windowObjectReference = null;
+export class LoginPageComponent implements OnInit, OnDestroy { windowObjectReference = null;
   windowMessageListener: Function;
+
   user: User;
+  userSub: Subscription;
+
+  coreStatus;
+  coreSub: Subscription;
+
+  sfStatus;
+  sfSub;
 
   userWaitSub: Subscription;
 
-  constructor(private route: ActivatedRoute, private userService: UserService, private renderer: Renderer) { }
+  constructor(private router: Router, private route: ActivatedRoute, private userService: UserService, private renderer: Renderer) { }
 
   ngOnInit() {
-    this.route.data.subscribe(({ user: userSubject }) => {
-      let wait = userSubject.skip(1);
-      userSubject.take(1).subscribe(user => {
-        if (user) {
-          this.user = user;
+    // current user
+    // core status
+    // salesforce status
+    this.route.data.subscribe(({ user: { user: userSubject, core: coreSubject } }) => {
+      let redirect = this.route.snapshot.queryParams['redirect'];
+
+      this.userSub = userSubject.subscribe(user => {
+        this.user = user;
+        if (user && redirect) {
+          this.router.navigateByUrl(redirect);
         }
-        this.userWaitSub = wait.subscribe(user => {
-          if (!this.user) this.userService.completeNavigation();
-          this.user = user;
-        });
       });
+
+      this.coreSub = coreSubject.subscribe(s => this.coreStatus = s);
     });
   }
 
@@ -41,7 +51,7 @@ export class LoginPageComponent implements OnInit, OnDestroy {
 
     } else {
       if (this.windowMessageListener) this.windowMessageListener();
-      this.windowObjectReference = window.open(this.userService.authWindowURL, 'Core Login', 'toolbar=no,dependent=yes,height=600,width=600');
+      this.windowObjectReference = window.open(this.userService.coreAuthURL, 'Core Login', 'toolbar=no,dependent=yes,height=600,width=600');
       this.windowMessageListener = this.renderer.listenGlobal('window', 'message', async(event) => {
         let data = event.data;
         let code = data.code;
@@ -57,6 +67,10 @@ export class LoginPageComponent implements OnInit, OnDestroy {
 
   logout() {
     this.userService.logout();
+  }
+
+  changeUser(user) {
+    if (!this.coreStatus) this.userService.changeUser(user);
   }
 
   anon() {};

@@ -1,19 +1,66 @@
 <div>
-  <div *ngIf="!user">
-    <span>Log in with your CORE credentials.</span>
-    <div class="core-login" (click)="openLogin()">
-      <span class="icon-core">Login with Core</span>
+  <div class="list">
+    <div class="list-element tall bordered user">
+      <span class="icon fa fa-user-circle-o"></span>
+      <div class="content">
+        <span class="title" *ngIf="!user">None</span>
+        <span class="title" *ngIf="user">{{ user.first_name }} {{ user.last_name }}</span>
+        <div class="content">
+          <span *ngIf="user" class="hoverunderline">Remove local content</span>
+          <span *ngIf="user" (click)="changeUser(null)" class="hoverunderline">Change user</span>
+          <span *ngIf="!user" class="hoverunderline">Work Anonymously</span>
+        </div>
+      </div>
+      <div class="status">
+        <span class="fa fa-fw" [ngClass]="user ? 'fa-check' : 'fa-remove'"></span>
+      </div>
     </div>
-    <span class="spacer"></span>
-    <button class="button wide" (click)="anon()">Continue Anonymously</button>
-  </div>
-  <div *ngIf="user">
-    <h3>Logged in as</h3>
-    <h1>{{ user.first_name }} {{ user.last_name }}</h1>
-    <div class="buttons">
-      <a class="nostyle button" target="_blank" href="https://beta.dayautomation.com/oauth/authorized_applications">Revoke Access</a>
-      <a class="nostyle button" target="_blank" href="https://beta.dayautomation.com/pages/people/{{ user.id }}/">Core Profile</a>
-      <button class="button" (click)="logout()">Log out</button>
+    <div class="list-element tall bordered core">
+      <svg class="icon" viewBox="0 0 12 12" preserveAspectRatio="xMidYMid" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <g transform="translate(1.2, 1.2)" fill="black">
+          <circle r="5" cx="5.5" cy="5" mask="url(#hole)"/>
+          <mask id="hole">
+            <rect fill="white" x="0" y="0" width="10" height="10"/>
+            <circle fill="black" r="2.75" cx="5.5" cy="5"/>
+            <polygon fill="black" points="5.5,5 10.5,0.5 10.5,9.5"/>
+          </mask>
+        </g>
+        <g transform="translate(1, 1)" fill="currentColor">
+          <circle r="5" cx="5.5" cy="5" mask="url(#hole)"/>
+          <mask id="hole">
+            <rect fill="white" x="0" y="0" width="10" height="10"/>
+            <circle fill="black" r="2.75" cx="5.5" cy="5"/>
+            <polygon fill="black" points="5.5,5 10.5,0.5 10.5,9.5"/>
+          </mask>
+        </g>
+      </svg>
+      <div class="content">
+        <span class="title">Core</span>
+        <div class="content">
+          <span class="hoverunderline" *ngIf="!coreStatus" (click)="openLogin()">Login</span>
+          <span *ngIf="coreStatus" (click)="logout()" class="hoverunderline">Logout</span>
+          <a *ngIf="coreStatus" class="hoverunderline" target="_blank" href="https://beta.dayautomation.com/oauth/authorized_applications">Revoke Access</a>
+          <a *ngIf="coreStatus" class="hoverunderline" target="_blank" href="https://beta.dayautomation.com/pages/people/{{ user.id }}/">Core Profile</a>
+        </div>
+
+      </div>
+      <div class="status">
+        <span class="fa fa-fw" [ngClass]="coreStatus ? 'fa-check' : 'fa-remove'"></span>
+      </div>
+    </div>
+    <div class="list-element tall bordered sf">
+      <svg class="icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <path fill="currentColor" d="M10 5.5c.8-.8 1.9-1.3 3.1-1.3 1.5 0 2.9.9 3.7 2.2.6-.3 1.3-.5 2-.5 2.9 0 5.2 2.3 5.2 5.2s-2.3 5.1-5.2 5.1h-1c-.6 1.1-1.9 1.9-3.3 1.9-.6 0-1.2-.1-1.7-.4-.6 1.5-2.1 2.6-3.9 2.6-1.9 0-3.5-1.1-4.1-2.8-.3 0-.6.1-.8.1-2.2 0-4-1.8-4-4 0-1.5.7-2.8 1.9-3.5-.2-.5-.3-1.2-.3-1.8 0-2.6 2-4.7 4.6-4.7 1.6.1 3 .8 3.8 1.9"/>
+      </svg>
+      <div class="content">
+        <span class="title">Salesforce</span>
+        <div class="content">
+          <span class="hoverunderline" click="openLogin()" >Login</span>
+        </div>
+      </div>
+      <div class="status">
+        <span class="fa fa-fw" [ngClass]="sfStatus ? 'fa-check' : 'fa-remove'"></span>
+      </div>
     </div>
   </div>
 </div>

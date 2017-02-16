@@ -6,6 +6,8 @@
       <a *ngIf="user" class="hoverunderline" routerLink="/users" routerLinkActive="active">Users</a>
       <a class="hoverunderline" routerLink="/search" routerLinkActive="active">Search</a>
       <a class="hoverunderline" routerLink="/settings" routerLinkActive="active">Settings</a>
+      <span class="hoverlink fa fa-fw fa-user-o" routerLink="/login"></span>
+      <!--
       <div class="dropdown" *ngIf="user">
         <span class="dropdown-button fa fa-user-o"></span>
         <div *ngIf="user" class="dropdown-content right hovershadow">
@@ -16,6 +18,7 @@
           <div class="hoverunderline" routerLink="/login" routerLinkActive="active">Log in</div>
         </div>
       </div>
+      -->
     </div>
   </div>
 </nav>
