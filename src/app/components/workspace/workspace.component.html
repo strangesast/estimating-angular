@@ -4,6 +4,7 @@
       <form *ngIf="searchForm" [formGroup]="searchForm" (ngSubmit)="searchFormSubmit(searchForm)">
         <div class="input">
           <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
+          <span (click)="clearSearch()" *ngIf="searchForm.value.query" class="fa fa-fw fa-times clear hoverlink"></span>
           <span (click)="advancedSearchVisible = !advancedSearchVisible" class="hoverlink fa fa-fw fa-angle-down" [class.invert]="advancedSearchVisible"></span>
         </div>
         <div *ngIf="advancedSearchVisible" class="advanced">

@@ -28,85 +28,21 @@ export class SearchService implements Resolve<any> {
   private jobSub: Subscription;
   private resultObservable: Observable<any>;
 
+  public resultsPageObservable: BehaviorSubject<any[]> = new BehaviorSubject([]);
+
   constructor(private elementService: ElementService, private db: DataService, private http: Http, private userService: UserService) { }
 
-  startListening(): void {
-    let jobPageSwitch:Observable<any> = this.currentJob.switchMap((job:Collection) => {
-      if(job) {
-        let prom = this.elementService.retrieveCollectionComponents(job, 10).then(components => {
-          let root = {
-            name: 'Components in ' + job.name,
-            type: 'filter',
-            children: components/*.map(component => {
-              return {
-                name: component.name,
-                data: component,
-                type: 'component'
-              };
-            })
-            */
-          };
-          return [D3.hierarchy(root)];
-        });
-        let prom2 = Promise.resolve([
-          new (<any>ComponentElement)('New Component', '', 0.0, 0.0, ''),
-          new FolderElement('New Folder (phase)', '', 'phase', '', []),
-          new FolderElement('New Folder (building)', '', 'building', '', [])
-        ].map(n=>D3.hierarchy(n)));
-        return <any>Observable.fromPromise(<any>Promise.all([prom, prom2]).then((results:any) => results.reduce((a, b)=>a.concat(b))));
-
-      } else {
-        let getJobs = this.elementService.getJobs();
-        return Observable.fromPromise(getJobs).map(jobs => {
-          let root = {
-            name: 'Create New Job',
-            url: {
-              path: '/jobs'
-            },
-            type: 'job',
-            children: jobs.map(_job => {
-              return {
-                name: '... based on ' + _job.name,
-                url: {
-                  path: '/jobs',
-                  fragment: _job.id
-                },
-                type: 'job'
-              };
-            })
-          };
-          return D3.hierarchy(root);
-        });
-      }
-    });
-
-    this.jobSub = this.elementService.isReady.distinct().switchMap(isReady => isReady ? jobPageSwitch : Observable.never()).subscribe((results:any) => {
-      this.results.next(results);
-    });
-  }
-
-  resolve() {
-    if(!this.jobSub) this.startListening();
-    return Promise.resolve();
-  }
-
-  setJob(job: Collection) {
-    this.currentJob.next(job);
-  }
-
-  refreshCredentials() {
-    return Observable.of(null).delay(1000);
-  }
+  resolve() {}
 
   streamWithRetry(stream, fn) {
     return stream.catch((err, stream) => {
-      console.log('err', err);
+      console.error('caught', err);
       return fn.concat(stream)
     });
   }
 
   searchSubject(inputSubject) {
-    let retryFn = this.refreshCredentials()
+    let retryFn = this.userService.refresh()
       .withLatestFrom(inputSubject)
       .flatMap(([_, input]) => this.handleSearchForm(input));
 
@@ -114,28 +50,19 @@ export class SearchService implements Resolve<any> {
       .switchMap(this.handleSearchForm.bind(this));
 
     return this.streamWithRetry(input, retryFn);
-
-    /*
-    return inputSubject
-      .debounceTime(100)
-      .switchMap(input => this.handleSearchForm(input))
-      .catch((err, stream) => this.refreshCredentials()
-        .withLatestFrom(inputSubject)
-        .flatMap(([_, input]) => this.handleSearchForm(input))
-        .concat(stream)
-      );
-    */
   }
 
   handleSearchForm(input: any) {
-    //if (Math.random() > 0.9) {
-    //  return Observable.throw(new Error('fuck'));
-    //}
-    if (input.elementType == 'catalog') {
+    let clean = (input.query || '').replace(/[^\w\s-&#@]/gi, '').toLowerCase();
+    let observables = [];
+    let db = this.db;
+    let elementType = input.elementType;
+    let attr = input.attributes; let query = input.query;
+    if (elementType == '' || elementType == 'catalog') {
       let search = new URLSearchParams();
-      if (input.attributes) {
-        for (let prop in input.attributes) {
-          let val = input.attributes[prop];
+      if (attr) {
+        for (let prop in attr) {
+          let val = attr[prop];
           if (val != '') {
             search.set(prop, val);
           }
@@ -143,92 +70,69 @@ export class SearchService implements Resolve<any> {
       }
 
       if (search.paramsMap.size) {
-        if (input.query) {
-          search.set('description', ':' + input.query);
+        if (query) {
+          search.set('description', ':' + clean);
         }
         search.set('fields', ['description', 'label'].join(','));
         
         let options = this.userService.authorizationOptions.merge({ search });
-        return this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el[Object.keys(el)[0]]))));
+        observables.push(this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el[Object.keys(el)[0]])))).startWith([]));
 
       } else {
-        search.set('search', input.query);
+        search.set('search', clean);
         let options = this.userService.authorizationOptions.merge({ search });
-        return this.http.get(`${ API_ADDR }/search/select/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el))));
+        observables.push(this.http.get(`${ API_ADDR }/search/select/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el)))).startWith([]));
 
       }
 
-    } else if (input.elementType == 'component') {
-      /*
-      let options = this.userService.authorizationOptions.merge({ search: Object.assign({ description: ':' + input.query }, input.attributes) });
-      return this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json()).toPromise();
-      */
-      return [];
+    }
+    if (elementType == '' || elementType == 'component') {
+      let col:any = db.componentElements;
 
-
-    } else if (input.elementType == 'folder') {
-      /*
-      let options = this.userService.authorizationOptions.merge({ search: Object.assign({ description: ':' + input.query }, input.attributes) });
-      return this.http.get(`${ API_ADDR }/data/part_catalogs.json`, options).map(res => res.json()).toPromise();
-      */
-      return [];
-
+      if (attr) {
+        if (attr.collection) {
+          col = col.where('collection').equals(attr.collection);
+        }
+      }
+      if (query) {
+        col = col.where('name').startsWithIgnoreCase(clean).distinct();
+      }
+      let promise = col.toArray().then(arr => arr.map(el => D3.hierarchy(el)));
+      observables.push(Observable.fromPromise(promise).startWith([]));
 
     }
-    let search = new URLSearchParams();
-    search.set('search', input.query);
-    let options = this.userService.authorizationOptions.merge({ search });
-    return this.http.get(`${ API_ADDR }/search/select/part_catalogs.json`, options).map(res => res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el))));
-  }
+    if (elementType == '' || elementType == 'folder') {
+      let col:any = db.folderElements;
+      let q = {};
+      if (attr) {
+        if (attr.collection) {
+          q['collection'] = attr.collection;
+        }
+        if (attr.type) {
+          q['type'] = attr.type;
+        }
+      }
 
-  search(query) {
-    let clean = query.replace(/[^\w\s-&#@]/gi, '');
-    let db = this.db;
-
-    let types = this.currentTypes.getValue();
-
-    let search = new URLSearchParams();
-    search.set('active', '1')
-    search.set('q', clean);
-    let observables = types.map((tableName) => Observable.fromPromise(db[tableName].where('name').startsWithIgnoreCase(clean).distinct().toArray().then(arr => arr.map(element => D3.hierarchy(element)))).startWith([]));
-
-    if (this.userService.authorizationOptions) {
-
-      let options = this.userService.authorizationOptions.merge({ search });
-      //let uri = '/catalog/development_part_catalogs/_search?size=100&q="' + clean + '"';
-      let uri = `${ API_ADDR }/search/select/part_catalogs.json`;
-  
-      let net = this.http.get(uri, options)
-        .catch(err => {
-          this.userService.refresh();
-          return Observable.never();
-        })
-        .map((res:any) => {
-          return res.json().map(el => D3.hierarchy(CatalogPart.fromJSON(el)));
-        }).startWith([]);
-
-      return Observable.combineLatest(...observables, net).map(arr => arr.reduce((a, b) => a.concat(b)));
-
+      if (Object.keys(q).length && query) {
+        col = col.where(q).filter(doc => {
+          return doc.name.toLowerCase().startsWith(clean);
+        });
+      } else if (Object.keys(q).length) {
+        col = col.where(q);
+      } else if (query) {
+        col = col.where('name').startsWithIgnoreCase(clean).distinct();
+      }
+      let promise = col.toArray().then(arr => arr.map(el => D3.hierarchy(el)));
+      observables.push(Observable.fromPromise(promise).startWith([]));
     }
-    return Observable.combineLatest(...observables).map(arr => arr.reduce((a:any[], b:any) => a.concat(b)));
+
+    return Observable.combineLatest(...observables).map((arr: any[]) => arr.reduce((a, b) => a.concat(b)));
   }
 
   moreDetail(id) {
     let url = `${ API_ADDR }/data/part_catalogs/${ id }.json`;
     let search = new URLSearchParams();
-    search.set('fields', [
-      'description',
-      'id',
-      'kind',
-      'label',
-      'summary',
-      'type',
-      'nys_price',
-      'price',
-      'list_price',
-      'number',
-      'version_id'
-    ].join(','));
+    search.set('fields', ['description', 'id', 'kind', 'label', 'summary', 'type', 'nys_price', 'price', 'list_price', 'number', 'version_id' ].join(','));
     let options = this.userService.authorizationOptions.merge({ search });
     return this.http.get(url, options).map(res => {
       let json = res.json();

@@ -60,13 +60,13 @@ export class LoginPageComponent implements OnInit, OnDestroy { windowObjectRefer
         }
         this.windowObjectReference.close();
         this.windowObjectReference = null;
-        return this.userService.login(code);
+        return this.userService.login(code).toPromise();
       });
     }
   }
 
   logout() {
-    this.userService.logout();
+    return this.userService.logout().toPromise();
   }
 
   changeUser(user) {

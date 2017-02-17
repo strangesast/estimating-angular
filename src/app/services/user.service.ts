@@ -51,9 +51,10 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
     if (user) {
       return true;
     } else if (this.coreAccessToken) {
-      user = await this.getCurrentUser();
+      user = await this.getCurrentUser().toPromise();
       if (user) {
         this.currentUser.next(user);
+        this.coreAuthState.next(1);
         return true;
       }
     }
@@ -89,37 +90,33 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
     return true;
   }
 
-  async getCurrentUser() {
-    if (!this.coreAccessToken) return null;
-    let r1 = await this.http.get(`${ API_ADDR }/sessions/me.json`, this.authorizationOptions)
-      .map(res => res.json())
-      .toPromise();
-
-    if (r1 && r1.user ) {
-      let user = r1.user;
-      let r2 = await this.http.get(`${ API_ADDR }/data/people/${ user.person_id }.json`, this.authorizationOptions)
-        .map(res => res.json())
-        .toPromise();
-
-      if (!r2 || !r2.person) {
-        throw new Error('person info not accessible');
+  getCurrentUser() {
+    if (!this.coreAccessToken) return Observable.of(null);
+    return this.http.get(`${ API_ADDR }/sessions/me.json`, this.authorizationOptions).flatMap(r1 => {
+      let user = r1 && (r1.json() || <any>{}).user;
+      if (!user) {
+        this.coreAuthState.next(0);
+        return Observable.of(null);
       }
 
-      this.coreAuthState.next(1);
+      return this.http.get(`${ API_ADDR }/data/people/${ user.person_id }.json`, this.authorizationOptions).map(r2 => {
+        let person = r2 && (r2.json() || <any>{}).person;
 
-      let person = r2.person;
-      return User.fromJSON(Object.assign(person, { username: user.name, user_id: user.id }));
-    }
-    this.coreAuthState.next(0);
-    return null;
+        if (!person) {
+          throw new Error('person info not accessible');
+        }
+
+        return User.fromJSON(Object.assign(person, { username: user.name, user_id: user.id }));
+      });
+    });
   }
 
-  async refresh() {
+  refresh(): Observable<User> {
     if (!this.coreRefreshToken) throw new Error('need a refresh token for refresh');
     return this.login(this.coreRefreshToken, true);
   }
 
-  async login(authorizationCode: string, refresh = false) {
+  login(authorizationCode: string, refresh = false): Observable<User> {
     if (!authorizationCode) throw new Error('no auth code provided');
     let body = {
       client_id: CLIENT_ID,
@@ -128,31 +125,42 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
       grant_type: refresh ? 'refresh_token' : 'authorization_code'
     };
     body[refresh ? 'refresh_token' : 'code'] = authorizationCode;
+
     let headers = new Headers({ 'Content-Type': 'application/x-www-form-urlencoded' });
-    let { access_token: coreAccessToken, refresh_token: coreRefreshToken } = await this.http.post(`${ API_ADDR }/oauth/token`, body, headers).map(response => response.json()).toPromise();
 
-    this.coreAccessToken = coreAccessToken;
-    localStorage.setItem('core_access_token', coreAccessToken);
-    this.coreRefreshToken = coreRefreshToken;
-    localStorage.setItem('core_refresh_token', coreRefreshToken);
+    return this.http.post(`${ API_ADDR }/oauth/token`, body, headers).flatMap(response => {
+      let tokens = response.json();
 
-    let user = await this.getCurrentUser();
+      let { access_token: coreAccessToken, refresh_token: coreRefreshToken } = tokens;
 
-    localStorage.setItem('user', JSON.stringify(user));
+      this.coreAccessToken = coreAccessToken;
+      localStorage.setItem('core_access_token', coreAccessToken);
+
+      this.coreRefreshToken = coreRefreshToken;
+      localStorage.setItem('core_refresh_token', coreRefreshToken);
+
+      return this.getCurrentUser().map(user => {
+
+        localStorage.setItem('user', JSON.stringify(user));
+        this.currentUser.next(user);
+        this.coreAuthState.next(1);
     
-    this.currentUser.next(user);
-
-    return user;
+        return user;
+      });
+    });
   }
 
-  async logout() {
-    if (this.authorizationOptions) {
-      let body = {
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        token: this.coreAccessToken
-      };
-      let res = await this.http.post(`${ API_ADDR }/oauth/revoke`, body, this.authorizationOptions).map(res => res.json()).toPromise();
+  logout(): Observable<void> {
+    // also removes app access
+    if (!this.authorizationOptions) {
+      return Observable.throw(new Error('not logged in'));
+    }
+    let body = {
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      token: this.coreAccessToken
+    };
+    return this.http.post(`${ API_ADDR }/oauth/revoke`, body, this.authorizationOptions).map(res => {
       this.coreAccessToken = null;
       localStorage.removeItem('core_access_token');
       this.coreRefreshToken = null;
@@ -160,14 +168,7 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
 
       this.coreAuthState.next(0);
 
-      /*
-      this.currentUser.next(null);
-      localStorage.removeItem('user');
-      */
-
-    } else {
-      throw new Error('not logged in');
-    }
+    });
   }
 
   async changeUser(user) {

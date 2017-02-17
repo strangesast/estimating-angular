@@ -16,7 +16,7 @@ export interface IFolderElement {
 
 export class FolderElement extends BaseElement {
   static readonly store = 'folderElements';
-  static readonly keys = ['$$id', 'collection', 'name', '&*children', 'type'];
+  static readonly keys = ['$$id', 'collection', 'name', '&*children', 'type', '[collection+type]'];
 
   static excluded: string[] = ['commit', 'open', 'saveState'];
 

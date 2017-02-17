@@ -7,7 +7,7 @@
         <span class="title" *ngIf="user">{{ user.first_name }} {{ user.last_name }}</span>
         <div class="content">
           <span *ngIf="user" class="hoverunderline">Remove local content</span>
-          <span *ngIf="user" (click)="changeUser(null)" class="hoverunderline">Change user</span>
+          <span *ngIf="user && !coreStatus" (click)="changeUser(null)" class="hoverunderline">Change user</span>
           <span *ngIf="!user" class="hoverunderline">Work Anonymously</span>
         </div>
       </div>

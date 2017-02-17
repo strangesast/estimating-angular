@@ -5,6 +5,10 @@ import { Observable } from 'rxjs';
 import { UserService } from '../../services/user.service';
 import { User } from '../../models';
 
+let USERS = [
+  new User('John Doe', 'john.doe', 'john.doe@google.com')
+];
+
 @Component({
   selector: 'app-user-list-page',
   templateUrl: './user-list-page.component.html',
@@ -15,7 +19,12 @@ export class UserListPageComponent implements OnInit, OnDestroy {
 
   constructor(private userService: UserService) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.users = USERS;
+    this.userService.currentUser.subscribe(user => {
+      this.users = [user];
+    });
+  }
 
   ngOnDestroy() {}
 

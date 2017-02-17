@@ -43,8 +43,9 @@ export class JobListPageComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     this.route.data.subscribe(({ jobs }) => {
       this.localJobs = jobs;
+
+      this.searchService.resultsPageObservable.next(jobs);
     });
-    this.searchService.setJob(null);
   }
 
   ngAfterViewInit() {

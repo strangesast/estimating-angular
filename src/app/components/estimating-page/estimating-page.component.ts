@@ -1,10 +1,11 @@
 import { ElementRef, Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Router,ActivatedRoute } from '@angular/router';
 
 import { Observable, Subscription, BehaviorSubject } from 'rxjs';
 import * as D3 from 'd3';
 import { Selection, HierarchyNode } from 'd3';
 
+import { ClassToStringPipe } from '../../pipes';
 import { ElementService } from '../../services/element.service';
 import { JobService } from '../../services/job.service';
 import { TreeService } from '../../services/tree.service';
@@ -42,13 +43,16 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
   constructor(
     private jobService: JobService,
     private route: ActivatedRoute,
+    private router: Router,
+    private pipe: ClassToStringPipe,
     private element: ElementRef,
     private elementService: ElementService,
     private treeService: TreeService
   ) { }
 
   ngOnInit() {
-    this.route.parent.data.subscribe(({ job: { collectionSubject: jobSubject, nestConfigSubject: nestConfig, nestSubject, trees:treesSubject }}) => {
+    this.route.parent.data.subscribe(({ job: { collectionSubject: jobSubject, nestConfigSubject: nestConfig, nestSubject, trees:treesSubject, editWindowsEnabled }}) => {
+      editWindowsEnabled.next(true);
       this.jobSubject = jobSubject;
       this.nestSubject = nestSubject;
       this.nestConfig = nestConfig;
@@ -60,11 +64,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
         this.nestSubscription = Observable.combineLatest(nestConfig, this.selectedFolderSubject, this.groupBySubject).withLatestFrom(jobSubject).switchMap(([[config, selectedFolder, groupBy], job]) => Observable.fromPromise(this.treeService.nest(job, config)).switchMap(res => this.blobUpdate(res, selectedFolder, groupBy))).subscribe();
       });
 
-      /*
-      (this.treesSubject = treesSubject).withLatestFrom(this.groupBySubject).take(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
-      this.treesSubscription = Observable.combineLatest(this.treesSubject, this.groupBySubject).skip(1).switchMap(this.treesSubjectUpdate.bind(this)).subscribe();
-      */
-      
     });
   }
 
@@ -97,6 +96,9 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
 
   blobUpdate({ children, components, folders }, selectedFolder, groupBy) {
     if (!folders.length) return Observable.never();
+
+    let pipe = this.pipe;
+    let router = this.router;
 
     let folderIndex = this.folderNames.map(o => o.value).indexOf(this.selectedFolder);
     let folder = folders[folderIndex];
@@ -156,6 +158,14 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
 
     let circle = add.append('circle')
       .attr('r', (d: any) => d.r)
+      .on('click', function(data: any) {
+        let e = D3.event;
+        if (e.ctrlKey) {
+          let name = pipe.transform(data.data);
+          console.log('name', name);
+          router.navigate([], { fragment: [name, data.data.id].join('/') });
+        }
+      });
 
     add.append('title')
       .text((d: any) => d.data.name + ' (' + currency(d.value) + ')')

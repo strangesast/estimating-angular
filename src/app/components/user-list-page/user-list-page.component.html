@@ -8,11 +8,11 @@
     <li class="collections-cnt"><a class="hoverunderline"><span class="fa fa-fw fa-truck"></span>/<span class="fa fa-fw fa-book"></span></a></li>
   </ul>
   <ul class="body">
-    <li>
-      <a class="name hoverunderline">John Doe</a>
-      <span class="username">john_doe</span>
+    <li *ngFor="let user of users">
+      <a class="name hoverunderline">{{ user.name }}</a>
+      <span class="username">{{ user.username }}</span>
       <a class="settings hoverunderline"><span class="fa fa-fw fa-cog"></span></a>
-      <span class="email">John.Doe@example.com</span>
+      <span class="email">{{ user.email }}</span>
       <span class="collections-cnt">10</span>
     </li>
   </ul>

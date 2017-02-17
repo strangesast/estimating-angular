@@ -7,6 +7,7 @@ import { DataService } from '../../services/data.service';
 import { Subscription, Observable, Subject, BehaviorSubject } from 'rxjs';
 
 const PART_TYPES = [
+  '',
   'ActuatorCatalog',
   'CameraCatalog',
   'ComputerCatalog',
@@ -22,6 +23,7 @@ const PART_TYPES = [
 ]
 
 const PART_KINDS = [
+  '',
   'ACKIT',
   'ACT',
   'ADA',
@@ -421,6 +423,8 @@ export class WorkspaceComponent implements OnInit {
 
   searchFocused: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
+  searchPageResults: BehaviorSubject<any[]> = new BehaviorSubject([]);
+
   constructor(private searchService: SearchService, private formBuilder: FormBuilder, private db: DataService) { }
 
   async ngOnInit() {
@@ -488,6 +492,10 @@ export class WorkspaceComponent implements OnInit {
       }
     }).subscribe(this.results);
     */
+  }
+
+  clearSearch() {
+    this.searchForm.patchValue({ query: '' });
   }
 
   resetForm() {

@@ -69,7 +69,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ngOnInit() {
     this.route.data.subscribe(({ job: { collectionSubject, openElements, nestSubject, editWindowsEnabled } }) => {
       editWindowsEnabled.subscribe(enabled => this.editWindowsEnabled = enabled);
-      this.searchService.setJob(collectionSubject.getValue());
+      this.searchService.resultsPageObservable.next([]);
       this.jobSubscription = (this.jobSubject = collectionSubject).subscribe(collection => this.job = collection);
 
       (this.openElementsSubject = openElements).subscribe(els => {

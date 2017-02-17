@@ -29,6 +29,9 @@ import { SELECTOR, ElementDisplayComponent } from '../element-display/element-di
   styleUrls: ['./tree.component.less']
 })
 export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
+  // accept array of hierarchy nodes or elements
+  // allow hierarchy nodes to be toggled open / close
+
   @Input() root: any;
   rootValue: any;
   rootSubject: Observable<any>;
