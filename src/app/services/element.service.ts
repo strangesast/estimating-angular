@@ -322,7 +322,7 @@ export class ElementService implements Resolve<any> {
         qty
       );
 
-      child.id = await db.childElements.add(child);
+      child.id = <any>(await db.childElements.add(child));
 
       if (loc === undefined) {
         return child;
@@ -341,7 +341,7 @@ export class ElementService implements Resolve<any> {
           [child.id],
           folders
         );
-        location.id = await db.locationElements.add(location)
+        location.id = <any>(await db.locationElements.add(location));
 
       } else {
         (<(string|number)[]>location.children).push(child.id);
@@ -381,7 +381,7 @@ export class ElementService implements Resolve<any> {
 
     let db = this.db;
     return db.transaction('rw', db.folderElements, async() => {
-      folder.id = await db.folderElements.add(folder);
+      folder.id = <any>(await db.folderElements.add(folder));
 
       if (parentId === undefined) {
         return folder;
@@ -424,7 +424,7 @@ export class ElementService implements Resolve<any> {
         ));
 
         await Promise.all([
-          Promise.all(folders.map(folder => db.folderElements.add(folder).then(id => folder.id = id))),
+          Promise.all(folders.map(folder => db.folderElements.add(folder).then((id: any) => folder.id = id))),
           Promise.all(components.map(component => db.componentElements.add(component).then(id => component.id = id)))
         ]);
 
@@ -443,7 +443,7 @@ export class ElementService implements Resolve<any> {
           Math.ceil(Math.random()*10) // qty 1 - 10
         ))).reduce((a, b)=>a.concat(b));
 
-        await Promise.all(children.map(child => db.childElements.add(child).then(id => child.id = id)));
+        await Promise.all(children.map(child => db.childElements.add(child).then((id: any) => child.id = id)));
 
         let groups = product(collection.folders.order.map(t => folders.filter((f:any) => f.type === t).map(f => f.id)));
         let copy = children.map(c => c.id);
@@ -495,7 +495,7 @@ export class ElementService implements Resolve<any> {
         throw new ValidationError('shortname must be at least 4 characters long');
       }
 
-      job.id = await db.collections.add(job);
+      job.id = <any>(await db.collections.add(job));
 
       // save root folders
       let folders = await Promise.all(folderNames.map(type => this.createFolder(job, type, 'root')));
@@ -915,7 +915,7 @@ export class ElementService implements Resolve<any> {
             }
 
             if(!what.id) {
-              what.id = await db.childElements.add(what);
+              what.id = <any>(await db.childElements.add(what));
             }
 
             newPosition.children.push(what.id);
@@ -926,11 +926,11 @@ export class ElementService implements Resolve<any> {
         } else if (what instanceof ComponentElement) {
           if (!what.id) {
             what.collection = to.collection;
-            what.id = await db.componentElements.add(what);
+            what.id = <any>(await db.componentElements.add(what));
           }
 
           let child = new ChildElement(what.name, what.description, what.collection, what.id);
-          child.id = await db.childElements.add(child);
+          child.id = <any>(await db.childElements.add(child));
 
           let folders = job.orderedFolders;
           config.folders.order.filter(n => config.folders.roots[n]).forEach(n => folders[job.folders.order.indexOf(n)] = config.folders.roots[n]);
@@ -966,7 +966,7 @@ export class ElementService implements Resolve<any> {
             if(!what.id) {
               what.type = to.type;
               what.collection = to.collection;
-              what.id = await db.folderElements.add(what);
+              what.id = <any>(await db.folderElements.add(what));
             }
             to.children.push(what.id);
             await db.folderElements.put(to.clean());
@@ -988,7 +988,7 @@ export class ElementService implements Resolve<any> {
         if (what instanceof ChildElement) {
           if (!what.id) {
             what.collection = to.collection;
-            what.id = await db.childElements.add(what);
+            what.id = <any>(await db.childElements.add(what));
           }
           
           if (currentPosition.id == desiredPosition.id) return;
@@ -1007,12 +1007,12 @@ export class ElementService implements Resolve<any> {
 
         } else if (what instanceof ComponentElement) {
           if(!what.id) {
-            what.collection = to.collection;
-            what.id = await db.componentElements.add(what);
+            what.collection = <any>(to.collection);
+            what.id = <any>(await db.componentElements.add(what));
           }
 
           let child = new ChildElement(what.name, what.description, what.collection, what.id);
-          child.id = await db.childElements.add(child);
+          child.id = <any>(await db.childElements.add(child));
 
           (<(string|number)[]>desiredPosition.children).push(child.id);
           await db[(<any>desiredPosition.constructor).store].put(desiredPosition);
@@ -1023,11 +1023,11 @@ export class ElementService implements Resolve<any> {
         if (what instanceof ComponentElement) {
           if (!what.id) {
             what.collection = to.collection;
-            what.id = await db.componentElements.add(what);
+            what.id = <any>(await db.componentElements.add(what));
           }
 
           let child = new ChildElement(what.name, what.description, what.collection, what.id);
-          child.id = await db.childElements.add(child);
+          child.id = <any>(await db.childElements.add(child));
 
           (<any[]>to.children).push(child.id);
           await db.componentElements.put(to)
@@ -1387,19 +1387,19 @@ export class ElementService implements Resolve<any> {
       let copy = element.clean();
       copy.children = [];
       delete copy.id;
-      copy.id = await db.folderElements.add(copy);
+      copy.id = <any>(await db.folderElements.add(copy));
       return copy;
 
     } else if (element instanceof ComponentElement) {
       let copy = element.clean();
       delete copy.id;
-      copy.id = await db.componentElements.add(copy);
+      copy.id = <any>(await db.componentElements.add(copy));
       return copy;
 
     } else if (element instanceof ChildElement) {
       let copy = element.clean();
       delete copy.id;
-      copy.id = await db.childElements.add(copy);
+      copy.id = <any>(await db.childElements.add(copy));
       return copy;
 
     } else {

@@ -42,9 +42,39 @@
             </div>
             <div class="form-control">
               <label>Core part:</label>
-              <input formControlName="catalog">
+              <input (change)="corePartChange($event.target.value)" formControlName="catalog">
               <small class="about">Core reference part.</small>
             </div>
+            <div *ngIf="corePart">
+              <div class="form-group">
+                <div class="form-group-title">Core Part</div>
+                <div class="form-control">
+                  <label>Description</label>
+                  <textarea readonly>{{ corePart.description }}</textarea>
+                </div>
+                <div class="form-control">
+                  <label>Summary</label>
+                  <input readonly [value]="corePart.summary">
+                </div>
+                <div class="form-control">
+                  <label>Number</label>
+                  <input readonly [value]="corePart.number">
+                </div>
+                <div class="form-control">
+                  <label>Kind</label>
+                  <input readonly [value]="corePart.kind">
+                </div>
+                <div class="form-control">
+                  <label>Type</label>
+                  <input readonly [value]="corePart.type">
+                </div>
+                <div class="form-control">
+                  <label>Label</label>
+                  <input readonly [value]="corePart.label">
+                </div>
+              </div>
+            </div>
+
             <div class="form-control">
               <label>Qty:</label>
               <input formControlName="qty" type="number" min="1" max="1000000" step="1">

@@ -13,6 +13,7 @@ import { Observable, Subscription, BehaviorSubject } from 'rxjs';
 
 import * as D3 from 'd3';
 import { ElementService } from '../../services/element.service';
+import { SearchService } from '../../services/search.service';
 import { Collection, CatalogPart, LocationElement, ComponentElement, ChildElement, FolderElement } from '../../models';
 
 // for use in edit page in '.main' and on build / elsewhere in lower window
@@ -41,6 +42,8 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   public treeConfig: any = { maxDepth: 1 };
   public root: any;
 
+  public corePart;
+
   public fullPath: any;
 
   private form: FormGroup;
@@ -49,10 +52,11 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() isWindow: boolean = false;
 
-  constructor(private elementService: ElementService, private formBuilder: FormBuilder) { }
+  constructor(private elementService: ElementService, private formBuilder: FormBuilder, private searchService: SearchService) { }
 
   ngOnInit() {
     let el = this.element;
+    this.corePart = null;
     if(el) this.initElement(el);
   }
 
@@ -74,6 +78,7 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
         group.sell = _element.sell;
         group.qty = [_element.qty, Validators.required];
         group.catalog = _element.catalog;
+        this.corePartChange(group.catalog);
 
       } else if (_element instanceof ChildElement) {
         group.qty = [_element.qty, Validators.required];
@@ -105,7 +110,7 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   buildChildTree(el) {
-    this.elementService.resolveElementTree(el.clean()).then(copy => {
+    return this.elementService.resolveElementTree(el.clean()).then(copy => {
       let node = D3.hierarchy(copy, (n: any) => n.data ? [n.data] : n.children);
       if (this.root) {
         this.root.next(node);
@@ -200,6 +205,21 @@ export class EditWindowComponent implements OnInit, OnChanges, OnDestroy {
   setMaxDepth(n) {
     this.treeConfig.maxDepth = n;
     this.root.next(this.root.getValue());
+  }
+
+  async corePartChange(id) {
+    if(!id) return;
+    try {
+      let component = await this.searchService.moreDetail(id);
+      let sell = isNaN(component.nys_price) ? 0.0 : Number(component.nys_price);
+      let buy = isNaN(component.price) ? 0.0 : Number(component.price);
+      this.form.patchValue({ sell, buy });
+      this.corePart = component;
+    } catch (e) {
+
+    }
+
+
   }
 
   ngOnDestroy() {

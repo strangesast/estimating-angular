@@ -160,6 +160,10 @@ export class EditPageComponent implements OnInit, OnChanges {
           change: async(evt) => {
             try {
               let component: any = await this.searchComponent(evt.target.value);
+              if (!component) {
+                this.corePart = null;
+                return;
+              }
               let sell = isNaN(component.nys_price) ? 0.0 : Number(component.nys_price);
               let buy = isNaN(component.price) ? 0.0 : Number(component.price);
               this.corePart = component;
