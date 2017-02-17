@@ -78,6 +78,7 @@ export class EditPageComponent implements OnInit, OnChanges {
     let group:any = {};
     let form = this.newElementForm;
 
+    this.corePart = null;
     if(type == 'folder') {
       let folderTypes = job.folders.order.map(name => ({ key: name[0].toUpperCase() + name.slice(1), value: name }));
       let parentFolders = await this.jobService.getParentFolderCandidates();

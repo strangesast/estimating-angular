@@ -518,7 +518,9 @@ export class JobService implements Resolve<Promise<any>> {
 
   async getParentFolderCandidates() {
     let db = this.db;
-    let folders = await db.folderElements.toArray()
+    let job = this.collectionSubject.getValue();
+    let id = job.id;
+    let folders = await db.folderElements.where('collection').equals(id).toArray();
 
     return folders.map(f => ({ value: f.id, key: f.name, type: f.type }));
   }
