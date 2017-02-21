@@ -1,76 +1,81 @@
-<div class="table">
-  <span class="title">Local Jobs</span>
-  <ul class="header">
-    <li class="name"><a class="hoverunderline">Name</a></li>
-    <li class="description"><a class="hoverunderline">Description</a></li>
-    <li class="settings"></li>
-    <li class="owner"><a class="hoverunderline">Owner</a></li>
-    <li class="type"><a class="hoverunderline">Type</a></li>
-    <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
-    <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
-  </ul>
-  <ul class="jobs">
-    <li *ngFor="let job of localJobs" class="list-item" tabindex="0" #localJobEls>
-      <a *ngIf="job !== editing" class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
-      <span *ngIf="job === editing" class="name"><input autofocus (blur)="finishRename(job)" [(ngModel)]="job.name"></span>
-      <span class="description">{{ job.description }}</span>
-      <div class="settings dropdown">
-        <span class="dropdown-button"><span class="fa fa-cog"></span></span>
-        <div class="dropdown-content right">
-          <span class="triangle"></span>
-          <span (click)="renameJob(job)"class="hoverunderline">Rename</span>
-          <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Details</a>
-          <span (click)="removeJob(job)" class="hoverunderline">Remove</span>
+<nav>
+  <span class="title">Job List</span>
+</nav>
+<div class="body">
+  <div class="table">
+    <span class="title">Local Jobs</span>
+    <ul class="header">
+      <li class="name"><a class="hoverunderline">Name</a></li>
+      <li class="description"><a class="hoverunderline">Description</a></li>
+      <li class="settings"></li>
+      <li class="owner"><a class="hoverunderline">Owner</a></li>
+      <li class="type"><a class="hoverunderline">Type</a></li>
+      <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
+      <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
+    </ul>
+    <ul class="jobs">
+      <li *ngFor="let job of localJobs" class="list-item" tabindex="0" #localJobEls>
+        <a *ngIf="job !== editing" class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
+        <span *ngIf="job === editing" class="name"><input autofocus (blur)="finishRename(job)" [(ngModel)]="job.name"></span>
+        <span class="description">{{ job.description }}</span>
+        <div class="settings dropdown">
+          <span class="dropdown-button"><span class="fa fa-cog"></span></span>
+          <div class="dropdown-content right">
+            <span class="triangle"></span>
+            <span (click)="renameJob(job)"class="hoverunderline">Rename</span>
+            <a class="hoverunderline" [routerLink]="[job.owner.username, job.shortname, 'details']">Details</a>
+            <span (click)="removeJob(job)" class="hoverunderline">Remove</span>
+          </div>
         </div>
-      </div>
-      <span class="owner">{{ job.owner.username }}</span>
-      <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
-      <span class="folders-cnt">{{ 0 }}</span>
-      <span class="components-cnt">{{ 0 }}</span>
-    </li>
-    <li *ngIf="(!localJobsjobs || !localJobsjobs.length) && !newCollection">
-      <span class="name">None</span>
-    </li>
-    <li *ngIf="newCollection">
-      <form class="inline" novalidate (ngSubmit)="createNewJobSubmit(newCollectionForm)" [formGroup]="newCollectionForm">
-        <div class="name"><input formControlName="name"></div><div class="description"><input formControlName="description"></div><div class="settings"></div><div class="owner">{{ userService.currentUser.username }}</div><div class="type"><select formControlName="kind"><option value="job">Job</option><option value="library">Library</option></select></div><div class="folders-cnt"></div><div class="components-cnt"></div>
-      </form>
-    </li>
-  </ul>
-  <div>
-    <button *ngIf="!newCollection" (click)="createNewJob()">Create New</button>
-    <button *ngIf="newCollection" (click)="createNewJobSubmit(newCollectionForm)">Save</button>
-    <button *ngIf="newCollection" (click)="cancelNewJob()">Cancel</button>
+        <span class="owner">{{ job.owner.username }}</span>
+        <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
+        <span class="folders-cnt">{{ 0 }}</span>
+        <span class="components-cnt">{{ 0 }}</span>
+      </li>
+      <li *ngIf="(!localJobsjobs || !localJobsjobs.length) && !newCollection">
+        <span class="name">None</span>
+      </li>
+      <li *ngIf="newCollection">
+        <form class="inline" novalidate (ngSubmit)="createNewJobSubmit(newCollectionForm)" [formGroup]="newCollectionForm">
+          <div class="name"><input formControlName="name"></div><div class="description"><input formControlName="description"></div><div class="settings"></div><div class="owner">{{ userService.currentUser.username }}</div><div class="type"><select formControlName="kind"><option value="job">Job</option><option value="library">Library</option></select></div><div class="folders-cnt"></div><div class="components-cnt"></div>
+        </form>
+      </li>
+    </ul>
+    <div>
+      <button *ngIf="!newCollection" (click)="createNewJob()">Create New</button>
+      <button *ngIf="newCollection" (click)="createNewJobSubmit(newCollectionForm)">Save</button>
+      <button *ngIf="newCollection" (click)="cancelNewJob()">Cancel</button>
+    </div>
   </div>
-</div>
-<div class="table">
-  <span class="title">Remote Jobs</span>
-  <ul class="header">
-    <li class="name"><a class="hoverunderline">Name</a></li>
-    <li class="description"><a class="hoverunderline">Description</a></li>
-    <li class="settings"></li>
-    <li class="owner"><a class="hoverunderline">Owner</a></li>
-    <li class="type"><a class="hoverunderline">Type</a></li>
-    <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
-    <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
-  </ul>
-  <ul class="jobs">
-    <li *ngFor="let job of remoteJobs" class="list-item" tabindex="0">
-      <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
-      <span class="description">{{ job.description }}</span>
-      <span class="hoverlink settings fa fa-cog"></span>
-      <span class="owner">{{ job.owner.name }}</span>
-      <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
-      <span class="folders-cnt">{{ 0 }}</span>
-      <span class="components-cnt">{{ 0 }}</span>
-    </li>
-    <li *ngIf="!remoteJobs || remoteJobs.length">
-      <span class="name">None</span>
-    </li>
-  </ul>
-  <!--
-  <div>
-    <button (click)="createNewJob()">Create New</button>
+  <div class="table">
+    <span class="title">Remote Jobs</span>
+    <ul class="header">
+      <li class="name"><a class="hoverunderline">Name</a></li>
+      <li class="description"><a class="hoverunderline">Description</a></li>
+      <li class="settings"></li>
+      <li class="owner"><a class="hoverunderline">Owner</a></li>
+      <li class="type"><a class="hoverunderline">Type</a></li>
+      <li class="folders-cnt"><a class="hoverunderline"><span class="fa fa-folder-o"></span></a></li>
+      <li class="components-cnt"><a class="hoverunderline"><span class="fa fa-cubes"></span></a></li>
+    </ul>
+    <ul class="jobs">
+      <li *ngFor="let job of remoteJobs" class="list-item" tabindex="0">
+        <a class="name hoverunderline" [routerLink]="[job.owner.username, job.shortname]">{{ job.name }}</a>
+        <span class="description">{{ job.description }}</span>
+        <span class="hoverlink settings fa fa-cog"></span>
+        <span class="owner">{{ job.owner.name }}</span>
+        <span class="type"><span class="fa" [ngClass]="job.kind !== 'job' ? 'fa-book' : 'fa-truck'"></span></span>
+        <span class="folders-cnt">{{ 0 }}</span>
+        <span class="components-cnt">{{ 0 }}</span>
+      </li>
+      <li *ngIf="!remoteJobs || remoteJobs.length">
+        <span class="name">None</span>
+      </li>
+    </ul>
+    <!--
+    <div>
+      <button (click)="createNewJob()">Create New</button>
+    </div>
+    -->
   </div>
-  -->
 </div>

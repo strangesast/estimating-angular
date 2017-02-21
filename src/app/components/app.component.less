@@ -3,12 +3,17 @@
 :host {
   .default-host;
   background-color: #F0F0F0;
+
+  @media(min-width: 1000px) {
+    margin: 0 auto;
+    max-width: 1100px;
+  }
 }
 
 nav {
-  height: @nav-height + 16px;
+  height: @nav-height;
   .title {
-    padding: 8px;
+    padding: 0 8px;
     font-size: 1.5em;
   }
   & > div {

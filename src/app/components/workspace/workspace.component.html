@@ -1,74 +1,76 @@
-<div class="body">
+<div class="body" [class.search-visible]="!collapsed" [class.wide-search]="wideSearch">
   <div class="side">
-    <div class="search">
-      <form *ngIf="searchForm" [formGroup]="searchForm" (ngSubmit)="searchFormSubmit(searchForm)">
+    <form class="search" *ngIf="searchForm" [formGroup]="searchForm" (ngSubmit)="searchFormSubmit(searchForm)">
+      <div class="top">
+        <span (click)="toggleSearch()" class="fa fa-fw fa-lg fa-search hovercolor search-toggle"></span>
         <div class="input">
           <input formControlName="query" type="text" placeholder="search" (focus)="searchFocused.next(true)" (focusout)="searchFocused.next(false)">
-          <span (click)="clearSearch()" *ngIf="searchForm.value.query" class="fa fa-fw fa-times clear hoverlink"></span>
-          <span (click)="advancedSearchVisible = !advancedSearchVisible" class="hoverlink fa fa-fw fa-angle-down" [class.invert]="advancedSearchVisible"></span>
+          <span (click)="wideSearch = !wideSearch" [class.fa-long-arrow-right]="!wideSearch" [class.fa-long-arrow-left]="wideSearch" class="fa hovercolor wide-search"></span>
+          <span (click)="clearSearch()" *ngIf="searchForm.value.query" class="fa fa-fw fa-times hovercolor"></span>
+          <span (click)="advancedSearchVisible = !advancedSearchVisible" class="fa fa-fw fa-angle-down hovercolor" [class.invert]="advancedSearchVisible"></span>
         </div>
-        <div *ngIf="advancedSearchVisible" class="advanced">
-          <ul class="controls">
-            <li>
-              <span class="key">Element</span>
-              <select formControlName="elementType" class="button value">
-                <option value="catalog">Part Catalog</option>
-                <option value="component">Component</option>
-                <option value="folder">Folder</option>
-              </select>
-            </li>
-            <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
-              <span class="key">Kind</span>
-              <input class="value" type="text" list="kinds" formControlName="kind" [class.invalid]="searchForm.controls.attributes.controls.kind.dirty && searchForm.controls.attributes.controls.kind.errors">
-              <datalist id="kinds">
-                <option *ngFor="let kind of kinds" [value]="kind"></option>
-              </datalist>
-            </li>
-            <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
-              <span class="key">Type</span>
-              <input class="value" type="text" list="types" formControlName="type" [class.invalid]="searchForm.controls.attributes.controls.type.dirty && searchForm.controls.attributes.controls.type.errors">
-              <datalist id="types">
-                <option *ngFor="let type of types" [value]="type"></option>
-              </datalist>
-            </li>
-            <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
-              <span class="key">Manufacturer</span>
-              <input class="value" list="manufacturers" class="value" type="text" formControlName="manufacturer">
-              <datalist id="manufacturers"></datalist>
-            </li>
-            <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
-              <span class="key">Active</span>
-              <div class="value radio">
-                <div *ngFor="let item of [{ value: null, display: 'Any' }, { value: true, display: 'Yes'}, { value: false, display: 'No' }]; let i=index">
-                  <input [attr.id]="'active-' + i" type="radio" formControlName="active" [value]="item.value">
-                  <label [attr.for]="'active-' + i">{{ item.display }}</label>
-                </div>
+      </div>
+      <div *ngIf="advancedSearchVisible" class="advanced">
+        <ul class="controls">
+          <li>
+            <span class="key">Element</span>
+            <select formControlName="elementType" class="button value">
+              <option value="catalog">Part Catalog</option>
+              <option value="component">Component</option>
+              <option value="folder">Folder</option>
+            </select>
+          </li>
+          <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
+            <span class="key">Kind</span>
+            <input class="value" type="text" list="kinds" formControlName="kind" [class.invalid]="searchForm.controls.attributes.controls.kind.dirty && searchForm.controls.attributes.controls.kind.errors">
+            <datalist id="kinds">
+              <option *ngFor="let kind of kinds" [value]="kind"></option>
+            </datalist>
+          </li>
+          <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
+            <span class="key">Type</span>
+            <input class="value" type="text" list="types" formControlName="type" [class.invalid]="searchForm.controls.attributes.controls.type.dirty && searchForm.controls.attributes.controls.type.errors">
+            <datalist id="types">
+              <option *ngFor="let type of types" [value]="type"></option>
+            </datalist>
+          </li>
+          <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
+            <span class="key">Manufacturer</span>
+            <input class="value" list="manufacturers" class="value" type="text" formControlName="manufacturer">
+            <datalist id="manufacturers"></datalist>
+          </li>
+          <li *ngIf="searchForm && searchForm.value.elementType == 'catalog'" formGroupName="attributes">
+            <span class="key">Active</span>
+            <div class="value radio">
+              <div *ngFor="let item of [{ value: null, display: 'Any' }, { value: true, display: 'Yes'}, { value: false, display: 'No' }]; let i=index">
+                <input [attr.id]="'active-' + i" type="radio" formControlName="active" [value]="item.value">
+                <label [attr.for]="'active-' + i">{{ item.display }}</label>
               </div>
-            </li>
-            <li *ngIf="searchForm && searchForm.value.elementType == 'folder'" formGroupName="attributes">
-              <span class="key">Type</span>
-              <div class="value radio">
-                <div *ngFor="let item of ['', 'building', 'phase']; let i=index">
-                  <input [attr.id]="'type-' + item" type="radio" [value]="item" formControlName="type">
-                  <label [attr.for]="'type-' + item">{{ ( item && (item[0].toUpperCase() + item.slice(1))) || 'Any' }}</label>
-                </div>
+            </div>
+          </li>
+          <li *ngIf="searchForm && searchForm.value.elementType == 'folder'" formGroupName="attributes">
+            <span class="key">Type</span>
+            <div class="value radio">
+              <div *ngFor="let item of ['', 'building', 'phase']; let i=index">
+                <input [attr.id]="'type-' + item" type="radio" [value]="item" formControlName="type">
+                <label [attr.for]="'type-' + item">{{ ( item && (item[0].toUpperCase() + item.slice(1))) || 'Any' }}</label>
               </div>
-            </li>
-            <li *ngIf="searchForm && (searchForm.value.elementType == 'folder' || searchForm.value.elementType == 'component')" formGroupName="attributes">
-              <span class="key">Collection</span>
-              <input class="value" type="text" list="collections" formControlName="collection">
-              <datalist id="collections">
-                <option *ngFor="let col of collections" [value]="col.id">{{ col.name }}</option>
-              </datalist>
-            </li>
-          </ul>
-          <div class="buttons">
-            <button [disabled]="!searchForm || searchForm.value.elementType == ''" (click)="resetForm()" type="button" class="button">Clear</button>
-            <button (click)="advancedSearchVisible = false" type="button" class="button">Close</button>
-          </div>
+            </div>
+          </li>
+          <li *ngIf="searchForm && (searchForm.value.elementType == 'folder' || searchForm.value.elementType == 'component')" formGroupName="attributes">
+            <span class="key">Collection</span>
+            <input class="value" type="text" list="collections" formControlName="collection">
+            <datalist id="collections">
+              <option *ngFor="let col of collections" [value]="col.id">{{ col.name }}</option>
+            </datalist>
+          </li>
+        </ul>
+        <div class="buttons">
+          <button [disabled]="!searchForm || searchForm.value.elementType == ''" (click)="resetForm()" type="button" class="button">Clear</button>
+          <button (click)="advancedSearchVisible = false" type="button" class="button">Close</button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
     <div class="results">
       <!--<app-simple-tree class="default-margin" [config]="treeConfig" [rootNode]="results"></app-simple-tree>-->
       <app-tree [config]="treeConfig" [root]="results"></app-tree>

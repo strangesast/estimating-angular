@@ -1,0 +1,24 @@
+.table {
+  box-sizing: border-box;
+  .title {
+    font-size: 1.5em;
+  }
+  ul {
+    position: relative;
+    padding-left: 0;
+    list-style-type: none;
+    margin: 0;
+    li > * {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      line-height: 30px;
+    }
+  }
+  ul.header {
+    white-space: nowrap;
+  }
+  ul.header, li {
+    display: flex;
+    flex-direction: row;
+  }
+}

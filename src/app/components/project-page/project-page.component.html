@@ -1,15 +1,16 @@
-<div class="main">
-  <div class="detail">
+<nav>
+  <div class="titleblock">
     <span class="title">{{ job.name }}</span>
-    <span class="description">{{ job.description }}</span>
+    <span class="description">{{ job.shortname }}</span>
   </div>
+  <span class="spacer"></span>
   <div class="links">
-    <a class="hoverunderline" routerLinkActive="active" [preserveFragment]="true" [routerLink]="['build']">Build</a>
-    <a class="hoverunderline" routerLinkActive="active" [preserveFragment]="true" [routerLink]="['edit']">Edit</a>
-    <a class="hoverunderline" routerLinkActive="active" [routerLink]="['estimate']">Estimate</a>
-    <a class="hoverunderline" routerLinkActive="active" [routerLink]="['details']">Details</a>
+    <a routerLinkActive="active" [preserveFragment]="true" [routerLink]="['build']">Build</a>
+    <a routerLinkActive="active" [preserveFragment]="true" [routerLink]="['edit']">Edit</a>
+    <a routerLinkActive="active" [routerLink]="['estimate']">Estimate</a>
+    <a routerLinkActive="active" [routerLink]="['details']">Details</a>
   </div>
-</div>
+</nav>
 <ul class="info">
   <li>
     <span>Buy</span>

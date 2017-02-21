@@ -1,5 +1,41 @@
 @import "../../styles/basic";
 
-.body {
+:host {
+  display: block;
   .default-margin;
+}
+
+.body {
+  margin: 5%;
+}
+
+.search {
+  display: flex;
+  height: 60px;
+
+  color: @off-white;
+  .box-shadow;
+  background-color: #F8F8F8;
+  border: 1px solid #D3D3D3;
+
+  &, * {
+    line-height: 60px;
+  }
+
+  .hovercolor:hover {
+    cursor: pointer;
+    color: darkgrey;
+  }
+
+  input {
+    flex-grow: 1;
+    -webkit-appearance: none;
+    background-color: inherit;
+    font-size: 1.1em;
+    border: none;
+    &:active, &:focus {
+      outline: none;
+    }
+    .input-italic;
+  }
 }

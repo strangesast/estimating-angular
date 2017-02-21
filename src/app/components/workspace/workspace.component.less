@@ -2,32 +2,72 @@
 
 :host {
   display: block;
-  height: ~"calc(100% - " @nav-height + 16px ~")";
 }
+
+@search-offset: 30px;
+@side-width: 320px;
 
 .body {
   display: flex;
+  position: relative;
   flex-direction: row;
   height: 100%;
+  .default-margin;
 
   & > .side {
-    width: 320px;
+    position: sticky;
+    top: 0;
+    width: 0;
+    border: none;
+    max-height: 100vh;
+    transition: width 0.1s;
     display: flex;
     flex-direction: column;
+    background-color: fade(#d8d8d8, 70%);
   
     .search {
       position: relative;
-      .default-margin;
+
+      .top {
+        border-top: 1px solid #D3D3D3;
+        border-left: 1px solid #D3D3D3;
+        border-bottom: 1px solid #D3D3D3;
+        position: relative;
+        margin-left: -@search-offset;
+        z-index: 1;
+        .box-shadow;
+        background-color: #F8F8F8;
+
+        transition: margin-left 0.1s;
+        line-height: 60px;
+        color: @off-white;
+        display: flex;
+
+        .search-toggle {
+          line-height: 60px;
+          width: @search-offset;
+          flex-basis: @search-offset;
+          flex-shrink: 0;
+        }
+
+        .input {
+          min-width: 0; // required
+        }
+      }
+
+      .hovercolor:hover {
+        cursor: pointer;
+        color: darkgrey;
+      }
 
       .input {
-        height: 38px;
-        line-height: 38px;
-        padding: 0 4px;
+        height: 60px;
+        margin: auto 0;
+        flex-grow: 1;
+        line-height: 60px;
+        padding-right: 8px;
         box-sizing: border-box;
-        border-radius: 3px;
         font-size: 1.1em;
-        border: 1px solid @off-white;
-        background-color: #F8F8F8;
         display: flex;
         align-items: center;
         flex-direction: row;
@@ -35,12 +75,18 @@
         .clear {
           color: @off-white;
           &:hover {
-            color: inherit;
+            color: darkgrey;
           }
+        }
+
+        span {
+          padding: 2px;
+          flex-shrink: 0;
         }
 
         input {
           flex-grow: 1;
+          width: 100px;
           -webkit-appearance: none;
           background-color: inherit;
           font-size: 1.1em;
@@ -53,6 +99,9 @@
       }
 
       .advanced {
+        z-index: 0;
+        border-bottom: 1px solid #D3D3D3;
+
         ul {
           list-style-type: none;
           padding-left: 0;
@@ -61,13 +110,13 @@
         margin-top: -1px;
         font-size: 0.75em;
         background-color: #F8F8F8;
-        border: 1px solid rgba(0, 0, 0, 0.18);
+
         width: 100%;
         padding: 8px;
         box-sizing: border-box;
-        .box-shadow;
         display: flex;
         flex-direction: column;
+
         & > .controls {
           flex-grow: 1;
           & > li {
@@ -103,14 +152,12 @@
         input.invalid {
           border: 1px solid red;
         }
-        & > .buttons {
-        }
       }
     }
     .results {
       overflow: auto;
-      flex-grow: 1;
-      .default-margin-left;
+      padding-bottom: 40px;
+
       app-tree {
         margin-right: 10px;
       }
@@ -128,14 +175,63 @@
   }
 
   & > .main {
-    flex-grow: 1;
+    position: relative;
     min-width: 0;
-    .default-margin-right;
-    padding: 12px;
+    min-height: 80vh;
+    flex-grow: 1;
     align-self: baseline;
-    .box-shadow;
-    border: 1px solid rgba(0, 0, 0, 0.18);
+
+    z-index: 2;
     background-color: #F8F8F8;
+    border: 1px solid #D3D3D3;
+  }
+
+  &.search-visible {
+    @media(max-width: 800px) {
+      .full-search;
+      .wide-search {
+        display: none;
+      }
+    }
+
+    @media(min-width: 800px) {
+      & > .side {
+        width: @side-width;
+        border-bottom: 1px solid #d8d8d8;
+        border-left: 1px solid #d8d8d8;
+        & > form > .top {
+          margin-left: -1px;
+        }
+        & .input {
+          display: block;
+        }
+      }
+    }
+  }
+
+  &.wide-search {
+    .full-search;
+  }
+}
+
+.full-search {
+  & > .side {
+    width: 100%;
+    max-height: 100%;
+    height: auto;
+    &, * {
+      z-index: 11;
+    }
+  
+    & .results {
+      align-self: flex-start;
+      width: 100%;
+    }
+  }
+  & > .main {
+    filter: blur(2px);
+    position: absolute;
+    width: 100%;
   }
 }
 

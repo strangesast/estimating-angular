@@ -1,53 +1,51 @@
+@import "../../styles/basic.less";
+@import "../../styles/table.less";
+
+:host {
+  display: block;
+
+  & > nav {
+    display: flex;
+    height: 60px;
+    line-height: 60px;
+    padding: 0 8px;
+    .title {
+      font-size: 2em;
+    }
+  }
+
+  & > .body {
+    margin: 8px;
+  }
+}
 .title {
   font-size: 1.5em;
-}
-.table {
-  box-sizing: border-box;
-  ul {
-    position: relative;
-    padding-left: 0;
-    list-style-type: none;
-    margin: 0;
-    li > * {
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      line-height: 30px;
-    }
-    li.name, li .name {
-      width: 35%;
-      overflow: hidden;
-    }
-    li.description, li .description {
-      width: 30%;
-      overflow: hidden;
-    }
-    li.settings, li .settings {
-      width: 5%;
-    }
-    li.owner, li .owner {
-      width: 15%;
-      overflow: hidden;
-    }
-    li.type, li .type, li.folders-cnt, li .folders-cnt, li.components-cnt, li .components-cnt {
-      justify-content: center;
-      text-align: center;
-      width: 5%;
-    }
-  }
-  ul.header {
-    white-space: nowrap;
-  }
-  ul.header, li {
-    display: flex;
-    flex-direction: row;
-  }
-  &:not(:first-child) {
-    margin-top: 20px;
-  }
 }
 form.inline {
   width: 100%;
   & > div {
     display: inline-block;
+  }
+}
+.table {
+  .name {
+    width: 35%;
+    overflow: hidden;
+  }
+  .description {
+    width: 30%;
+    overflow: hidden;
+  }
+  .settings {
+    width: 5%;
+  }
+  .owner {
+    width: 15%;
+    overflow: hidden;
+  }
+  .type, .folders-cnt, .components-cnt {
+    justify-content: center;
+    text-align: center;
+    width: 5%;
   }
 }

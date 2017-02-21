@@ -1,40 +1,37 @@
 @import "../../styles/basic";
+@import "../../styles/table.less";
 
-.table {
-  .title {
-    font-size: 1.5em;
-  }
-  ul {
-    position: relative;
-    padding-left: 0;
-    list-style-type: none;
-    margin: 0;
-    .name {
-      width: 35%;
-    }
-    .username {
-      width: 20%;
-    }
-    .settings {
-      width: 5%;
-    }
-    .email {
-      width: 30%;
-    }
-    .collections-cnt {
-      width: 10%;
-    }
-  }
-  ul.header, ul > li {
-    white-space: nowrap;
+:host {
+  display: block;
+
+  & > nav {
     display: flex;
-    height: 30px;
-    line-height: 30px;
-
-    & > li, & > span, & > a {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    height: 60px;
+    line-height: 60px;
+    padding: 0 8px;
+    .title {
+      font-size: 2em;
     }
+  }
+
+  & > .body {
+    margin: 8px;
+  }
+}
+.table {
+  .name {
+    width: 35%;
+  }
+  .username {
+    width: 20%;
+  }
+  .settings {
+    width: 5%;
+  }
+  .email {
+    width: 30%;
+  }
+  .collections-cnt {
+    width: 10%;
   }
 }

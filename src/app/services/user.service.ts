@@ -7,7 +7,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { User } from '../models';
 
 import { environment } from '../../environments/environment';
-const { LOCAL_ADDR, API_ADDR, CLIENT_ID, CLIENT_SECRET } = environment;
+const { LOCAL_ADDR, API_ADDR, CORE_CLIENT_ID, CORE_CLIENT_SECRET } = environment;
 
 const AnonymousUser = new User('Anonymous', 'anonymous', 'anon@anon.com');
 
@@ -27,7 +27,7 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
 
   get coreAuthURL(): string {
     let params = new URLSearchParams();
-    params.set('client_id', CLIENT_ID);
+    params.set('client_id', CORE_CLIENT_ID);
     params.set('response_type', 'code');
     params.set('redirect_uri', this.coreRedirectURL);
     params.set('scopes', 'user');
@@ -119,8 +119,8 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
   login(authorizationCode: string, refresh = false): Observable<User> {
     if (!authorizationCode) throw new Error('no auth code provided');
     let body = {
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
+      client_id: CORE_CLIENT_ID,
+      client_secret: CORE_CLIENT_SECRET,
       redirect_uri: this.coreRedirectURL,
       grant_type: refresh ? 'refresh_token' : 'authorization_code'
     };
@@ -156,8 +156,8 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
       return Observable.throw(new Error('not logged in'));
     }
     let body = {
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
+      client_id: CORE_CLIENT_ID,
+      client_secret: CORE_CLIENT_SECRET,
       token: this.coreAccessToken
     };
     return this.http.post(`${ API_ADDR }/oauth/revoke`, body, this.authorizationOptions).map(res => {
