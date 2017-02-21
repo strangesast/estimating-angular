@@ -6,36 +6,106 @@
 }
 
 .body {
-  margin: 5%;
+  margin: 5% 5% 0;
 }
 
 .search {
-  display: flex;
-  height: 60px;
+  position: sticky;
+  top: 0;
 
-  color: @off-white;
-  .box-shadow;
   background-color: #F8F8F8;
-  border: 1px solid #D3D3D3;
 
-  &, * {
-    line-height: 60px;
-  }
+  .top {
+    position: relative;
+    height: 60px;
+    .box-shadow;
+    border: 1px solid #D3D3D3;
 
-  .hovercolor:hover {
-    cursor: pointer;
-    color: darkgrey;
-  }
-
-  input {
-    flex-grow: 1;
-    -webkit-appearance: none;
-    background-color: inherit;
-    font-size: 1.1em;
-    border: none;
-    &:active, &:focus {
-      outline: none;
+    & > span, .input, .input * {
+      line-height: 60px;
     }
-    .input-italic;
+    display: flex;
+    color: @off-white;
+    z-index: 10;
+
+    .input {
+      flex-grow: 1;
+      min-width: 0;
+      display: flex;
+      box-sizing: border-box;
+
+      .hovercolor:hover {
+        cursor: pointer;
+        color: darkgrey;
+      }
+
+      input {
+        flex-grow: 1;
+        -webkit-appearance: none;
+        background-color: inherit;
+        font-size: 1.1em;
+        border: none;
+        &:active, &:focus {
+          outline: none;
+        }
+        .input-italic;
+      }
+    }
+  }
+  .advanced {
+    z-index: 0;
+    border-bottom: 1px solid #D3D3D3;
+    border-left: 1px solid #D3D3D3;
+    border-right: 1px solid #D3D3D3;
+
+    ul {
+      list-style-type: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    font-size: 0.75em;
+    background-color: #F8F8F8;
+
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+
+    & > .controls {
+      flex-grow: 1;
+      & > li {
+        display: flex;
+        margin-bottom: 8px;
+      }
+      line-height: 28px;
+      .key {
+        flex-grow: 1;
+        flex-shrink: 1;
+      }
+      input.value {
+        text-align: right;
+      }
+      .radio {
+        & > div {
+          display: inline;
+        }
+        input[type='radio'] {
+          display: none;
+        }
+        input:checked + label {
+          background-color: #d8d8d8;
+        }
+        label {
+          .button;
+        }
+      }
+    }
+    input {
+      border: 1px solid #d1d1d1;
+    }
+    input.invalid {
+      border: 1px solid red;
+    }
   }
 }
