@@ -22,7 +22,8 @@ export class UserService implements OnInit, OnDestroy, CanActivate, Resolve<any>
   };
 
   get coreRedirectURL(): string {
-    return `${ LOCAL_ADDR }/oauth`;
+    let loc = window.location;
+    return `${ loc.origin }/oauth`;
   }
 
   get coreAuthURL(): string {
