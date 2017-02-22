@@ -2,7 +2,7 @@
   <span class="icon fa" [ngClass]="(data.data.type ? data.data.type : data.data) | typeToClass"></span>
   <span *ngIf="config && config.window" class="hoverlink name" (click)="nameClicked.emit(data)" [title]="data.data.name || data.data.description" [routerLink]="" [fragment]="fragment">{{ data.data.name || data.data.description }}</span>
   <span *ngIf="!config || !config.window" class="name" [class.hoverlink]="fullPath" [routerLink]="fullPath ? fullPath.path : []" [fragment]="fullPath ? fullPath.fragment : null" [title]="data.data.name || data.data.description">{{ data.data.name || data.data.description }}</span>
-  <span (click)="rootEvt.emit(data)" *ngIf="config.root" class="fa fa-chevron-right hoverlink"></span>
+  <span (click)="rootEvt.emit(data)" *ngIf="config.root" class="fa fa-fw fa-angle-right hoverlink"></span>
   <span *ngIf="!props || props.indexOf('description') !== -1" class="description">{{ data.data.description }}</span>
   <span class="spacer"></span>
   <span *ngIf="(!props || props.indexOf('qty') !== -1) && data.data.qty != null" class="qty">{{ data.data.qty }}</span>

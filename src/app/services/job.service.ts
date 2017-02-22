@@ -516,6 +516,36 @@ export class JobService implements Resolve<Promise<any>> {
   search(query) {
   }
 
+  async getParentFolderPath(folderId: string) {
+    let db = this.db;
+    let table = db.folderElements;
+
+    let path = [];
+    let ret = [];
+
+    let par, id = folderId;
+
+    let first = await table.get(<any>folderId);
+    if (!first) throw new Error('folder with that id does not exist');
+
+    ret.unshift({ name: first.name, id });
+
+    do {
+      par = await table.get({ children: id })
+      path.unshift(id);
+      if (par) {
+        id = par.id;
+        if (path.indexOf(id) !== -1) {
+          throw new Error('parent loop');
+        }
+        ret.unshift({ id, name: par.name });
+      }
+    } while (par != null);
+
+    return ret.slice(1); // don't send the root
+
+  }
+
   async getParentFolderCandidates() {
     let db = this.db;
     let job = this.collectionSubject.getValue();
@@ -566,5 +596,10 @@ export class JobService implements Resolve<Promise<any>> {
     }
 
     return instance;
+  }
+
+  async getFolder(id) {
+    let db = this.db;
+    return db.folderElements.get(<any>id);
   }
 }

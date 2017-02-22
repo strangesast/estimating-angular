@@ -49,6 +49,10 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   private jobSubscription: Subscription;
 
   private nestSubscription: Subscription;
+  public nestConfig;
+  public nestConfigSubject;
+
+  public rootPaths: any = {};
 
   public editWindowsEnabled: boolean = true;
 
@@ -67,10 +71,18 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
   ) { }
 
   ngOnInit() {
-    this.route.data.subscribe(({ job: { collectionSubject, openElements, nestSubject, editWindowsEnabled } }) => {
+    this.route.data.subscribe(({ job: { collectionSubject, openElements, nestConfigSubject, nestSubject, editWindowsEnabled } }) => {
       editWindowsEnabled.subscribe(enabled => this.editWindowsEnabled = enabled);
       this.searchService.resultsPageObservable.next([]);
       this.jobSubscription = (this.jobSubject = collectionSubject).subscribe(collection => this.job = collection);
+
+      (this.nestConfigSubject = nestConfigSubject).switchMap(config => {
+        return Promise.all(config.folders.order.map(async(name) => {
+          let root = config.folders.roots[name];
+          return this.rootPaths[name] = root ? (await this.jobService.getParentFolderPath(root)) : [];
+        })).then(() => this.nestConfig = config);
+      }).subscribe();
+
 
       (this.openElementsSubject = openElements).subscribe(els => {
         this.openElements = els;
@@ -106,6 +118,31 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         this.jobService.selectedElementSubject.next(undefined);
       }
     });
+  }
+
+  async changeRoot(id, type?) {
+    let job = this.job;
+    let config = this.nestConfigSubject.getValue();
+
+    if (!id && !type) throw new Error('type or id must be provided');
+
+    if (!id) {
+      if (job.folders.order.indexOf(type) == -1) {
+        throw new Error('invalid type');
+      }
+      config.folders.roots[type] = null;
+
+    } else {
+      let folder = await this.jobService.getFolder(id);
+
+      if (folder.collection !== job.id || job.folders.order.indexOf(folder.type) == -1) {
+        throw new Error('invalid or incompatible folder');
+      }
+
+      config.folders.roots[folder.type] == folder.id;
+    }
+
+    this.nestConfigSubject.next(config);
   }
 
   ngAfterViewInit() {

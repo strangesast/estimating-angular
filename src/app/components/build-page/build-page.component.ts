@@ -238,13 +238,19 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     return this.jobService.addChildElement(on, dropped, this.nestConfig);
   }
 
-  handleRoot({ data }) {
+  async handleRoot({ data }) {
     if (data instanceof FolderElement) {
       if (data.id) {
-        let type = 'root';
-        let display = 'root: ' + data.name;
-        let filter = { type, affects: [ data.type ], value: data.id, display }
-        this.jobService.addFilter(filter);
+        let folder = await this.jobService.getFolder(data.id);
+        if (folder) {
+          let job = this.job;
+          if (folder.collection !== job.id || job.folders.order.indexOf(folder.type) == -1) {
+            throw new Error('invalid or incompatible folder');
+          }
+          let config = this.nestConfigSubject.getValue();
+          config.folders.roots[folder.type] = folder.id;
+          this.nestConfigSubject.next(config);
+        }
       }
     }
   }

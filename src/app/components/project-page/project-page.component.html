@@ -33,6 +33,12 @@
     <span title="number of children">{{stats.childCnt}}<span class="fa fa-cubes"></span></span>
   </li>
 </ul>
+<div class="roots" *ngIf="nestConfig">
+  <ul *ngFor="let name of nestConfig.folders.order">
+    <li (click)="changeRoot(null, name)" [title]="'root ' + name"><span class="fa fa-fw" [ngClass]="name | typeToClass"></span></li>
+    <li (click)="changeRoot(each.id, name)" class="text" [title]="each.name + '(' + name + ')'" *ngFor="let each of rootPaths[name]">{{ each.name }}</li>
+  </ul>
+</div>
 <router-outlet></router-outlet>
 <div class="edit-windows" *ngIf="editWindowsEnabled">
   <div class="container">
