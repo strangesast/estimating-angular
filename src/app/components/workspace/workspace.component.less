@@ -19,7 +19,7 @@
     top: 0;
     width: 0;
     border: none;
-    max-height: 100vh;
+    max-height: ~"calc(100vh - 60px - 1px)";
     transition: width 0.1s;
     display: flex;
     flex-direction: column;
@@ -177,6 +177,7 @@
     min-height: 80vh;
     flex-grow: 1;
     align-self: baseline;
+    transition: width 0.1s, margin-left 0.1s;
 
     z-index: 2;
     background-color: #F8F8F8;
@@ -214,8 +215,8 @@
 .full-search {
   & > .side {
     width: 100%;
-    max-height: 100%;
-    height: auto;
+    //max-height: 100%;
+    //height: auto;
     &, * {
       z-index: 11;
     }
@@ -227,7 +228,7 @@
   }
   & > .main {
     filter: blur(2px);
-    position: absolute;
+    margin-left: -100%;
     width: 100%;
   }
 }

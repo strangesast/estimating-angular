@@ -10,6 +10,15 @@
     <a routerLinkActive="active" [routerLink]="['estimate']">Estimate</a>
     <a routerLinkActive="active" [routerLink]="['details']">Details</a>
   </div>
+  <div class="links-alt">
+    <span>Pages <span class="fa fa-caret-down"></span></span>
+    <div>
+      <a routerLinkActive="active" [preserveFragment]="true" [routerLink]="['build']">Build</a>
+      <a routerLinkActive="active" [preserveFragment]="true" [routerLink]="['edit']">Edit</a>
+      <a routerLinkActive="active" [routerLink]="['estimate']">Estimate</a>
+      <a routerLinkActive="active" [routerLink]="['details']">Details</a>
+    </div>
+  </div>
 </nav>
 <ul class="info">
   <li>

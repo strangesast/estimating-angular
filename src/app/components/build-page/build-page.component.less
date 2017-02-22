@@ -43,6 +43,7 @@ ul.filters {
   }
 }
 ul.toggle {
+  white-space: nowrap;
   & > li {
     padding: 8px;
     border: 1px solid rgba(0, 0, 0, 0.18);
@@ -52,11 +53,18 @@ ul.toggle {
     &.active {
       background: rgba(0, 0, 0, 0.08);
     }
+    @media(max-width: 800px) {
+      & > span:not(:first-child) {
+        display: none;
+      }
+    }
   }
 }
 .search {
   padding: 0 4px;
   position: relative;
+  flex-shrink: 1;
+
   input {
     height: 34px;
     box-sizing: border-box;
@@ -68,6 +76,7 @@ ul.toggle {
     width: 100%;
     .input-italic;
   }
+
   .suggestions {
     position: absolute;
     right: 0;

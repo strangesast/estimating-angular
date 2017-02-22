@@ -6,7 +6,6 @@
     <li [class.active]="nestConfig.component.enabled" (click)="toggleComponentVisibility($event.ctrlKey)" class="hoverlink noselect">
       <span class="fa" [ngClass]="'component' | typeToClass"></span>
       <span>Component</span>
-    <!-- fucking weird - no closing tags -->
   </ul>
   <div class="search">
     <form *ngIf="filterForm" [formGroup]="filterForm" (ngSubmit)="filterFormSubmit(filterForm)">

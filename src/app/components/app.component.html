@@ -2,23 +2,11 @@
   <div>
     <a class="nostyle title" routerLink="/">{{ title }}</a>
     <div class="links">
-      <a *ngIf="user" class="hoverunderline" routerLink="/jobs" routerLinkActive="active">Jobs</a>
-      <a *ngIf="user" class="hoverunderline" routerLink="/users" routerLinkActive="active">Users</a>
-      <a class="hoverunderline" routerLink="/search" routerLinkActive="active">Search</a>
-      <a class="hoverunderline" routerLink="/settings" routerLinkActive="active">Settings</a>
-      <span class="hoverlink fa fa-fw fa-user-o" routerLink="/login"></span>
-      <!--
-      <div class="dropdown" *ngIf="user">
-        <span class="dropdown-button fa fa-user-o"></span>
-        <div *ngIf="user" class="dropdown-content right hovershadow">
-          <a class="nostyle hoverlink" routerLink="/login" [title]="user.first_name + ' ' + user.last_name">Logged in as {{ user.username }}</a>
-          <a class="nostyle hoverlink">Log out</a>
-        </div>
-        <div *ngIf="!user" class="dropdown-content right">
-          <div class="hoverunderline" routerLink="/login" routerLinkActive="active">Log in</div>
-        </div>
-      </div>
-      -->
+      <a *ngIf="user" class="nostyle" routerLink="/jobs" routerLinkActive="active">Jobs</a>
+      <a *ngIf="user" class="nostyle" routerLink="/users" routerLinkActive="active">Users</a>
+      <a class="nostyle" routerLink="/search" routerLinkActive="active">Search</a>
+      <a class="nostyle" routerLink="/settings" routerLinkActive="active">Settings</a>
+      <a class="nostyle" routerLink="/login" routerLinkActive="active"><span class="fa fa-fw fa-user-o"></span></a>
     </div>
   </div>
 </nav>
