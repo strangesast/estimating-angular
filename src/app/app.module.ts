@@ -45,6 +45,8 @@ import {
 import { LoginPageComponent } from './components/login-page/login-page.component';
 import { PageNotFoundComponent } from './components/page-not-found/page-not-found.component';
 import { JobNotFoundComponent } from './components/job-not-found/job-not-found.component';
+import { D3ExampleComponent } from './components/d3-example/d3-example.component';
+import { ExampleComponent } from './components/d3-example/example-component/example-component.component';
 
 
 @NgModule({
@@ -74,7 +76,9 @@ import { JobNotFoundComponent } from './components/job-not-found/job-not-found.c
     ElementDisplayComponent,
     LoginPageComponent,
     PageNotFoundComponent,
-    JobNotFoundComponent
+    JobNotFoundComponent,
+    D3ExampleComponent,
+    ExampleComponent
   ],
   imports: [
     BrowserModule,
