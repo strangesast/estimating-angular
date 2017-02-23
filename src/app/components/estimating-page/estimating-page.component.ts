@@ -68,30 +68,13 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   ngAfterViewInit() {
-    this.htmlElement = this.element.nativeElement.querySelector('div');
+    this.htmlElement = this.element.nativeElement.querySelector('.graphs');
     this.host = D3.select(this.htmlElement);
     this.hostReady.next(true);
   }
 
   treesSubjectUpdate([nodes, groupBy]) {
     return this.treeUpdate(nodes, groupBy);
-    /*
-    if(this.host == null) return Observable.never();
-    return Observable.zip(...Object.keys(trees).map(name => trees[name].filter(x=>x))).combineLatest(this.jobSubject).switchMap(([nodes, job]:[HierarchyNode<any>[], Collection]) => {
-
-      let copied = nodes.map(node => node.copy());
-
-      let getChildren = Promise.all(copied.map(node => this.elementService.retrieveAllChildren(job, node.data).then(node => {
-        return node;
-      })));
-
-      return Observable.combineLatest(Observable.fromPromise(getChildren), this.groupBySubject).switchMap(([nodes, groupBy]) => {
-
-        return this.treeUpdate(nodes, groupBy);
-      });
-
-    });
-    */
   }
 
   blobUpdate({ children, components, folders }, selectedFolder, groupBy) {
@@ -162,7 +145,6 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
         let e = D3.event;
         if (e.ctrlKey) {
           let name = pipe.transform(data.data);
-          console.log('name', name);
           router.navigate([], { fragment: [name, data.data.id].join('/') });
         }
       });

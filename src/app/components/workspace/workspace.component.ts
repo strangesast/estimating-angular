@@ -113,6 +113,9 @@ export class WorkspaceComponent implements OnInit {
     */
   }
 
+  searchFormSubmit(form) {
+  }
+
   toggleSearch(close?) {
     if (close == undefined) close = !this.collapsed;
     if (close) {
