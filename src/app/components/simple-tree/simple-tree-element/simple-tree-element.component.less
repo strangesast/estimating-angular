@@ -1,23 +1,17 @@
 @off-white: #D5D8DD;
 :host {
-  //background: white;
-  color: black;
+  display: flex;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  box-sizing: border-box;
-  display: block;
-}
-:host:first-child > li {
-  //border-top: 1px solid @off-white;
-  border-top: none;
-}
-:host > li {
   padding: 8px;
-  display: flex;
-  border-bottom: 1px solid @off-white;
+  box-sizing: border-box;
+  height: 37px;
+
+  color: black;
+  background-color: #F8F8F8;
+  border: 1px solid @off-white;
   white-space: nowrap;
   text-overflow: ellipsis;
 
@@ -33,59 +27,68 @@
     margin-left: 8px;
     min-width: 0;
   }
+
   & > .name, & > .description {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   & > .qty {
     &:before {
       content: 'qty';
       font-size: 10px;
     }
   }
+
+  &.dragging {
+    background: black;
+    color: white;
+  }
+  
+  &.dragover {
+    background: @off-white;
+  }
+
+  .grip {
+    color: @off-white;
+    &:hover {
+      color: black;
+      cursor: move;
+    }
+  }
+
+  &:focus {
+    outline: none;
+    background: #F3F4F5;
+  }
+  &:hover {
+    border: 1px solid #BCBCBC;
+    z-index: 50;
+  }
+
 }
+
 .hoverlink {
   &:hover {
     cursor: pointer;
   }
+
+  [hidden] {
+    visibility: hidden;
+  }
 }
+
 .collapse {
   transform: rotate(180deg);
   &.open {
     transform: rotate(0deg);
   }
 }
-.spacer {
-  flex-grow: 1;
-}
+
 .fa.fa-grip:before {
   content: "\f142 \202F \f142 \202F \f142";
 }
+
 .fa.fa-grip-large:before {
   content: "\f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142 \202F \f142";
-}
-.grip {
-  color: @off-white;
-  &:hover {
-    color: black;
-    cursor: move;
-  }
-}
-[hidden] {
-  visibility: hidden;
-}
-:host-context(.dragging) {
-  * {
-    pointer-events: none;
-  }
-}
-.dragging {
-  background: black;
-  color: white;
-  &, * {
-    pointer-events: none;
-  }
-}
-.dragover {
-  background: @off-white;
 }

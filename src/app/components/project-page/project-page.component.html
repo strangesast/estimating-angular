@@ -20,23 +20,23 @@
     </div>
   </div>
 </nav>
-<ul class="info">
-  <li>
-    <span>Buy</span>
-    <span style="font-style:italic">{{stats.buy | currency:'USD':true}}</span>
-    <span>Sell</span>
-    <span style="font-style:italic">{{stats.sell | currency:'USD':true}}</span>
-  </li>
-  <li class="counts">
+<div class="info">
+  <div class="total-label">Buy</div>
+  <div class="total-value">{{stats.buy | currency:'USD':true}}</div>
+  <div class="total-label">Sell</div>
+  <div class="total-value">{{stats.sell | currency:'USD':true}}</div>
+  <div class="spacer"></div>
+  <div class="counts">
     <span title="number of folders">{{stats.folderCnt}}<span class="fa fa-folder-o"></span></span>
     <span title="number of unique components">{{stats.componentCnt}}<span class="fa fa-cube"></span></span>
     <span title="number of children">{{stats.childCnt}}<span class="fa fa-cubes"></span></span>
-  </li>
-</ul>
+  </div>
+</div>
 <div class="roots" *ngIf="nestConfig">
   <ul *ngFor="let name of nestConfig.folders.order">
     <li (click)="changeRoot(null, name)" [title]="'root ' + name"><span class="fa fa-fw" [ngClass]="name | typeToClass"></span></li>
-    <li (click)="changeRoot(each.id, name)" class="text" [title]="each.name + '(' + name + ')'" *ngFor="let each of rootPaths[name]">{{ each.name }}</li>
+    <li *ngIf="(rootPaths[name] || []).length > (nestConfig.folders.order.length > 1 ? 3 : 2)"><span>…</span></li>
+    <li (click)="changeRoot(each.id, name)" class="text" [title]="each.name + '(' + name + ')'" *ngFor="let each of (rootPaths[name] || []).slice(-3)"><span>{{ each.name }}</span></li>
   </ul>
 </div>
 <router-outlet></router-outlet>

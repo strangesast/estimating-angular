@@ -23,6 +23,11 @@ export const SIMPLE_TREE_ELEMENT_SELECTOR = 'app-simple-tree-element';
   host: {
     '(dragstart)': 'onDragStart($event)',
     '(dragover)':  'onDragOver($event)',
+    '[class.dragover]': 'dragover',
+    '[class.dragging]': 'dragging',
+    '[attr.depth]': 'startAt + data.depth',
+    'class': 'node',
+    'tabindex': '0',
     '(dragenter)':  'onDragEnter($event)',
     '(dragleave)':  'onDragLeave($event)',
     '(drop)':      'onDragDrop($event)',

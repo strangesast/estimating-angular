@@ -9,86 +9,84 @@
       <span>Create New</span>
   </ul>
 </div>
-<div class="main">
-  <div *ngIf="selectedElement === undefined">
-    <p>No element has been selected.  Search for one in on the left or create a new one.</p>
-  </div>
-  <app-edit-window *ngIf="selectedElement" [isWindow]="false" [element]="openElements[selectedElement].element"></app-edit-window>
-  <!--<app-edit-window *ngIf="selectedElement === null" [isWindow]="false" [element]="newElement"></app-edit-window>-->
-  <div *ngIf="selectedElement === null">
-    <h1>Create New</h1>
-    <p>Choose one of the following types.</p>
+<div class="main" *ngIf="selectedElement === undefined">
+  <p>No element has been selected.  Search for one in on the left or create a new one.</p>
+</div>
+<app-edit-window *ngIf="selectedElement" [isWindow]="false" [element]="openElements[selectedElement].element"></app-edit-window>
+<!--<app-edit-window *ngIf="selectedElement === null" [isWindow]="false" [element]="newElement"></app-edit-window>-->
+<div class="main" *ngIf="selectedElement === null">
+  <h1>Create New</h1>
+  <p>Choose one of the following types.</p>
 
-    <div class="new-types">
-      <button [disabled]="newElementType == 'folder'" (click)="setNewElementType('folder')">Folder</button>
-      <button [disabled]="newElementType == 'component'" (click)="setNewElementType('component')">Component</button>
-      <button [disabled]="newElementType == 'child'" (click)="setNewElementType('child')">Child</button>
-      <button (click)="cancelNew()">Cancel</button>
-    </div>
-    <form *ngIf="newElementForm" [formGroup]="newElementForm" (ngSubmit)="onSubmit(newElementForm)">
-      <div class="form-group">
-        <!--<div class="form-group-title">New {{ newElementType[0].toUpperCase() + newElementType.slice(1) }}</div>-->
-        <div class="form-control">
-          <label>Name:</label>
-          <input formControlName="name" type="text">
-          <small class="about">Identifying string.</small>
-        </div>
-        <div class="form-control">
-          <label>Description:</label>
-          <textarea formControlName="description"></textarea>
-          <small class="about">A useful description of the element.</small>
-        </div>
-        <div class="form-control" *ngFor="let input of inputs">
-          <label>{{ input.label }}</label>
-          <input *ngIf="input.type == 'text' || input.type == 'number'" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step" (change)="input.change ? input.change($event) : null">
-          <select *ngIf="input.options && input.type == 'select'" [formControlName]="input.key">
-            <option *ngFor="let option of input.options" [value]="option.value">{{ option.key }}</option>
-          </select>
-          <div *ngIf="input.options && input.type == 'radio'" class="radio">
-            <div *ngFor="let option of input.options; let i = index">
-              <input [attr.id]="i + '-' + input.key" type="radio" [checked]="newElementForm.value[input.key] == option.value" [formControlName]="input.key" [value]="option.value">
-              <label [attr.for]="i + '-' + input.key">{{ option.key }}</label>
-            </div>
-          </div>
-          <div *ngIf="input.type == 'search'">
-            <input type="search" [attr.list]="input.key" [formControlName]="input.key">
-            <datalist [attr.id]="input.key">
-              <option *ngFor="let option of input.filter(input.options)" [value]="option.value">{{ option.key }}</option>
-            </datalist>
-          </div>
-          <small class="about" *ngIf="input.description">{{ input.description }}</small>
-          <div *ngIf="input.key == 'catalog' && corePart">
-            <div class="form-group">
-              <div class="form-group-title">Core Part</div>
-              <div class="form-control">
-                <label>Description</label>
-                <textarea readonly>{{ corePart.description }}</textarea>
-              </div>
-              <div class="form-control">
-                <label>Summary</label>
-                <input readonly [value]="corePart.summary">
-              </div>
-              <div class="form-control">
-                <label>Number</label>
-                <input readonly [value]="corePart.number">
-              </div>
-              <div class="form-control">
-                <label>Kind</label>
-                <input readonly [value]="corePart.kind">
-              </div>
-              <div class="form-control">
-                <label>Type</label>
-                <input readonly [value]="corePart.type">
-              </div>
-              <div class="form-control">
-                <label>Label</label>
-                <input readonly [value]="corePart.label">
-              </div>
-            </div>
-          </div>
-        </div>
-        <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty" class="button">Save</button>
-      </div>
-    </form>
+  <div class="new-types" [class.none]="!newElementType">
+    <button [disabled]="newElementType == 'folder'" (click)="setNewElementType('folder')">Folder</button>
+    <button [disabled]="newElementType == 'component'" (click)="setNewElementType('component')">Component</button>
+    <button [disabled]="newElementType == 'child'" (click)="setNewElementType('child')">Child</button>
+    <button (click)="cancelNew()">Cancel</button>
   </div>
+  <form *ngIf="newElementForm" [formGroup]="newElementForm" (ngSubmit)="onSubmit(newElementForm)">
+    <div class="form-group">
+      <!--<div class="form-group-title">New {{ newElementType[0].toUpperCase() + newElementType.slice(1) }}</div>-->
+      <div class="form-control">
+        <label>Name:</label>
+        <input formControlName="name" type="text">
+        <small class="about">Identifying string.</small>
+      </div>
+      <div class="form-control">
+        <label>Description:</label>
+        <textarea formControlName="description"></textarea>
+        <small class="about">A useful description of the element.</small>
+      </div>
+      <div class="form-control" *ngFor="let input of inputs">
+        <label>{{ input.label }}</label>
+        <input *ngIf="input.type == 'text' || input.type == 'number'" [formControlName]="input.key" [type]="input.type" [attr.min]="input.min" [attr.max]="input.max" [attr.step]="input.step" (change)="input.change ? input.change($event) : null">
+        <select *ngIf="input.options && input.type == 'select'" [formControlName]="input.key">
+          <option *ngFor="let option of input.options" [value]="option.value">{{ option.key }}</option>
+        </select>
+        <div *ngIf="input.options && input.type == 'radio'" class="radio">
+          <div *ngFor="let option of input.options; let i = index">
+            <input [attr.id]="i + '-' + input.key" type="radio" [checked]="newElementForm.value[input.key] == option.value" [formControlName]="input.key" [value]="option.value">
+            <label [attr.for]="i + '-' + input.key">{{ option.key }}</label>
+          </div>
+        </div>
+        <div *ngIf="input.type == 'search'">
+          <input type="search" [attr.list]="input.key" [formControlName]="input.key">
+          <datalist [attr.id]="input.key">
+            <option *ngFor="let option of input.filter(input.options)" [value]="option.value">{{ option.key }}</option>
+          </datalist>
+        </div>
+        <small class="about" *ngIf="input.description">{{ input.description }}</small>
+        <div *ngIf="input.key == 'catalog' && corePart">
+          <div class="form-group">
+            <div class="form-group-title">Core Part</div>
+            <div class="form-control">
+              <label>Description</label>
+              <textarea readonly>{{ corePart.description }}</textarea>
+            </div>
+            <div class="form-control">
+              <label>Summary</label>
+              <input readonly [value]="corePart.summary">
+            </div>
+            <div class="form-control">
+              <label>Number</label>
+              <input readonly [value]="corePart.number">
+            </div>
+            <div class="form-control">
+              <label>Kind</label>
+              <input readonly [value]="corePart.kind">
+            </div>
+            <div class="form-control">
+              <label>Type</label>
+              <input readonly [value]="corePart.type">
+            </div>
+            <div class="form-control">
+              <label>Label</label>
+              <input readonly [value]="corePart.label">
+            </div>
+          </div>
+        </div>
+      </div>
+      <button type="submit" [disabled]="newElementForm.invalid || !newElementForm.dirty" class="button">Save</button>
+    </div>
+  </form>
 </div>

@@ -139,7 +139,7 @@ export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, O
         throw new Error('invalid or incompatible folder');
       }
 
-      config.folders.roots[folder.type] == folder.id;
+      config.folders.roots[folder.type] = folder.id;
     }
 
     this.nestConfigSubject.next(config);

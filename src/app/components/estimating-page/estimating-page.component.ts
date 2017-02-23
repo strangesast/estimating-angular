@@ -171,6 +171,7 @@ export class EstimatingPageComponent implements OnInit, AfterViewInit, OnDestroy
       .text((d: any) => d.data.name + ' (' + currency(d.value) + ')')
 
     add.filter(d => d.data instanceof FolderElement)
+      .sort((a, b) => a.value > b.value ? -1 : 1)
       .on('mouseover', function() {
         D3.select(this).select('text').transition().duration(100).attrTween('fill-opacity', () => <any>D3.interpolate(0, 1)); 
       })

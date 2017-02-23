@@ -1,5 +1,12 @@
 @import "../../styles/basic";
 
+.generate-levels(@n, @i: 0) when(@i =< @n) {
+  &:nth-child(@{i}) {
+    z-index: (20 - @i);
+  }
+  .generate-levels(@n, (@i+1));
+}
+
 :host {
   .default-host;
   width: 100%;
@@ -101,19 +108,32 @@
     padding-left: 0;
     margin: 0;
     display: flex;
+    z-index: 10;
+    flex-shrink: 1;
+    min-width: 0;
+
     & > li {
       position: relative;
       line-height: 30px;
       height: 30px;
       background-color: #F8F8F8;
       padding-left: 15px + 4px;
-      z-index: 10;
       user-select: none;
       cursor: pointer;
+      max-width: 200px;
 
       &.text {
-        white-space: nowrap;
-        text-overflow: ellipsis;
+        flex-shrink: 1;
+        min-width: 0;
+
+        & > span {
+          display: block;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          margin-right: -15px;
+          padding-right: 15px;
+        }
       }
 
       &:after {
@@ -130,21 +150,20 @@
         height: 21.21px;
         background-color: inherit;
       }
+
       &:hover {
         background-color: #E5E5E5;
       }
+      .generate-levels(20, 0);
+
     }
-    li + li {
-      z-index: 9;
+    &:last-child {
+      margin-right: 20px;
     }
+
   }
   ul + ul {
-    li {
-      z-index: 4;
-    }
-    li + li {
-      z-index: 3;
-    }
+    z-index: 9;
   }
   ul:first-child > li:first-child {
     padding-left: 10px;
@@ -153,24 +172,28 @@
 
 .info {
   height: @info-height;
-  padding-left: 0;
-  margin: 0;
-  list-style-type: none;
   display: flex;
-  justify-content: space-between;
-  & > li {
-    display: inline-block;
-    line-height: @info-height - 16px;
-    padding: 8px;
+  line-height: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 4px;
 
-    &.counts {
-      span > span {
-        margin-left: 4px;
-      }
-      
-      span + span {
-        margin-left: 8px;
-      }
+  .total-label {
+    text-transform: uppercase;
+    font-size: 0.5em;
+    padding: 0 4px;
+  }
+  .total-value {
+    font-style: italic;
+  }
+
+  & > .counts {
+    span > span {
+      margin-left: 4px;
+    }
+    
+    span + span {
+      margin-left: 8px;
     }
   }
 }
