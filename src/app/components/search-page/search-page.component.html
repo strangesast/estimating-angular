@@ -51,7 +51,7 @@
           <div class="value radio">
             <div *ngFor="let item of ['', 'building', 'phase']; let i=index">
               <input [attr.id]="'type-' + item" type="radio" [value]="item" formControlName="type">
-              <label [attr.for]="'type-' + item">{{ ( item && (item[0].toUpperCase() + item.slice(1))) || 'Any' }}</label>
+              <label [attr.for]="'type-' + item">{{ item || 'any' }}</label>
             </div>
           </div>
         </li>

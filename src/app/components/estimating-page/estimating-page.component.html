@@ -5,7 +5,7 @@
     <li>
       <span>Value</span>
       <select class="button value" [(ngModel)]="groupBy" (ngModelChange)="groupByChanged($event)">
-        <option *ngFor="let option of groupByOptions" [value]="option">{{ option[0].toUpperCase() + option.slice(1) }}</option>
+        <option *ngFor="let option of groupByOptions" [value]="option">{{ option }}</option>
       </select>
     </li>
     <li>

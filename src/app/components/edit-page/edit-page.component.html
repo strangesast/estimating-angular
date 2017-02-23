@@ -26,7 +26,6 @@
   </div>
   <form *ngIf="newElementForm" [formGroup]="newElementForm" (ngSubmit)="onSubmit(newElementForm)">
     <div class="form-group">
-      <!--<div class="form-group-title">New {{ newElementType[0].toUpperCase() + newElementType.slice(1) }}</div>-->
       <div class="form-control">
         <label>Name:</label>
         <input formControlName="name" type="text">

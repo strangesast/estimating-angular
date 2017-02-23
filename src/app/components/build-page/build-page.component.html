@@ -2,10 +2,10 @@
   <ul class="toggle" *ngIf="nestConfig">
     <li *ngFor="let folderName of nestConfig.folders.order" [class.active]="nestConfig.folders.enabled[folderName]" (click)="toggleFolderVisibility(folderName, $event.ctrlKey)" class="hoverlink noselect">
       <span class="fa" [ngClass]="folderName | typeToClass"></span>
-      <span>{{ folderName[0].toUpperCase() + folderName.slice(1) }}</span>
+      <span>{{ folderName }}</span>
     <li [class.active]="nestConfig.component.enabled" (click)="toggleComponentVisibility($event.ctrlKey)" class="hoverlink noselect">
       <span class="fa" [ngClass]="'component' | typeToClass"></span>
-      <span>Component</span>
+      <span>component</span>
   </ul>
   <div class="search">
     <form *ngIf="filterForm" [formGroup]="filterForm" (ngSubmit)="filterFormSubmit(filterForm)">
