@@ -81,9 +81,15 @@ ul.toggle {
     box-sizing: border-box;
     padding: 4px;
     font-size: 1.1em;
-    border-radius: 4px;
     -webkit-appearance: none;
-    border: 1px solid @off-white;
+
+    border: 1px solid #d1d1d1;
+
+    &:focus, &:hover {
+      border: 1px solid #BCBCBC;
+      outline: none;
+    }
+
     width: 100%;
     .input-italic;
   }

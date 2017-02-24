@@ -35,7 +35,7 @@
 <div class="roots" *ngIf="nestConfig">
   <ul *ngFor="let name of nestConfig.folders.order">
     <li (click)="changeRoot(null, name)" [title]="'root ' + name"><span class="fa fa-fw" [ngClass]="name | typeToClass"></span></li>
-    <li *ngIf="(rootPaths[name] || []).length > (nestConfig.folders.order.length > 1 ? 3 : 2)"><span>…</span></li>
+    <li *ngIf="(rootPaths[name] || []).length > (nestConfig.folders.order.length > 1 ? 4 : 3)"><span>…</span></li>
     <li (click)="changeRoot(each.id, name)" class="text" [title]="each.name + '(' + name + ')'" *ngFor="let each of (rootPaths[name] || []).slice(-3)"><span>{{ each.name }}</span></li>
   </ul>
 </div>

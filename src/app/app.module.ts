@@ -47,6 +47,8 @@ import { PageNotFoundComponent } from './components/page-not-found/page-not-foun
 import { JobNotFoundComponent } from './components/job-not-found/job-not-found.component';
 import { D3ExampleComponent } from './components/d3-example/d3-example.component';
 import { ExampleComponent } from './components/d3-example/example-component/example-component.component';
+import { ListComponent } from './components/list/list.component';
+import { ListElementComponent } from './components/list/list-element/list-element.component';
 
 
 @NgModule({
@@ -78,7 +80,9 @@ import { ExampleComponent } from './components/d3-example/example-component/exam
     PageNotFoundComponent,
     JobNotFoundComponent,
     D3ExampleComponent,
-    ExampleComponent
+    ExampleComponent,
+    ListComponent,
+    ListElementComponent
   ],
   imports: [
     BrowserModule,
@@ -97,7 +101,7 @@ import { ExampleComponent } from './components/d3-example/example-component/exam
     ClassToStringPipe,
     TreeService
   ],
-  entryComponents: [ SimpleTreeElementComponent, ElementDisplayComponent ],
+  entryComponents: [ SimpleTreeElementComponent, ElementDisplayComponent, ListElementComponent ],
   bootstrap: [ AppComponent ]
 })
 export class AppModule { }

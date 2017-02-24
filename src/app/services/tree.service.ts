@@ -186,4 +186,216 @@ export class TreeService {
       throw new Error('invalid/ incompatible object');
     }
   }
+
+  test(jobS, configS) {
+    let rootFolders = {};
+
+    let folderMap = {};
+    let folderIds = [];
+
+    let folderTrees = {};
+    let folderTreeOrders = {};
+
+    let locMap = {};
+    let locIds = [];
+    let locPairs = [];
+
+    let childMap = {};
+    let childIds = [];
+
+    let componentMap = {};
+    let componentIds = [];
+
+    let maxCache = 100;
+
+    return configS.withLatestFrom(jobS).switchMap(async([config, job]) => {
+      let folderNames = config.folders.order; // may need to be moved below if order is dynamic
+      let rootFolderIds = folderNames.map(name => config.folders.roots[name] || job.folders.roots[name]);
+
+      // check for root folder changes
+      let checkLocs = (await Promise.all(folderNames.map(async(name, i) => {
+        let rootFolderId = rootFolderIds[i];
+
+        if (rootFolders[name] !== rootFolderId) {
+          let newIds = [];
+          await this.buildFolderTree(rootFolderId, newIds, folderIds, folderMap)
+
+          // keep at least the folders necessary
+          folderIds = newIds.concat(folderIds.filter(_id => newIds.indexOf(_id) == -1)).slice(0, Math.max(newIds.length, maxCache));
+
+          for (let id in folderMap) {
+            if (folderIds.indexOf(id) == -1) {
+              delete folderMap[id];
+            }
+          }
+
+          rootFolders[name] = rootFolderId;
+          folderTrees[name] = D3.hierarchy(folderMap[rootFolderId], (d) => d._children);
+          folderTreeOrders[name] = folderTrees[name].descendants().map(n => n.data.id);
+          return 1;
+        }
+        return 0;
+      }))).some(x => x == 1);
+
+      if (checkLocs) {
+        let trees = folderNames.map(name => folderTrees[name]);
+
+        locPairs = product(trees.map(node => node.descendants().map(el => el.data.id))).map(arr => arr.join('+'));
+
+        let db = this.db;
+
+        let newLocIds = locPairs.filter(id => locIds.indexOf(id) == -1).map(e => e.split('+'));
+        if (newLocIds.length ) {
+          let keyName = folderNames.length > 1 ?
+            `[${folderNames.map((n, i) => 'folder' + i).join('+')}]` :
+            'folder0';
+
+          let newLocs = await db.locationElements.where(keyName).anyOf(newLocIds).toArray();
+          
+          newLocs.forEach(loc => {
+            let id = loc.folders.join('+');
+            locMap[id] = loc;
+          });
+        }
+
+        locPairs.forEach(id => {
+          if (locMap[id] === undefined) {
+            locMap[id] = null; // location doesn't exist (different than uncached)
+          } 
+        });
+
+        let cids = locPairs.map(id => locMap[id] && locMap[id].children).reduce((a, b) => b ? a.concat(b) : a, []);
+
+        await Promise.all(cids.map(async(id) => {
+          if (childIds.indexOf(id) == -1) {
+            let child = await db.childElements.get(id);
+            childMap[id] = child;
+          }
+        }));
+
+        let coids = cids.map(id => childMap[id].ref).filter((r, i, arr) => r && arr.indexOf(r) == i);
+
+        let newCoids = coids.filter(id => componentIds.indexOf(id) == -1);
+
+        let newComponents = await db.componentElements.where('id').anyOf(newCoids).toArray();
+        if (newComponents.length !== newCoids.length) throw new Error('missing ref component');
+
+        newComponents.forEach(comp => {
+          componentMap[comp.id] = comp;
+        });
+
+        componentIds = coids.concat(componentIds.filter(_id =>    coids.indexOf(_id) == -1)).slice(0, Math.max(   coids.length, maxCache));
+        childIds =      cids.concat(    childIds.filter(_id =>     cids.indexOf(_id) == -1)).slice(0, Math.max(    cids.length, maxCache));
+        locIds =    locPairs.concat(      locIds.filter(_id => locPairs.indexOf(_id) == -1)).slice(0, Math.max(locPairs.length, maxCache));
+
+        for (let id in componentMap) {
+          if (componentIds.indexOf(id) == -1) {
+            delete componentMap[id];
+          }
+        }
+
+        for (let id in childMap) {
+          if (childIds.indexOf(id) == -1) {
+            delete childMap[id];
+          }
+        }
+
+        for (let id in locMap) {
+          if (locIds.indexOf(id) == -1) {
+            delete locMap[id];
+          }
+        }
+      }
+      // TODO: add filter check
+
+      let enabledFolders = folderNames.filter(name => config.folders.enabled[name]);
+
+      let tree;
+      if (config.component.enabled) {
+        // if component enabled
+        let children = locPairs.map(id => {
+          let loc = locMap[id];
+          return loc && loc.children.map(_id => Object.assign(childMap[_id], { folders: loc.folders }));
+        }).reduce((a, b) => b ? a.concat(b) : a, []);
+
+        let nest: any = D3.nest();
+
+        enabledFolders.forEach(key => {
+          nest = nest.key((d) => d.folders[folderNames.indexOf(key)]);
+        });
+
+        let data = nest.entries(children);
+
+        // add empty folders
+        // TODO: improve this mess
+        tree = D3.hierarchy({ values: data, key: null }, (n) => {
+          if (n.values && n.values.length) {
+            if (n.values[0].key && n.values[0].values) {
+              let ids = n.values.map(x => x.key);
+              let name = enabledFolders.find(name => ids.some(x => folderTreeOrders[name].indexOf(x) != -1));
+              if (name) {
+                return folderTreeOrders[name].map(id => {
+                  let i = ids.indexOf(id);
+                  if (i == -1) {
+                    return { key: id, values: [] };
+                  } else {
+                    return n.values[i];
+                  }
+                });
+              }
+            }
+
+          }
+          return n.values;
+        });
+
+        // replace { key: ... values: [] } with FolderElements
+        tree.each((n: any) => {
+          if (n.data.key && n.data.values) {
+            n.data = folderMap[n.data.key];
+          } else if (n.data.values) {
+            // root node (not root folder, however);
+            n.data = null;
+          }
+        });
+
+      } else if (enabledFolders.length) {
+        let name = enabledFolders[0]
+
+        tree = folderTrees[name];
+
+      } else {
+        throw new Error('invalid state (component and folders disabled)');
+      }
+
+      return tree;
+
+    });
+  }
+
+  async buildFolderTree(root, arr, prev=[], map={}, maxDepth = 10, parents = []) {
+    if (parents.indexOf(root) != -1) {
+      throw new Error('circular tree structure');
+    }
+    if (prev.indexOf(root) !== -1) {
+      arr.unshift(root);
+      return map[root];
+    }
+
+    let db = this.db;
+    let folder = await db.folderElements.get(root);
+
+    if (folder.children && folder.children.length && maxDepth > 0) {
+      folder._children = [];
+      await Promise.all(folder.children.map((id, i) => {
+        return this.buildFolderTree(id, arr, prev, map, maxDepth - 1, parents.concat(root)).then(child => {
+          // should probably be BehaviorSubject
+          folder._children[i] = child;
+        });
+      }));
+    }
+
+    arr.unshift(root);
+    return map[root] = folder;
+  }
 }

@@ -22,6 +22,7 @@ import { FolderElement, NestConfig, Collection, Filter } from '../../models';
 import { NestComponent } from '../nest/nest.component';
 import { SearchService } from '../../services/search.service';
 import { JobService } from '../../services/job.service';
+import { TreeService } from '../../services/tree.service';
 
 function methodToSymbol(name: string) {
   switch(name) {
@@ -75,6 +76,9 @@ export class BuildPageComponent implements OnInit, OnDestroy {
   public nestConfig: NestConfig;
   private nestConfigSubject: BehaviorSubject<NestConfig>;
   private nestSubject: BehaviorSubject<any>
+  private nestSubject2: any;
+
+  public listData;
 
   private filterForm: FormGroup;
   private nestElementConfig: any = { ['window']: true };
@@ -85,12 +89,13 @@ export class BuildPageComponent implements OnInit, OnDestroy {
     private jobService: JobService,
     private route: ActivatedRoute,
     private formBuilder: FormBuilder,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private treeService: TreeService
   ) { }
 
   ngOnInit() {
     this.searchService.currentTypes.next(['componentElements']);
-    this.route.parent.data.subscribe(({ job: { collection, collectionSubject, nestConfigSubject, nestSubject, editWindowsEnabled } }) => {
+    this.route.parent.data.subscribe(({ job: { collection, collectionSubject, nestConfigSubject, nestSubject2, nestSubject, editWindowsEnabled } }) => {
       editWindowsEnabled.next(true);
 
       this.job = collection;
@@ -109,9 +114,13 @@ export class BuildPageComponent implements OnInit, OnDestroy {
 
       this.filterSuggestionsSubject.subscribe(arr => this.filterSuggestions = arr);
 
+      nestConfigSubject.withLatestFrom(collectionSubject).switchMap(([config, job]) => this.treeService.nest(job, config)).subscribe((data)=>{
+        this.listData = data;
+      });
 
       // nest
       (this.nestSubject = nestSubject).subscribe(nest => this.nest = nest);
+      this.nestSubject2 = nestSubject2;
     });
   }
 

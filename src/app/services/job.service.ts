@@ -106,6 +106,8 @@ export class JobService implements Resolve<Promise<any>> {
 
     let nestConfigSubject = this.nestConfigSubject = new BehaviorSubject(config);
 
+    let nestSubject2 = this.treeService.test(collectionSubject, nestConfigSubject);
+
     let trees = this.elementService.buildTreesSubject(collectionSubject, nestConfigSubject);
 
     let nestSubject = this.elementService.buildNestSubject(collectionSubject, nestConfigSubject);
@@ -123,6 +125,7 @@ export class JobService implements Resolve<Promise<any>> {
       selectedElementSubject,
       openElements,
       nestSubject,
+      nestSubject2,
       collection,
       trees
     };

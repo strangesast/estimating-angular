@@ -27,6 +27,7 @@ export class FolderElement extends BaseElement {
 
   public totalSell = null;
   public totalBuy = null;
+  public _children;
 
   constructor(
     name,
