@@ -43,6 +43,7 @@ export class JobListService implements Resolve<any> {
   }
 
   async createCollection(collection: Collection) {
+    console.log('col', collection);
     let db = this.db;
     let id = await db.collections.add(collection);
     collection.id = <any>id;

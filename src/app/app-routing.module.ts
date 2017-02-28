@@ -15,6 +15,7 @@ import { HistoryPageComponent }    from './components/history-page/history-page.
 import { PageNotFoundComponent }   from './components/page-not-found/page-not-found.component';
 import { JobNotFoundComponent }    from './components/job-not-found/job-not-found.component';
 import { LoginPageComponent }      from './components/login-page/login-page.component';
+import { OAuthComponent }          from './components/oauth/oauth.component';
 
 import { ElementService } from './services/element.service';
 import { SearchService }  from './services/search.service';
@@ -126,6 +127,10 @@ const routes: Routes = [
     resolve: {
       elements: ElementService
     }
+  },
+  {
+    path: 'oauth',
+    component: OAuthComponent
   },
   {
     path: '**',

@@ -49,6 +49,7 @@ import { D3ExampleComponent } from './components/d3-example/d3-example.component
 import { ExampleComponent } from './components/d3-example/example-component/example-component.component';
 import { ListComponent } from './components/list/list.component';
 import { ListElementComponent } from './components/list/list-element/list-element.component';
+import { OAuthComponent } from './components/oauth/oauth.component';
 
 
 @NgModule({
@@ -82,7 +83,8 @@ import { ListElementComponent } from './components/list/list-element/list-elemen
     D3ExampleComponent,
     ExampleComponent,
     ListComponent,
-    ListElementComponent
+    ListElementComponent,
+    OAuthComponent
   ],
   imports: [
     BrowserModule,

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
  
 import { BehaviorSubject } from 'rxjs';
 
-import { Dexie } from 'dexie';
+import Dexie from 'dexie';
 import 'dexie-observable';
 
 import {
