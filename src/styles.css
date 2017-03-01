@@ -4,7 +4,7 @@ html, body {
   font-family: 'Open Sans', sans-serif;
   font-size: 16px;
   height: 100%;
-  background-color: #F0F0F0;
+  background-color: #F0F0F0; /* @app-background */;
 }
 .spacer {
   flex-grow: 1;

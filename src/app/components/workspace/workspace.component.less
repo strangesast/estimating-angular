@@ -1,5 +1,6 @@
 @import "../../styles/basic";
 
+
 :host {
   display: block;
 }
@@ -36,11 +37,11 @@
         margin-left: -@search-offset;
         z-index: 1;
         .box-shadow;
-        background-color: #F8F8F8;
+        background-color: #FAFAFA;
 
         transition: margin-left 0.1s;
         line-height: 60px;
-        color: @off-white;
+        color: @border;
         display: flex;
 
         .search-toggle {
@@ -70,7 +71,7 @@
         flex-direction: row;
 
         .clear {
-          color: @off-white;
+          color: @border;
           &:hover {
             color: darkgrey;
           }
@@ -106,7 +107,7 @@
         }
         margin-top: -1px;
         font-size: 0.75em;
-        background-color: #F8F8F8;
+        background-color: #FAFAFA;
 
         width: 100%;
         padding: 8px;
@@ -136,7 +137,7 @@
               display: none;
             }
             input:checked + label {
-              background-color: #d8d8d8;
+              background-color: #D8D8D8;
             }
             label {
               .button;
@@ -181,24 +182,24 @@
     transition: width 0.1s, margin-left 0.1s;
 
     z-index: 2;
-    background-color: #F8F8F8;
+    background-color: #FAFAFA;
     border: 1px solid #D3D3D3;
   }
 
   &.search-visible {
-    @media(max-width: 800px) {
+    @media(max-width: @max-small-content-width) {
       .full-search;
       .wide-search {
         display: none;
       }
     }
 
-    @media(min-width: 800px) {
+    @media(min-width: @max-small-content-width) {
       & > .side {
         width: @side-width;
         flex-shrink: 0;
-        border-bottom: 1px solid #d8d8d8;
-        border-left: 1px solid #d8d8d8;
+        border-bottom: 1px solid #D8D8D8;
+        border-left: 1px solid #D8D8D8;
         & > form > .top {
           margin-left: -1px;
         }

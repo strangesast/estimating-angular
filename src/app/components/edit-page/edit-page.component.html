@@ -15,9 +15,7 @@
 <app-edit-window *ngIf="selectedElement" [isWindow]="false" [element]="openElements[selectedElement].element"></app-edit-window>
 <!--<app-edit-window *ngIf="selectedElement === null" [isWindow]="false" [element]="newElement"></app-edit-window>-->
 <div class="main" *ngIf="selectedElement === null">
-  <h1>Create New</h1>
   <p>Choose one of the following types.</p>
-
   <div class="new-types" [class.none]="!newElementType">
     <button [disabled]="newElementType == 'folder'" (click)="setNewElementType('folder')">Folder</button>
     <button [disabled]="newElementType == 'component'" (click)="setNewElementType('component')">Component</button>

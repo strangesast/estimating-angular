@@ -4,12 +4,14 @@
   display: block;
   margin: 0 10px 10px;
 }
+
 input, textarea {
   padding: 4px;
-  border: 1px solid #D5D8DD;
+  border: 1px solid @border;
+
   &:focus {
     outline: none;
-    border: 1px solid #BCBCBC;
+    border: 1px solid @border-active;
   }
 }
 .navigation {
@@ -26,23 +28,23 @@ input, textarea {
     font-size: 1em;
     color: inherit;
     z-index: 9;
+    .hoverlink;
+    padding: 8px;
+    border: 1px solid #d1d1d1;
+    margin-bottom: -1px;
 
     &:active, &:focus {
       outline: none;
     }
+
     &:hover {
-      border: 1px solid #BCBCBC;
+      border: 1px solid @border-active;
       z-index: 10;
     }
-    .hoverlink;
-    padding: 8px;
 
     &:not([disabled]) {
-      background: #F3F4F5;
+      background: @inactive;
     }
-
-    border: 1px solid #d1d1d1;
-    margin-bottom: -1px;
 
     &[disabled] {
       border-bottom: 1px solid white;
@@ -50,9 +52,10 @@ input, textarea {
   }
 
   &.none > button {
-    background-color: #F8F8F8;
+    background-color: #FAFAFA;
   }
 }
+
 ul.tabs {
   display: block;
   width: 100%;
@@ -66,22 +69,22 @@ ul.tabs {
   & > li {
     display: inline-block;
     position: relative;
-
     z-index: 9;
     padding: 8px;
     max-width: 25%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    border: 1px solid @border;
+
     span + span {
       margin-left: 4px;
     }
 
-    border: 1px solid #D5D8DD;
 
     &:hover {
       z-index: 10;
-      border: 1px solid #BCBCBC;
+      border: 1px solid @border-active;
     }
 
     &.active {
@@ -135,7 +138,7 @@ form {
       padding: 4px;
       font-size: 14px;
       position: relative;
-      border: 1px solid #D5D8DD;
+      border: 1px solid @border;
       z-index: 9;
 
       &:not(:first-child) {
@@ -143,7 +146,7 @@ form {
       }
       &:hover {
         cursor: pointer;
-        border: 1px solid #BCBCBC;
+        border: 1px solid @border-active;
         z-index: 10;
       }
 

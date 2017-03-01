@@ -28,9 +28,9 @@ ul.filters {
   & > li {
     font-size: 14px;
     padding: 4px;
-    background: #F3F4F5;
+    background: @inactive;
     border-radius: 8px;
-    border: 1px solid #D5D8DD;
+    border: 1px solid @border;
     .remove {
       .hoverlink;
     }
@@ -49,7 +49,7 @@ ul.toggle {
   & > li {
     position: relative;
     padding: 8px;
-    border: 1px solid #D5D8DD;
+    border: 1px solid @border;
     z-index: 9;
     &:not(:first-child) {
       margin-left: -1px;
@@ -58,13 +58,13 @@ ul.toggle {
       background: #E5E5E5;
     }
     &:hover {
-      border: 1px solid #BCBCBC;
+      border: 1px solid @border-active;
       z-index: 10;
     }
     &:active {
-      background-color: #F3F4F5;
+      background-color: @inactive;
     }
-    @media(max-width: 800px) {
+    @media(max-width: @max-small-content-width) {
       & > span:not(:first-child) {
         display: none;
       }
@@ -83,10 +83,11 @@ ul.toggle {
     font-size: 1.1em;
     -webkit-appearance: none;
 
+    background-color: #FAFAFA;
     border: 1px solid #d1d1d1;
 
     &:focus, &:hover {
-      border: 1px solid #BCBCBC;
+      border: 1px solid @border-active;
       outline: none;
     }
 
@@ -113,7 +114,7 @@ ul.toggle {
         padding: 4px 8px;
         white-space: nowrap;
         &:hover {
-          background: fade(@off-white, 20%);
+          background: @inactive;
           cursor: pointer;
         }
       }
@@ -121,7 +122,7 @@ ul.toggle {
         padding: 4px;
         font-size: 12px;
         border-radius: 8px;
-        background: @off-white;
+        background: @border;
       }
     }
     &[hidden] {

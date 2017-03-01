@@ -16,7 +16,7 @@
     height: 60px;
     position: relative;
 
-    border-bottom: 1px solid @off-white;
+    border-bottom: 1px solid @border;
 
     .titleblock {
       line-height: 60px;
@@ -45,14 +45,14 @@
           background-color: #E5E5E5;
         }
       }
-      @media(max-width: 800px) {
+      @media(max-width: @max-small-content-width) {
         display: none;
       }
     }
 
     .links-alt {
       position: relative;
-      border-left: 1px solid @off-white;
+      border-left: 1px solid @border;
       & > span {
         display: block;
         height: 60px;
@@ -73,7 +73,7 @@
         z-index: 10;
         min-width: 120px;
         .box-shadow;
-        border: 1px solid @off-white;
+        border: 1px solid @border;
         padding: 8px 0;
         & > a {
           display: block;
@@ -93,7 +93,7 @@
         display: block;
       }
 
-      @media(min-width: 800px) {
+      @media(min-width: @max-small-content-width) {
         display: none;
       }
     }
@@ -155,7 +155,7 @@
         border-top: 1px solid #D3D3D3;
         border-left: 1px solid #D3D3D3;
         border-right: 1px solid #D3D3D3;
-        background: #F8F8F8;
+        background: #FAFAFA;
       }
     }
   }
@@ -164,9 +164,9 @@
 .roots {
   display: flex;
   margin-bottom: 10px;
-  border-top: 1px solid @off-white;
-  border-bottom: 1px solid @off-white;
-  background-color: #F3F4F5;
+  border-top: 1px solid @border;
+  border-bottom: 1px solid @border;
+  background-color: @inactive;
 
   & > ul {
     list-style-type: none;
@@ -181,7 +181,7 @@
       position: relative;
       line-height: 30px;
       height: 30px;
-      background-color: #F8F8F8;
+      background-color: #FAFAFA;
       padding-left: 15px + 4px;
       user-select: none;
       cursor: pointer;
@@ -205,8 +205,8 @@
         content: '';
         position: absolute;
         z-index: -1;
-        border-top: 1px solid @off-white;
-        border-right: 1px solid @off-white;
+        border-top: 1px solid @border;
+        border-right: 1px solid @border;
         top: 0;
         bottom: 0;
         left: 100%;

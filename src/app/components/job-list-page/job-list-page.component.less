@@ -9,8 +9,7 @@
     height: 60px;
     line-height: 60px;
     padding: 0 8px;
-
-    border-bottom: 1px solid @off-white;
+    border-bottom: 1px solid @border;
 
     .title {
       font-size: 2em;
@@ -21,34 +20,46 @@
     margin: 8px;
   }
 }
+
 .title {
   font-size: 1.5em;
 }
+
 form.inline {
   width: 100%;
+
   & > div {
     display: inline-block;
   }
 }
+
 .table {
   .name {
     width: 35%;
     overflow: hidden;
   }
+
   .description {
     width: 30%;
     overflow: hidden;
   }
+
   .settings {
     width: 5%;
   }
+
   .owner {
     width: 15%;
     overflow: hidden;
   }
+
   .type, .folders-cnt, .components-cnt {
     justify-content: center;
     text-align: center;
     width: 5%;
+  }
+
+  & + .table {
+    margin-top: 20px;
   }
 }
