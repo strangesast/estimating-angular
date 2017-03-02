@@ -77,43 +77,57 @@ export class OAuthService {
     return { accessToken, refreshToken };
   }
 
-  authorizeGithub(renderer) {
+  async authorizeGithub(renderer) {
     let origin = ORIGIN + '/gh';
     let authURL = `${ origin }/login/oauth/authorize`;
     let tokenURL = `${ origin }/login/oauth/access_token`;
     let scopes = ['repo', 'user'];
     let state = Math.random().toString(36).substring(2);
 
-    return this.authorize(
+    let tokens = await this.authorize(
       { client_id: GITHUB_ID, redirect_uri: REDIRECT_URL, scope: scopes.join(' '), state },
       authURL,
       { client_id: GITHUB_ID, client_secret: GITHUB_SECRET, state },
       tokenURL,
       renderer
     );
+
+    let test = await this.http.get('https://api.github.com/user', new RequestOptions({
+      headers: new Headers({ 'Authorization': 'Bearer ' + tokens.accessToken })
+    })).map(res => res.json()).toPromise();
+    console.log('test', test);
+
+    return tokens;
   }
 
-  authorizeCore(renderer, refresh = false) {
+  async authorizeCore(renderer, refresh = false) {
     let origin = 'https://beta.dayautomation.com';
     let authURL = `${ origin }/oauth/authorize`;
     let tokenURL = `${ origin }/oauth/token`;
 
-    return this.authorize(
+    let tokens = await this.authorize(
       { client_id: CORE_ID, redirect_uri: REDIRECT_URL, scopes: 'user', response_type: 'code' },
       authURL,
       { client_id: CORE_ID, client_secret: CORE_SECRET, grant_type: 'authorization_code', redirect_uri: REDIRECT_URL },
       tokenURL,
       renderer
     );
+
+    let test = await this.http.get(origin + '/sessions/me.json', new RequestOptions({
+      headers: new Headers({ 'Authorization': 'Bearer ' + tokens.accessToken })
+    })).map(res => res.json()).toPromise();
+    console.log('test', test);
+
+    return tokens;
   }
 
-  authorizeSalesforce(renderer, refresh = false) {
+  async authorizeSalesforce(renderer, refresh = false) {
     let origin = ORIGIN + '/sf';
     let authURL = `${ origin }/services/oauth2/authorize`;
     let tokenURL = `${ origin }/services/oauth2/token`;
     let state = Math.random().toString(36).substring(2);
 
-    return this.authorize(
+    let tokens = await this.authorize(
       { client_id: SALESFORCE_ID, redirect_uri: REDIRECT_URL, response_type: 'code', state },
       authURL,
       { client_id: SALESFORCE_ID, client_secret: SALESFORCE_SECRET, grant_type: 'authorization_code', redirect_uri: REDIRECT_URL, state },
@@ -121,5 +135,12 @@ export class OAuthService {
       renderer,
       true
     );
+
+    let test = await this.http.get('https://na40.salesforce.com/services/data/v20.0/sobjects/Account/', new RequestOptions({
+      headers: new Headers({ 'Authorization': 'Bearer ' + tokens.accessToken, 'Content-Type': 'application/json'})
+    })).map(res => res.json()).toPromise();
+    console.log('test', test);
+
+    return tokens
   }
 }

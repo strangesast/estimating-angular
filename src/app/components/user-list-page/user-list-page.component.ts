@@ -37,8 +37,8 @@ export class UserListPageComponent implements OnInit, OnDestroy {
 
     let tokens: any = {};
     // github
-    tokens.core = await this.oauth.authorizeCore(renderer);
-    tokens.github = await this.oauth.authorizeGithub(renderer);
+    //tokens.core = await this.oauth.authorizeCore(renderer);
+    //tokens.github = await this.oauth.authorizeGithub(renderer);
     tokens.salesforce = await this.oauth.authorizeSalesforce(renderer);
 
     console.log('tokens', tokens);
