@@ -22,6 +22,7 @@ import { Selection } from 'd3';
 
 import { TreeConfiguration } from '../../models';
 import { SELECTOR, ElementDisplayComponent } from '../element-display/element-display.component';
+import { SimpleTreeElementComponent, SIMPLE_TREE_ELEMENT_SELECTOR } from '../simple-tree/simple-tree-element/simple-tree-element.component';
 
 @Component({
   selector: 'app-tree',
@@ -55,7 +56,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   ngOnInit() {
     this.elementMap = new Map();
     this.children = [];
-    this.factory = this.componentFactoryResolver.resolveComponentFactory(ElementDisplayComponent);
+    this.factory = this.componentFactoryResolver.resolveComponentFactory(SimpleTreeElementComponent);
   }
 
   ngOnChanges(changes) {
@@ -86,7 +87,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
   create(data, index) {
     let config = { size: 'small' };
     let inputProviders = [
-      { provide: 'element', useValue: data },
+      { provide: 'data', useValue: data },
       { provide: 'config',  useValue: config }
     ];
     let resolvedInputs = ReflectiveInjector.resolve(inputProviders);
@@ -125,7 +126,7 @@ export class TreeComponent implements OnInit, OnChanges, AfterViewInit {
       throw new Error('invalid root node');
     }
 
-    let selection = this.host.selectAll(SELECTOR).data(arr, (n: any) => n.data ? n.data.id : null || n);
+    let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR).data(arr, (n: any) => n.data ? n.data.id : null || n);
 
     selection.exit()
       .each(this.remove.bind(this))

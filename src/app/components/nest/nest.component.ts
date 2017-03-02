@@ -19,7 +19,7 @@ import { Selection, HierarchyNode } from 'd3';
 import * as D3 from 'd3';
 
 import { waitForTransition } from '../../resources/util';
-import { SimpleTreeElementComponent } from '../simple-tree/simple-tree-element/simple-tree-element.component';
+import { SimpleTreeElementComponent, SIMPLE_TREE_ELEMENT_SELECTOR } from '../simple-tree/simple-tree-element/simple-tree-element.component';
 
 import { ClassToStringPipe, TypeToClassPipe } from '../../pipes';
 import { FolderElement, ChildElement } from '../../models';
@@ -187,7 +187,7 @@ export class NestComponent implements OnInit {
       n.x = i * HEIGHT;
     });
 
-    let selection = this.host.selectAll('.item').data(arr, (d) => {
+    let selection = this.host.selectAll(SIMPLE_TREE_ELEMENT_SELECTOR).data(arr, (d) => {
       if(d.data instanceof D3.hierarchy) {
         if (d.data.data instanceof ChildElement) {
           return d.data.ancestors().map(n => n.data.id).join('');

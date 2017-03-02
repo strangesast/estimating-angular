@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { URLSearchParams } from '@angular/http';
 import { Router } from '@angular/router';
 
 @Component({
@@ -14,13 +15,13 @@ export class OAuthComponent implements OnInit {
     if (window.opener) {
       let search = location.search;
       if (search.startsWith('?')) {
-        let arr = search.slice(1).split('=');
-        let i = arr.indexOf('code');
-        if (i != -1) {
-          let code = arr[i+1];
-          let message = { code: code };
-          return window.opener.postMessage(message, window.location.origin);
+        let params = new URLSearchParams(search.slice(1));
+        let message = {};
+        for(let [key, value] of params.paramsMap) {
+          message[key] = decodeURIComponent(value[0]);
         }
+        let origin = window.location.origin
+        return window.opener.postMessage(message, origin);
       }
     }
     this.router.navigateByUrl('/');

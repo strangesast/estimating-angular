@@ -1,5 +1,13 @@
 @import "../../../styles/basic";
 
+:host-context(app-tree) {
+  margin-bottom: -1px;
+  &, &:hover {
+    border-left: none;
+    border-right: none;
+  }
+}
+
 :host {
   display: flex;
   position: relative;
@@ -24,12 +32,17 @@
   }
   .generate-levels(10);
 
+  & > .icon {
+    flex-shrink: 0;
+  }
+
   & > span:not(:first-child):not(.spacer) {
     margin-left: 8px;
     min-width: 0;
   }
 
   & > .name, & > .description {
+    flex-shrink: 1;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -52,6 +65,7 @@
 
   .grip {
     color: @border;
+    flex-shrink: 0;
     &:hover {
       color: black;
       cursor: move;

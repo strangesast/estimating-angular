@@ -14,6 +14,7 @@ import {
   UserService,
   TreeService
 } from './services';
+import { OAuthService } from './services/oauth.service';
 
 import { AppComponent }               from './components/app.component';
 import { SearchComponent }            from './components/search/search.component';
@@ -101,7 +102,8 @@ import { OAuthComponent } from './components/oauth/oauth.component';
     JobService,
     UserService,
     ClassToStringPipe,
-    TreeService
+    TreeService,
+    OAuthService
   ],
   entryComponents: [ SimpleTreeElementComponent, ElementDisplayComponent, ListElementComponent ],
   bootstrap: [ AppComponent ]
