@@ -11,91 +11,75 @@
   .default-host;
   width: 100%;
 
-  & > nav {
+  & > nav > .links {
     display: flex;
-    height: 60px;
+
+    & > a {
+      display: block;
+      position: relative;
+      height: 60px;
+      padding: 0 8px;
+      line-height: 60px;
+      color: inherit;
+      text-decoration: none;
+
+      &.active {
+        background-color: @inactive;
+      }
+    }
+
+    @media(max-width: @max-small-content-width) {
+      display: none;
+    }
+  }
+
+  & > nav > .links-alt {
     position: relative;
+    border-left: 1px solid @border;
 
-    border-bottom: 1px solid @border;
-
-    .titleblock {
+    & > span {
+      display: block;
+      height: 60px;
       line-height: 60px;
       padding: 0 8px;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-
-      .title {
-        font-size: 2em;
-      }
     }
 
-    .links {
-      display: flex;
+    & > div {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: -9px; // +1 border
+      margin-right: -1px;
+
+      background-color: white;
+      z-index: 10;
+      min-width: 120px;
+      .box-shadow;
+      border: 1px solid @border;
+      padding: 8px 0;
       & > a {
         display: block;
-        position: relative;
-        height: 60px;
-        padding: 0 8px;
-        line-height: 60px;
+        text-align: right;
+        padding: 8px;
+        box-sizing: border-box;
+        width: 100%;
         color: inherit;
         text-decoration: none;
-
+        line-height: 20px;
         &.active {
-          background-color: #E5E5E5;
+          background-color: @inactive;
         }
-      }
-      @media(max-width: @max-small-content-width) {
-        display: none;
       }
     }
 
-    .links-alt {
-      position: relative;
-      border-left: 1px solid @border;
-      & > span {
-        display: block;
-        height: 60px;
-        line-height: 60px;
-        padding: 0 8px;
-        white-space: nowrap;
-      }
+    &:hover > div {
+      display: block;
+    }
 
-      & > div {
-        display: none;
-        position: absolute;
-        right: 0;
-        top: 100%;
-        margin-top: -9px; // +1 border
-        margin-right: -1px;
-
-        background-color: white;
-        z-index: 10;
-        min-width: 120px;
-        .box-shadow;
-        border: 1px solid @border;
-        padding: 8px 0;
-        & > a {
-          display: block;
-          text-align: right;
-          padding: 8px;
-          box-sizing: border-box;
-          width: 100%;
-          color: inherit;
-          text-decoration: none;
-          &.active {
-            background-color: #E5E5E5;
-          }
-        }
-      }
-
-      &:hover > div {
-        display: block;
-      }
-
-      @media(min-width: @max-small-content-width) {
-        display: none;
-      }
+    @media(min-width: @max-small-content-width) {
+      display: none;
     }
   }
 
@@ -112,12 +96,14 @@
       font-size: 0.5em;
       padding: 0 4px;
     }
+
     .total-value {
       font-style: italic;
       margin-right: 10px;
     }
   
     & > .counts {
+      white-space: nowrap;
       span > span {
         margin-left: 4px;
       }
@@ -135,7 +121,6 @@
       position: fixed;
       bottom: 0;
       right: 10px;
-      max-width: 80%;
       overflow-x: auto;
       white-space: nowrap;
       direction:rtl;
@@ -155,7 +140,7 @@
         border-top: 1px solid #D3D3D3;
         border-left: 1px solid #D3D3D3;
         border-right: 1px solid #D3D3D3;
-        background: #FAFAFA;
+        background: @background;
       }
     }
   }
@@ -181,7 +166,7 @@
       position: relative;
       line-height: 30px;
       height: 30px;
-      background-color: #FAFAFA;
+      background-color: @background;
       padding-left: 15px + 4px;
       user-select: none;
       cursor: pointer;
@@ -217,7 +202,7 @@
       }
 
       &:hover {
-        background-color: #E5E5E5;
+        background-color: @inactive;
       }
       .generate-levels(20, 0);
 

@@ -13,7 +13,7 @@
   position: sticky;
   top: 0;
 
-  background-color: #FAFAFA;
+  background-color: @background;
 
   .top {
     position: relative;
@@ -64,7 +64,7 @@
       margin: 0;
     }
     font-size: 0.75em;
-    background-color: #FAFAFA;
+    background-color: @background;
 
     width: 100%;
     padding: 8px;
@@ -94,7 +94,7 @@
           display: none;
         }
         input:checked + label {
-          background-color: #d8d8d8;
+          background-color: @border;
         }
         label {
           .button;
@@ -103,7 +103,7 @@
       }
     }
     input {
-      border: 1px solid #d1d1d1;
+      border: 1px solid @border;
     }
     input.invalid {
       border: 1px solid red;

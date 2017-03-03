@@ -30,7 +30,7 @@ input, textarea {
     z-index: 9;
     .hoverlink;
     padding: 8px;
-    border: 1px solid #d1d1d1;
+    border: 1px solid @border;
     margin-bottom: -1px;
 
     &:active, &:focus {
@@ -52,7 +52,7 @@ input, textarea {
   }
 
   &.none > button {
-    background-color: #FAFAFA;
+    background-color: @background;
   }
 }
 
@@ -88,7 +88,7 @@ ul.tabs {
     }
 
     &.active {
-      background: #E5E5E5;
+      background: @inactive;
     }
 
     &:not(:first-child) {
@@ -102,7 +102,7 @@ ul.tabs {
 }
 form {
   padding: 10px;
-  border: 1px solid #d1d1d1;
+  border: 1px solid @border;
   min-width: 400px;
 
   .form-group {

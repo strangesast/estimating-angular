@@ -21,7 +21,7 @@ interface CollectionRecord {
 @Component({
   selector: 'app-job-list-page',
   templateUrl: './job-list-page.component.html',
-  styleUrls: ['../../styles/general.less', './job-list-page.component.less']
+  styleUrls: ['../../styles/page.less', '../../styles/general.less', './job-list-page.component.less']
 })
 export class JobListPageComponent implements OnInit, AfterViewInit {
   localJobs: Collection[] = [];

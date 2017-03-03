@@ -41,7 +41,7 @@ const STATS_INIT = { buy: 0, sell: 0, childCnt: 0, componentCnt: 0, folderCnt: 0
 @Component({
   selector: 'app-project-page',
   templateUrl: './project-page.component.html',
-  styleUrls: ['../../styles/general.less', './project-page.component.less']
+  styleUrls: ['../../styles/page.less', '../../styles/general.less', './project-page.component.less']
 })
 export class ProjectPageComponent implements OnInit, OnDestroy, AfterViewInit, OnChanges {
   private job: Collection;

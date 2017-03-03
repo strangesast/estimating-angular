@@ -1,0 +1,29 @@
+@import "./basic";
+
+:host > nav {
+  display: flex;
+  height: 60px;
+  line-height: 60px;
+
+  border-bottom: 1px solid @border;
+
+  & > .title {
+    padding: 0 8px;
+  }
+
+  .title {
+    font-size: 2em;
+  }
+
+  .titleblock {
+    line-height: 60px;
+    padding: 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+:host > .body {
+  margin: 8px;
+}

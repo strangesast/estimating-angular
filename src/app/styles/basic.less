@@ -6,6 +6,7 @@
 @main-height: 50px;
 
 @app-background: #F0F0F0;
+@background: #FCFCFC;
 @border: #D1D1D1;
 @border-active: #BCBCBC;
 @inactive: #F3F4F5;
@@ -98,7 +99,7 @@
   color: inherit;
   .hoverlink;
   padding: 8px;
-  border: 1px solid #d1d1d1;
+  border: 1px solid @border;
   margin-bottom: -1px;
 
   &:active, &:focus {
@@ -107,7 +108,7 @@
 
   &[disabled] {
     opacity: 0.5;
-    background: #d1d1d1;
+    background: @border;
     border-bottom: 1px solid white;
   }
 

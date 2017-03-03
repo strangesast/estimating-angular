@@ -55,7 +55,7 @@ ul.toggle {
       margin-left: -1px;
     }
     &.active {
-      background: #E5E5E5;
+      background: @inactive;
     }
     &:hover {
       border: 1px solid @border-active;
@@ -83,8 +83,8 @@ ul.toggle {
     font-size: 1.1em;
     -webkit-appearance: none;
 
-    background-color: #FAFAFA;
-    border: 1px solid #d1d1d1;
+    background-color: @background;
+    border: 1px solid @border;
 
     &:focus, &:hover {
       border: 1px solid @border-active;
